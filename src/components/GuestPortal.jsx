@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
 import { Smartphone, Calendar, Clock, MapPin, CheckCircle, XCircle, Download, ShieldCheck, HeartHandshake } from 'lucide-react';
 
-export default function GuestPortal({ eventData, guests, setGuests, activeGuestId, setActiveGuestId }) {
+export default function GuestPortal({ eventData, guests, setGuests, activeGuestId, setActiveGuestId, refreshData }) {
   const activeGuest = guests.find(g => g.id === activeGuestId) || guests[0];
   const [companions, setCompanions] = useState(activeGuest?.companions || 1);
 
@@ -21,14 +21,24 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
     );
   }
 
-  // Handle RSVP Action
-  const handleRSVP = (status) => {
-    setGuests(prev => prev.map(g => {
-      if (g.id === activeGuest.id) {
-        return { ...g, status, companions: status === 'accepted' ? companions : g.companions };
+  // Handle RSVP API Call
+  const handleRSVP = async (status) => {
+    try {
+      const res = await fetch(`/api/guests/${activeGuest.id}/rsvp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, companions: status === 'accepted' ? companions : activeGuest.companions })
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setGuests(guests.map(g => g.id === updated.id ? updated : g));
+      } else {
+        setGuests(guests.map(g => g.id === activeGuest.id ? { ...g, status, companions: status === 'accepted' ? companions : g.companions } : g));
       }
-      return g;
-    }));
+    } catch (e) {
+      setGuests(guests.map(g => g.id === activeGuest.id ? { ...g, status, companions: status === 'accepted' ? companions : g.companions } : g));
+    }
 
     if (status === 'accepted') {
       confetti({
@@ -37,6 +47,8 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
         origin: { y: 0.6 }
       });
     }
+
+    if (refreshData) refreshData();
   };
 
   const qrPayload = JSON.stringify({
@@ -50,7 +62,7 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
   return (
     <div class="apple-guest-portal">
       {/* Top Banner selector */}
-      <div class="apple-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+      <div class="apple-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyBetween: 'space-between', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem' }}>
           <Smartphone class="system-gold" size={18} />
           <span>معاينة واجهة iPhone الفاتحة الخاصة بالضيف:</span>
@@ -160,7 +172,7 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
             </div>
           )}
 
-          {/* Accepted -> Light Apple Wallet Ticket */}
+          {/* Accepted State -> Apple Wallet Ticket */}
           {activeGuest.status === 'accepted' && (
             <div class="wallet-pass-container">
               <div class="wallet-pass">
@@ -173,14 +185,14 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
                   <ShieldCheck size={26} />
                 </div>
 
-                {/* Tear Cutout */}
+                {/* Tear Notch */}
                 <div class="pass-cutout-line">
                   <div class="notch-left"></div>
                   <div class="dashed"></div>
                   <div class="notch-right"></div>
                 </div>
 
-                {/* Pass Body with QR Code */}
+                {/* Body */}
                 <div class="pass-body">
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>ابرز هذا الرمز لمنظمي البوابة عند الوصول</p>
                   

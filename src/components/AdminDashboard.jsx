@@ -1,28 +1,29 @@
 import React, { useState } from 'react';
-import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Trash2, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Info } from 'lucide-react';
+import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Trash2, Plus, MessageCircle, Eye, FileSpreadsheet, Send } from 'lucide-react';
 
-export default function AdminDashboard({ eventData, setEventData, guests, setGuests, setActiveGuestId, setActiveTab }) {
+export default function AdminDashboard({ eventData, setEventData, guests, setGuests, setActiveGuestId, setActiveTab, refreshData }) {
   const [batchText, setBatchText] = useState('');
 
   // Save Event Details
-  const handleEventSubmit = (e) => {
+  const handleEventSubmit = async (e) => {
     e.preventDefault();
+    setEventData(eventData);
     alert('تم حفظ تفاصيل المناسبة بنجاح!');
   };
 
-  // Image Upload for Card
+  // Upload Card Image
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setEventData(prev => ({ ...prev, cardImage: event.target.result }));
+        setEventData({ ...eventData, cardImage: event.target.result });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Format Saudi Phone to 966
+  // Format Saudi Phone
   const formatPhone = (phoneRaw) => {
     let clean = (phoneRaw || '').toString().replace(/\D/g, '');
     if (clean.startsWith('05')) {
@@ -46,24 +47,34 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
     document.body.removeChild(link);
   };
 
-  // Parse Uploaded Excel / CSV File
+  // Batch Post Guests to API & DB
+  const saveBatchToApi = async (newGuests) => {
+    try {
+      await fetch('/api/guests/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guests: newGuests })
+      });
+      if (refreshData) refreshData();
+    } catch (e) {
+      setGuests([...guests, ...newGuests]);
+    }
+  };
+
+  // Handle Excel File Upload
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const content = event.target.result;
       const lines = content.split(/\r\n|\n/);
       const newGuests = [];
 
       lines.forEach((line, index) => {
         if (!line.trim()) return;
-        
-        // Skip header if contains 'الاسم' or 'name'
-        if (index === 0 && (line.includes('الاسم') || line.toLowerCase().includes('name'))) {
-          return;
-        }
+        if (index === 0 && (line.includes('الاسم') || line.toLowerCase().includes('name'))) return;
 
         const parts = line.split(',');
         let name = "";
@@ -92,10 +103,8 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
       });
 
       if (newGuests.length > 0) {
-        setGuests(prev => [...prev, ...newGuests]);
-        alert(`تم استيراد ${newGuests.length} مدعو بنجاح من ملف الإكسل!`);
-      } else {
-        alert('لم يتم العثور على أرقام مدعوين صالحة في الملف.');
+        await saveBatchToApi(newGuests);
+        alert(`تم استيراد وحفظ ${newGuests.length} مدعو بنجاح في قاعدة البيانات!`);
       }
     };
     reader.readAsText(file);
@@ -103,7 +112,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
   };
 
   // Process Batch Text Entry
-  const handleBatchSubmit = (e) => {
+  const handleBatchSubmit = async (e) => {
     e.preventDefault();
     if (!batchText.trim()) return;
 
@@ -137,20 +146,21 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
       }
     });
 
-    setGuests(prev => [...prev, ...newGuests]);
+    await saveBatchToApi(newGuests);
     setBatchText('');
     alert(`تم إضافة ${newGuests.length} مدعو بنجاح!`);
   };
 
-  // Sample Data Generator
-  const handleLoadSample = () => {
-    const samples = [
-      { id: "g_1", name: "عبدالله المحمد", phone: "966501234567", status: "accepted", companions: 2, ticketCode: "EV-897412", checkedIn: false, checkInTime: null },
-      { id: "g_2", name: "خالد العتيبي", phone: "966559876543", status: "pending", companions: 1, ticketCode: "EV-654321", checkedIn: false, checkInTime: null },
-      { id: "g_3", name: "فهد الدوسري", phone: "966541112233", status: "declined", companions: 1, ticketCode: "EV-112233", checkedIn: false, checkInTime: null },
-      { id: "g_4", name: "د. سارة الشمري", phone: "966567778899", status: "accepted", companions: 3, ticketCode: "EV-778899", checkedIn: false, checkInTime: null }
-    ];
-    setGuests(samples);
+  // Clear Guests
+  const handleClearAll = async () => {
+    if (confirm('هل أنت تأكد من مسح كافة المدعوين من قاعدة البيانات؟')) {
+      try {
+        await fetch('/api/guests', { method: 'DELETE' });
+        if (refreshData) refreshData();
+      } catch (e) {
+        setGuests([]);
+      }
+    }
   };
 
   // Stats
@@ -162,7 +172,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
   return (
     <div class="apple-dashboard">
 
-      {/* WhatsApp Official Activation Banner */}
+      {/* WhatsApp Official Banner */}
       <div class="apple-card" style={{ background: 'rgba(37, 211, 102, 0.08)', border: '1px solid rgba(37, 211, 102, 0.3)', padding: '16px 20px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <MessageCircle size={28} style={{ color: '#25D366' }} />
@@ -178,11 +188,11 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
       </div>
 
       <div class="grid-2col">
-        {/* Left: Event Details Form */}
+        {/* Left: Event Form */}
         <div class="apple-card">
           <div class="card-title-row">
             <h2><Calendar class="system-gold" size={22} /> تفاصيل المناسبة وكرت الدعوة</h2>
-            <span class="ios-badge ios-badge-gold">ثيم فاتح</span>
+            <span class="ios-badge ios-badge-gold">Railway API</span>
           </div>
 
           <form onSubmit={handleEventSubmit}>
@@ -254,7 +264,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
 
         {/* Right: Live Widgets & Excel Import */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* iOS Widgets */}
+          {/* Live Widgets */}
           <div class="apple-card">
             <div class="card-title-row">
               <h2>المؤشرات الإحصائية الحية</h2>
@@ -291,14 +301,14 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
             </div>
           </div>
 
-          {/* Excel Import & Template Tools */}
+          {/* Excel Import & Template */}
           <div class="apple-card">
             <div class="card-title-row">
               <h2><FileSpreadsheet class="system-gold" size={20} /> استيراد الأرقام من ملف الإكسل (Excel)</h2>
             </div>
             
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-              يمكنك رفع ملف Excel أو CSV يحتوي على قائمة الأسماء والأرقام لتسهيل الإدخال دفعة واحدة.
+              يمكنك رفع ملف Excel أو CSV يحتوي على قائمة الأسماء والأرقام لتسهيل الإدخال ومزامنته مع قاعدة البيانات.
             </p>
 
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -312,7 +322,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
               </label>
             </div>
 
-            {/* Alternative Manual Entry */}
+            {/* Manual Entry */}
             <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: '14px' }}>
               <div class="form-group">
                 <label>أو كتابة الأرقام يدوياً (الاسم، رقم الجوال):</label>
@@ -324,20 +334,15 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
                   onChange={(e) => setBatchText(e.target.value)}
                 ></textarea>
               </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button type="submit" class="apple-btn apple-btn-gold" style={{ flex: 1 }}>
-                  <Plus size={16} /> إضافة القائمة
-                </button>
-                <button type="button" class="apple-btn apple-btn-secondary" onClick={handleLoadSample}>
-                  تحميل عيّنة تجريبية
-                </button>
-              </div>
+              <button type="submit" class="apple-btn apple-btn-gold btn-block">
+                <Plus size={16} /> إضافة وحفظ في قاعدة البيانات
+              </button>
             </form>
           </div>
         </div>
       </div>
 
-      {/* Recipient List Table & WhatsApp Actions */}
+      {/* Recipient Table */}
       <div class="apple-card" style={{ marginTop: '20px' }}>
         <div class="card-title-row">
           <div>
@@ -345,7 +350,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>اضغط على زر الواتساب لكل مدعو لإرسال كرت الدعوة ورابط التذكرة المخصص له</p>
           </div>
           {guests.length > 0 && (
-            <button class="apple-btn apple-btn-danger" onClick={() => setGuests([])} style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
+            <button class="apple-btn apple-btn-danger" onClick={handleClearAll} style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
               مسح القائمة
             </button>
           )}
