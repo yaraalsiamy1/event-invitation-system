@@ -19,7 +19,9 @@
           "ticketCode": "EV-926558",
           "checkedIn": false,
           "checkInTime": null,
-          "eventId": "ev_1789587103668_307"
+          "eventId": "ev_1789587103668_307",
+          "sent": true,
+          "sentAt": "2026-09-16T20:31:29.986Z"
         },
         {
           "id": "g_1789587121342_44063",
@@ -31,7 +33,7 @@
           "checkInTime": null,
           "eventId": "ev_1789587103668_307",
           "sent": true,
-          "sentAt": "2026-09-16T19:36:18.900Z"
+          "sentAt": "2026-09-16T20:31:29.986Z"
         },
         {
           "id": "g_1789587121342_8824",
@@ -43,7 +45,7 @@
           "checkInTime": null,
           "eventId": "ev_1789587103668_307",
           "sent": true,
-          "sentAt": "2026-09-16T19:36:18.900Z"
+          "sentAt": "2026-09-16T20:31:29.986Z"
         }
       ]
     }

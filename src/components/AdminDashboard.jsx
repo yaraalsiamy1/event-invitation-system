@@ -21,6 +21,7 @@ export default function AdminDashboard({
 }) {
   const [batchText, setBatchText] = useState('');
   const [previewCardImg, setPreviewCardImg] = useState(eventData?.cardImage || null);
+  const [fullViewImage, setFullViewImage] = useState(null);
   
   // Validation & New Event Modals state
   const [pendingExcelRows, setPendingExcelRows] = useState(null);
@@ -621,7 +622,7 @@ export default function AdminDashboard({
                   </div>
                 </div>
 
-                {/* Row 3: Card Image Upload & Save Action Bar */}
+                {/* Row 3: Card Image Upload & Preview & Save Button */}
                 <div className="form-group" style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px', marginBottom: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -638,28 +639,32 @@ export default function AdminDashboard({
                       )}
                     </div>
 
-                    <button type="button" onClick={handleEventSubmit} className="apple-btn apple-btn-pink" style={{ padding: '8px 24px', fontSize: '0.88rem', cursor: 'pointer' }}>
+                    {previewCardImg && (
+                      <button
+                        type="button"
+                        className="apple-btn apple-btn-secondary"
+                        style={{ fontSize: '0.82rem', padding: '6px 14px' }}
+                        onClick={() => setFullViewImage(previewCardImg)}
+                      >
+                        <Eye size={14} /> عرض الصورة
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Save Button placed UNDER the image preview/upload section */}
+                  <div style={{ marginTop: '16px' }}>
+                    <button type="button" onClick={handleEventSubmit} className="apple-btn apple-btn-pink btn-block" style={{ padding: '10px 24px', fontSize: '0.92rem', cursor: 'pointer' }}>
                       حفظ تفاصيل المناسبة والكرت
                     </button>
                   </div>
-
-                  {/* Card Image Preview Box */}
-                  {previewCardImg && (
-                    <div className="card-preview-box" style={{ marginTop: '12px' }}>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--pink-dark)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
-                        <Sparkles size={14} /> معاينة حية لكرت هذه المناسبة:
-                      </span>
-                      <img src={previewCardImg} alt="معاينة الكرت" className="card-preview-img" style={{ maxHeight: '140px' }} />
-                    </div>
-                  )}
                 </div>
               </form>
             </div>
 
-            {/* Form 2: Excel Import & Manual Entry */}
+            {/* Form 2: Guest List Attachment */}
             <div className="apple-card" style={{ marginBottom: 0 }}>
               <div className="card-title-row">
-                <h2><FileSpreadsheet className="system-gold" size={20} /> 2. استيراد ومراجعة الإكسل (تمبلت الدعوات.xlsx)</h2>
+                <h2><FileSpreadsheet className="system-gold" size={20} /> 2. إرفاق قائمة الضيوف</h2>
               </div>
               
               <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
@@ -948,6 +953,60 @@ export default function AdminDashboard({
           );
         })()}
       </div>
+
+      {/* Full Size Image Lightbox Modal */}
+      {fullViewImage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => setFullViewImage(null)}
+        >
+          <div
+            style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setFullViewImage(null)}
+              style={{
+                position: 'absolute',
+                top: '-15px',
+                right: '-15px',
+                background: '#ffffff',
+                color: '#000000',
+                border: 'none',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                cursor: 'pointer',
+                fontWeight: 800,
+                boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <X size={20} />
+            </button>
+            <img
+              src={fullViewImage}
+              alt="كرت الدعوة بالحجم الكامل"
+              style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '16px', objectFit: 'contain', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -107,10 +107,24 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
             <h2 style={{ fontSize: '1.55rem', color: '#997a15', marginBottom: '8px', fontWeight: 800 }}>{activeEv?.title}</h2>
             <div style={{ height: '1px', background: 'linear-gradient(to right, transparent, #d4af37, transparent)', margin: '12px auto', width: '60%' }}></div>
             
-            {/* Display Event Card Image if available */}
+            {/* Display Event Card Image if available - Large & Clear for Guest */}
             {activeEv?.cardImage && (
-              <div style={{ margin: '14px 0' }}>
-                <img src={activeEv.cardImage} alt="كرت الدعوة" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '14px', objectFit: 'contain' }} />
+              <div style={{ margin: '18px 0', width: '100%', textAlign: 'center' }}>
+                <img
+                  src={activeEv.cardImage}
+                  alt="كرت الدعوة"
+                  style={{
+                    width: '100%',
+                    maxHeight: '480px',
+                    borderRadius: '16px',
+                    objectFit: 'contain',
+                    boxShadow: '0 8px 30px rgba(236,72,153,0.15)',
+                    border: '1px solid rgba(212, 175, 55, 0.35)',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => window.open(activeEv.cardImage, '_blank')}
+                  title="اضغط لتكبير صورة الكرت"
+                />
               </div>
             )}
 
