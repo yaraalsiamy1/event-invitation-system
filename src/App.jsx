@@ -46,19 +46,43 @@ export default function App() {
     return null;
   };
 
-  // Refresh all events and active event data
+  // Refresh all events and active event data (with resilient localStorage + Server DB merge)
   const refreshData = async (targetEventId) => {
     try {
+      // 1. Read current local cache
+      let localEvents = [];
+      try {
+        const raw = localStorage.getItem('apple_qr_events');
+        if (raw) localEvents = JSON.parse(raw);
+      } catch (e) {}
+
       const resEvents = await fetch('/api/events');
       if (resEvents.ok) {
-        const evs = await safeJsonParse(resEvents);
-        if (Array.isArray(evs)) {
+        const serverEvents = await safeJsonParse(resEvents);
+        if (Array.isArray(serverEvents)) {
+          // Merge: all server events + any local events not yet on server
+          const serverIdSet = new Set(serverEvents.map(e => e.id));
+          const missingFromServer = localEvents.filter(e => e && e.id && !serverIdSet.has(e.id));
+
+          // Auto-sync missing events to server DB
+          for (const missing of missingFromServer) {
+            try {
+              await fetch('/api/events', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(missing)
+              });
+            } catch (e) {}
+          }
+
+          const evs = [...serverEvents, ...missingFromServer];
           setEvents(evs);
           localStorage.setItem('apple_qr_events', JSON.stringify(evs));
 
           if (evs.length > 0) {
-            const activeEv = evs.find(e => e.isActive) || evs[0];
-            const curId = targetEventId || activeEv.id;
+            const storedActiveId = localStorage.getItem('apple_qr_active_event_id');
+            const activeEv = evs.find(e => e.id === targetEventId) || evs.find(e => e.id === storedActiveId) || evs.find(e => e.isActive) || evs[0];
+            const curId = activeEv.id;
             setActiveEventId(curId);
             localStorage.setItem('apple_qr_active_event_id', curId);
 
@@ -67,6 +91,8 @@ export default function App() {
             if (resEv.ok) {
               const ev = await safeJsonParse(resEv);
               if (ev) setEventData(ev);
+            } else {
+              setEventData(activeEv);
             }
 
             const resGu = await fetch(`/api/guests?eventId=${curId}`);
