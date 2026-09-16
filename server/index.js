@@ -136,19 +136,26 @@ app.post('/api/guests/:id/rsvp', async (req, res) => {
 // AUTOMATED WHATSAPP BATCH DISPATCHER ENDPOINT
 app.post('/api/send-whatsapp-batch', async (req, res) => {
   try {
-    const { instanceId, apiToken, hostUrl, eventId } = req.body;
+    const { instanceId, apiToken, hostUrl, eventId, guestIds } = req.body;
     const event = await db.getEvent(eventId);
-    const guests = await db.getGuests(eventId);
+    let allGuests = await db.getGuests(eventId);
 
-    if (!guests || guests.length === 0) {
-      return res.status(400).json({ error: 'لا يوجد مدعوين للإرسال في هذا الملف' });
+    let targetGuests = allGuests;
+    if (Array.isArray(guestIds) && guestIds.length > 0) {
+      const setIds = new Set(guestIds);
+      targetGuests = allGuests.filter(g => setIds.has(g.id));
+    }
+
+    if (!targetGuests || targetGuests.length === 0) {
+      return res.status(400).json({ error: 'لا يوجد مدعوين محددين للإرسال' });
     }
 
     const baseUrl = hostUrl || 'http://localhost:3000';
     let sentCount = 0;
     const results = [];
+    const successfullySentIds = [];
 
-    for (const guest of guests) {
+    for (const guest of targetGuests) {
       const guestLink = `${baseUrl}/?guest=${guest.id}`;
       const messageText = `مرحباً ${guest.name}\nيسرنا ويسعدنا دعوتكم لحضور ${event.title}.\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
       
@@ -176,15 +183,21 @@ app.post('/api/send-whatsapp-batch', async (req, res) => {
         }
       }
 
-      if (success) sentCount++;
+      if (success) {
+        sentCount++;
+        successfullySentIds.push(guest.id);
+      }
       results.push({ guestId: guest.id, name: guest.name, phone: guest.phone, success, errorMsg });
       
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 600));
     }
+
+    // Mark sent status in DB
+    await db.markGuestsSent(eventId, successfullySentIds);
 
     res.json({
       success: true,
-      total: guests.length,
+      total: targetGuests.length,
       sentCount,
       results
     });

@@ -238,6 +238,20 @@ class MultiEventJSONDatabase {
       }
     }
     return null;
+  async markGuestsSent(eventId, guestIds) {
+    const data = this.read();
+    const targetId = eventId || data.activeEventId;
+    const ev = (data.events || []).find(e => e.id === targetId);
+    if (ev && Array.isArray(ev.guests)) {
+      const idSet = new Set(guestIds);
+      ev.guests.forEach(g => {
+        if (idSet.has(g.id)) {
+          g.sent = true;
+          g.sentAt = new Date().toISOString();
+        }
+      });
+      this.write(data);
+    }
   }
 }
 

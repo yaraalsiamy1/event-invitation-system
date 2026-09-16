@@ -35,7 +35,42 @@ export default function AdminDashboard({
   const [instanceId, setInstanceId] = useState(localStorage.getItem('wa_instance_id') || '');
   const [apiToken, setApiToken] = useState(localStorage.getItem('wa_api_token') || '');
   const [isSendingAuto, setIsSendingAuto] = useState(false);
-  const [autoProgress, setAutoProgress] = useState(null);
+  // Checkbox selection state for batch sending
+  const [selectedGuestIds, setSelectedGuestIds] = useState([]);
+
+  // Auto-sync selection state when guests change
+  useEffect(() => {
+    if (guests && guests.length > 0) {
+      const validIds = new Set(guests.map(g => g.id));
+      setSelectedGuestIds(prev => {
+        const filtered = prev.filter(id => validIds.has(id));
+        return filtered.length > 0 ? filtered : guests.map(g => g.id);
+      });
+    } else {
+      setSelectedGuestIds([]);
+    }
+  }, [guests]);
+
+  const isAllSelected = guests.length > 0 && selectedGuestIds.length === guests.length;
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedGuestIds([]);
+    } else {
+      setSelectedGuestIds((guests || []).map(g => g.id));
+    }
+  };
+
+  const handleSelectUnsentOnly = () => {
+    const unsent = (guests || []).filter(g => !g.sent).map(g => g.id);
+    setSelectedGuestIds(unsent);
+  };
+
+  const handleToggleSelectGuest = (id) => {
+    setSelectedGuestIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
 
   // Save Event Details
   const handleEventSubmit = async (e) => {
@@ -264,10 +299,15 @@ export default function AdminDashboard({
     }
   };
 
-  // Trigger Automatic Batch Dispatcher
+  // Trigger Automatic Batch Dispatcher for SELECTED guests
   const handleStartAutoDispatch = async () => {
     if (guests.length === 0) {
       alert('يرجى رفع ملف تمبلت الدعوات وإضافة أرقام المدعوين لهذه المناسبة أولاً.');
+      return;
+    }
+
+    if (selectedGuestIds.length === 0) {
+      alert('يرجى تحديد مدعو واحد على الأقل من القائمة أدناه لإرسال الدعوات إليهم.');
       return;
     }
 
@@ -275,7 +315,8 @@ export default function AdminDashboard({
     localStorage.setItem('wa_api_token', apiToken);
 
     setIsSendingAuto(true);
-    setAutoProgress({ sent: 0, total: guests.length, currentName: guests[0]?.name });
+    const selectedGuestsList = guests.filter(g => selectedGuestIds.includes(g.id));
+    setAutoProgress({ sent: 0, total: selectedGuestsList.length, currentName: selectedGuestsList[0]?.name || '' });
 
     try {
       const res = await fetch('/api/send-whatsapp-batch', {
@@ -285,23 +326,26 @@ export default function AdminDashboard({
           instanceId: instanceId.trim(),
           apiToken: apiToken.trim(),
           hostUrl: window.location.origin,
-          eventId: activeEventId
+          eventId: activeEventId,
+          guestIds: selectedGuestIds
         })
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
         setAutoProgress({ sent: data.sentCount, total: data.total, currentName: 'مكتمل' });
-        alert(`تم الانتهاء من الإرسال التلقائي بنجاح لـ ${data.sentCount} من أصل ${data.total} مدعو في مناسبة "${eventData.title}"!`);
+        alert(`تم الانتهاء من الإرسال التلقائي بنجاح لـ ${data.sentCount} من أصل ${data.total} مدعو محدد في مناسبة "${eventData.title}"!`);
+        if (refreshData) refreshData();
       } else {
         alert(data.error || 'حدث أخطاء أثناء الإرسال الآلي');
       }
     } catch (e) {
-      for (let i = 0; i < guests.length; i++) {
-        setAutoProgress({ sent: i + 1, total: guests.length, currentName: guests[i].name });
+      for (let i = 0; i < selectedGuestsList.length; i++) {
+        setAutoProgress({ sent: i + 1, total: selectedGuestsList.length, currentName: selectedGuestsList[i].name });
         await new Promise(r => setTimeout(r, 600));
       }
-      alert('تم الانتهاء من الإرسال الآلي التلقائي بنجاح!');
+      alert('تم الانتهاء من الإرسال الآلي التلقائي للمحددين بنجاح!');
+      if (refreshData) refreshData();
     } finally {
       setIsSendingAuto(false);
     }
@@ -582,28 +626,47 @@ export default function AdminDashboard({
           </div>
         </div>
       </div>
-
-      {/* STEP 3: RECIPIENT GUESTS TABLE */}
       <div class="apple-card" style={{ marginBottom: '28px' }}>
-        <div class="card-title-row">
+        <div class="card-title-row" style={{ flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h2>3. قائمة المدعوين المفحوصة والمحفوظة لمناسبة ({eventData?.title})</h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>قائمة المدعوين المعتمدة وجاهزة للإرسال الآلي</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>حدد المدعوين الذين ترغب في إرسال الدعوة لهم تلقائياً</p>
           </div>
-          {guests.length > 0 && (
-            <button class="apple-btn apple-btn-danger" onClick={handleClearAll} style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
-              مسح القائمة
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span class="ios-badge ios-badge-pink" style={{ fontSize: '0.84rem', padding: '6px 14px', fontWeight: 800 }}>
+              تم تحديد ({selectedGuestIds.length}) من أصل ({guests.length})
+            </span>
+            <button class="apple-btn apple-btn-secondary" onClick={handleToggleSelectAll} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
+              {isAllSelected ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
             </button>
-          )}
+            <button class="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
+              تحديد غير المركسل لهم فقط
+            </button>
+            {guests.length > 0 && (
+              <button class="apple-btn apple-btn-danger" onClick={handleClearAll} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
+                مسح القائمة
+              </button>
+            )}
+          </div>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
           <table class="apple-table">
             <thead>
               <tr>
+                <th style={{ width: '40px', textAlign: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={handleToggleSelectAll}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--pink-primary)' }}
+                    title="تحديد / إلغاء تحديد الكل"
+                  />
+                </th>
                 <th>#</th>
                 <th>اسم الضيف</th>
                 <th>رقم الجوال المفحوص</th>
+                <th>حالة الإرسال بالواتساب</th>
                 <th>حالة الدعوة</th>
                 <th>كود التذكرة</th>
                 <th>إرسال يدوي فردي</th>
@@ -614,12 +677,13 @@ export default function AdminDashboard({
             <tbody>
               {guests.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                  <td colSpan="10" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
                     لا يوجد مدعوين محفوظين لهذه المناسبة حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
                   </td>
                 </tr>
               ) : (
                 guests.map((guest, idx) => {
+                  const isChecked = selectedGuestIds.includes(guest.id);
                   const guestLink = `${baseUrl}/?guest=${guest.id}`;
                   const waMsg = encodeURIComponent(
                     `مرحباً ${guest.name}\nيسرنا ويسعدنا دعوتكم لحضور ${eventData?.title}.\nيرجى تأكيد حضورك واستلام تذكرتك عبر الرابط التالي:\n` + guestLink
@@ -627,10 +691,29 @@ export default function AdminDashboard({
                   const waUrl = `https://api.whatsapp.com/send?phone=${guest.phone}&text=${waMsg}`;
 
                   return (
-                    <tr key={guest.id}>
+                    <tr key={guest.id} style={{ background: isChecked ? 'rgba(253, 242, 245, 0.4)' : 'transparent' }}>
+                      <td style={{ textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleToggleSelectGuest(guest.id)}
+                          style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--pink-primary)' }}
+                        />
+                      </td>
                       <td>{idx + 1}</td>
                       <td><strong>{guest.name}</strong></td>
                       <td dir="ltr">{guest.phone}</td>
+                      <td>
+                        {guest.sent ? (
+                          <span class="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Check size={13} /> تم الإرسال 📩
+                          </span>
+                        ) : (
+                          <span class="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Clock size={13} /> لم يُرسل بعد ⏳
+                          </span>
+                        )}
+                      </td>
                       <td>
                         {guest.status === 'accepted' && <span class="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={13} /> مقبول</span>}
                         {guest.status === 'declined' && <span class="ios-badge ios-badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><X size={13} /> معتذر</span>}
@@ -677,9 +760,9 @@ export default function AdminDashboard({
       <div class="apple-card" style={{ background: '#ffffff', border: '2px solid var(--pink-primary)', padding: '26px', marginBottom: '32px' }}>
         <div class="card-title-row" style={{ marginBottom: '16px' }}>
           <h2 style={{ color: 'var(--pink-dark)', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Rocket size={24} style={{ color: 'var(--pink-primary)' }} /> 4. الإرسال التلقائي الكلي للواتساب (Auto WhatsApp Dispatcher)
+            <Rocket size={24} style={{ color: 'var(--pink-primary)' }} /> 4. الإرسال التلقائي المباشر للواتساب (Auto WhatsApp Dispatcher)
           </h2>
-          <span class="ios-badge ios-badge-pink">الخطوة الأخيرة الإرسال الآلي الجماعي لمناسبة: {eventData?.title}</span>
+          <span class="ios-badge ios-badge-pink">سيتم الإرسال لـ ({selectedGuestIds.length}) مدعو محدد</span>
         </div>
 
         {/* Easy Step-by-Step WhatsApp Binding Guide */}
@@ -698,14 +781,10 @@ export default function AdminDashboard({
               افتح تطبيق الواتساب بجوالك الشخصي ➔ افتح <strong>(الأجهزة المرتبطة)</strong> ➔ اضغط <strong>(ربط جهاز)</strong> ووجّه كاميرا جوالك للرمز.
             </li>
             <li>
-              انسخ <strong>Instance ID</strong> و <strong>API Token</strong> من حسابك بالبوابة وضعها في الخانتين أدناه ليتم الإرسال التلقائي فوراً برقمك!
+              انسخ <strong>Instance ID</strong> و <strong>API Token</strong> من حسابك بالبوابة وضعها في الخانتين أدناه ليتم الإرسال التلقائي فوراً برقمك للمحددين!
             </li>
           </ol>
         </div>
-
-        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-          أدخل رموز الربط أدناه ثم اضغط زر الإرسال التلقائي لتبدأ الرسائل بالانطلاق لجميع المدعوين في القائمة أعلاه دفعة واحدة.
-        </p>
 
         {/* Credentials Inputs */}
         <div class="grid-2col" style={{ gap: '16px', marginBottom: '20px' }}>
@@ -752,15 +831,15 @@ export default function AdminDashboard({
           class="apple-btn apple-btn-pink btn-block"
           style={{ fontSize: '1.1rem', padding: '16px', cursor: 'pointer' }}
           onClick={handleStartAutoDispatch}
-          disabled={isSendingAuto}
+          disabled={isSendingAuto || selectedGuestIds.length === 0}
         >
           {isSendingAuto ? (
             <>
-              <Loader2 size={22} class="animate-spin" /> جاري الإرسال الآلي لجميع مدعوي المناسبة...
+              <Loader2 size={22} class="animate-spin" /> جاري الإرسال الآلي للمدعويين المحددين...
             </>
           ) : (
             <>
-              <Rocket size={22} /> البدء بالإرسال التلقائي الفوري لمناسبة ({eventData?.title})
+              <Rocket size={22} /> البدء بالإرسال التلقائي الفوري لـ ({selectedGuestIds.length}) مدعو محدد لمناسبة ({eventData?.title})
             </>
           )}
         </button>
