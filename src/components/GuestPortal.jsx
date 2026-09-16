@@ -1,10 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
 import { Smartphone, Calendar, Clock, MapPin, CheckCircle2, XCircle, Download, ShieldCheck, HeartHandshake, Check, X } from 'lucide-react';
 
 export default function GuestPortal({ eventData, guests, setGuests, activeGuestId, setActiveGuestId, refreshData }) {
-  const activeGuest = guests.find(g => g.id === activeGuestId) || guests[0];
+  const [guestRecord, setGuestRecord] = useState(null);
+  const [guestEvent, setGuestEvent] = useState(null);
+
+  React.useEffect(() => {
+    if (activeGuestId) {
+      fetch(`/api/guests/${activeGuestId}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && data.guest) {
+            setGuestRecord(data.guest);
+            if (data.event) setGuestEvent(data.event);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [activeGuestId]);
+
+  const activeGuest = guestRecord || (guests || []).find(g => g.id === activeGuestId) || guests[0];
+  const activeEv = guestEvent || eventData;
 
   if (!activeGuest) {
     return (
@@ -20,17 +38,17 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
       const res = await fetch(`/api/guests/${activeGuest.id}/rsvp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, companions: 1 })
+        body: JSON.stringify({ status })
       });
 
       if (res.ok) {
-        const updated = await res.json();
-        setGuests(guests.map(g => g.id === updated.id ? updated : g));
+        const result = await res.json();
+        if (result.guest) setGuestRecord(result.guest);
       } else {
-        setGuests(guests.map(g => g.id === activeGuest.id ? { ...g, status } : g));
+        setGuestRecord({ ...activeGuest, status });
       }
     } catch (e) {
-      setGuests(guests.map(g => g.id === activeGuest.id ? { ...g, status } : g));
+      setGuestRecord({ ...activeGuest, status });
     }
 
     if (status === 'accepted') {
@@ -65,7 +83,7 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
           value={activeGuest.id}
           onChange={(e) => setActiveGuestId(e.target.value)}
         >
-          {guests.map(g => (
+          {(guests || []).map(g => (
             <option key={g.id} value={g.id}>
               {g.name} ({g.phone}) - [{g.status === 'accepted' ? 'مقبول' : g.status === 'declined' ? 'معتذر' : 'بانتظار'}]
             </option>
@@ -86,13 +104,13 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
 
           {/* Invitation Card */}
           <div style={{ background: '#ffffff', border: '1.5px solid var(--apple-border-gold)', borderRadius: '22px', padding: '24px 18px', textAlign: 'center', boxShadow: '0 8px 25px rgba(236,72,153,0.06)' }}>
-            <h2 style={{ fontSize: '1.55rem', color: '#997a15', marginBottom: '8px', fontWeight: 800 }}>{eventData.title}</h2>
+            <h2 style={{ fontSize: '1.55rem', color: '#997a15', marginBottom: '8px', fontWeight: 800 }}>{activeEv?.title}</h2>
             <div style={{ color: '#d4af37', letterSpacing: '4px', margin: '8px 0', fontSize: '0.8rem' }}>❖ ❖ ❖</div>
             
             {/* Display Event Card Image if available */}
-            {eventData.cardImage && (
+            {activeEv?.cardImage && (
               <div style={{ margin: '14px 0' }}>
-                <img src={eventData.cardImage} alt="كرت الدعوة" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '14px', objectFit: 'contain' }} />
+                <img src={activeEv.cardImage} alt="كرت الدعوة" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '14px', objectFit: 'contain' }} />
               </div>
             )}
 
@@ -108,21 +126,21 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
                 <Calendar size={18} style={{ color: '#d4af37' }} />
                 <div>
                   <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>التاريخ</strong>
-                  <span>{eventData.date}</span>
+                  <span>{activeEv?.date}</span>
                 </div>
               </div>
               <div style={{ background: 'rgba(0, 0, 0, 0.03)', padding: '12px', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <Clock size={18} style={{ color: '#d4af37' }} />
                 <div>
                   <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>الوقت</strong>
-                  <span>{eventData.time}</span>
+                  <span>{activeEv?.time}</span>
                 </div>
               </div>
               <div style={{ gridColumn: 'span 2', background: 'rgba(0, 0, 0, 0.03)', padding: '12px', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <MapPin size={18} style={{ color: '#d4af37' }} />
                 <div>
                   <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>المكان</strong>
-                  <span>{eventData.location}</span>
+                  <span>{activeEv?.location}</span>
                 </div>
               </div>
             </div>

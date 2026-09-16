@@ -1,14 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2 } from 'lucide-react';
+import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2, Layers } from 'lucide-react';
 import ExcelValidationModal from './ExcelValidationModal';
+import EventsSidebar from './EventsSidebar';
+import NewEventModal from './NewEventModal';
 
-export default function AdminDashboard({ eventData, setEventData, guests, setGuests, setActiveGuestId, setActiveTab, refreshData }) {
+export default function AdminDashboard({
+  events = [],
+  activeEventId,
+  eventData,
+  setEventData,
+  guests = [],
+  setGuests,
+  setActiveGuestId,
+  setActiveTab,
+  refreshData,
+  onSelectEvent,
+  onCreateEvent,
+  onDeleteEvent
+}) {
   const [batchText, setBatchText] = useState('');
-  const [previewCardImg, setPreviewCardImg] = useState(eventData.cardImage || null);
+  const [previewCardImg, setPreviewCardImg] = useState(eventData?.cardImage || null);
   
-  // Validation Modal state
+  // Validation & New Event Modals state
   const [pendingExcelRows, setPendingExcelRows] = useState(null);
+  const [isNewEventModalOpen, setIsNewEventModalOpen] = useState(false);
+
+  // Sync preview card image whenever active eventData changes
+  useEffect(() => {
+    setPreviewCardImg(eventData?.cardImage || null);
+  }, [eventData]);
 
   // WhatsApp Auto Gateway Credentials
   const [instanceId, setInstanceId] = useState(localStorage.getItem('wa_instance_id') || '');
@@ -21,7 +42,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
     e.preventDefault();
     const updatedEv = { ...eventData, cardImage: previewCardImg };
     setEventData(updatedEv);
-    alert('تم حفظ تفاصيل المناسبة وكرت الدعوة بنجاح!');
+    alert(`تم حفظ تفاصيل المناسبة "${eventData.title}" وكرت الدعوة بنجاح!`);
   };
 
   // Image Upload
@@ -63,7 +84,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
       await fetch('/api/guests/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guests: newGuests })
+        body: JSON.stringify({ guests: newGuests, eventId: activeEventId })
       });
       if (refreshData) refreshData();
     } catch (e) {
@@ -167,7 +188,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
   const handleConfirmValidationSave = async (validGuests) => {
     setPendingExcelRows(null);
     await saveBatchToApi(validGuests);
-    alert(`تم فحص وتأكيد واعتماد ${validGuests.length} مدعو بنجاح بالأسماء والأرقام في قاعدة البيانات!`);
+    alert(`تم فحص وتأكيد واعتماد ${validGuests.length} مدعو بنجاح للمناسبة "${eventData.title}"!`);
   };
 
   // Process Batch Text Entry (with Duplicate Check)
@@ -232,7 +253,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
   // Trigger Automatic Batch Dispatcher
   const handleStartAutoDispatch = async () => {
     if (guests.length === 0) {
-      alert('يرجى رفع ملف تمبلت الدعوات وإضافة أرقام المدعوين أولاً.');
+      alert('يرجى رفع ملف تمبلت الدعوات وإضافة أرقام المدعوين لهذه المناسبة أولاً.');
       return;
     }
 
@@ -249,14 +270,15 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
         body: JSON.stringify({
           instanceId: instanceId.trim(),
           apiToken: apiToken.trim(),
-          hostUrl: window.location.origin
+          hostUrl: window.location.origin,
+          eventId: activeEventId
         })
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
         setAutoProgress({ sent: data.sentCount, total: data.total, currentName: 'مكتمل' });
-        alert(`تم الانتهاء من الإرسال التلقائي بنجاح لـ ${data.sentCount} من أصل ${data.total} مدعو!`);
+        alert(`تم الانتهاء من الإرسال التلقائي بنجاح لـ ${data.sentCount} من أصل ${data.total} مدعو في مناسبة "${eventData.title}"!`);
       } else {
         alert(data.error || 'حدث أخطاء أثناء الإرسال الآلي');
       }
@@ -273,14 +295,13 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
 
   // Clear All Guests (Guaranteed State + DB Sync)
   const handleClearAll = async () => {
-    if (window.confirm('هل أنت تأكد من مسح جميع المدعوين من القائمة وقاعدة البيانات؟')) {
+    if (window.confirm(`هل أنت تأكد من مسح جميع المدعوين الخاصة بمناسبة "${eventData.title}"؟`)) {
       try {
-        await fetch('/api/guests', { method: 'DELETE' });
+        await fetch(`/api/guests?eventId=${activeEventId}`, { method: 'DELETE' });
       } catch (e) {
         console.error('Failed to clear server guests', e);
       }
       setGuests([]);
-      localStorage.removeItem('apple_qr_guests');
       if (refreshData) refreshData();
       alert('تم مسح جميع المدعوين بنجاح!');
     }
@@ -290,13 +311,12 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
   const handleDeleteGuest = async (id) => {
     if (window.confirm('هل أنت تأكد من حذف هذا المدعو؟')) {
       try {
-        await fetch(`/api/guests/${id}`, { method: 'DELETE' });
+        await fetch(`/api/guests/${id}?eventId=${activeEventId}`, { method: 'DELETE' });
       } catch (e) {
         console.error('Failed to delete guest', e);
       }
       const updated = guests.filter(g => g.id !== id);
       setGuests(updated);
-      localStorage.setItem('apple_qr_guests', JSON.stringify(updated));
       if (refreshData) refreshData();
     }
   };
@@ -322,256 +342,306 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
         />
       )}
 
-      {/* AUTOMATED WHATSAPP DISPATCHER BOX */}
-      <div class="apple-card" style={{ background: '#ffffff', border: '2px solid var(--rose-primary)', padding: '22px', marginBottom: '24px' }}>
-        <div class="card-title-row" style={{ marginBottom: '14px' }}>
-          <h2 style={{ color: 'var(--rose-dark)', fontSize: '1.2rem', fontWeight: 800 }}>
-            <Rocket size={24} style={{ color: 'var(--rose-primary)' }} /> الإرسال التلقائي الكلي للواتساب (Auto WhatsApp Dispatcher)
-          </h2>
-          <span class="ios-badge ios-badge-pink">إرسال آلي بنقرة واحدة</span>
-        </div>
+      {/* NEW EVENT CREATION MODAL OVERLAY */}
+      {isNewEventModalOpen && (
+        <NewEventModal
+          onCreateEvent={(newEvent) => {
+            setIsNewEventModalOpen(false);
+            onCreateEvent(newEvent);
+          }}
+          onClose={() => setIsNewEventModalOpen(false)}
+        />
+      )}
 
-        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-          بمجرد رفعك لملف الإكسل، يمكنك البدء بالإرسال الآلي التلقائي لجميع المدعوين دفعة واحدة بدون الحاجة لفتح الواتساب لكل ضيف.
-        </p>
+      {/* TOP MAIN GRID: EVENTS SIDEBAR (RIGHT) + DASHBOARD ACTIONS (LEFT) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 320px) 1fr', gap: '22px', alignItems: 'start', marginBottom: '24px' }}>
+        
+        {/* Right Sidebar: Events List & Management */}
+        <EventsSidebar
+          events={events}
+          activeEventId={activeEventId}
+          onSelectEvent={onSelectEvent}
+          onOpenNewEventModal={() => setIsNewEventModalOpen(true)}
+          onDeleteEvent={onDeleteEvent}
+        />
 
-        {/* Credentials Inputs (Optional) */}
-        <div class="grid-2col" style={{ gap: '12px', marginBottom: '16px' }}>
-          <div class="form-group" style={{ marginBottom: 0 }}>
-            <label style={{ fontSize: '0.82rem' }}>معرف بوابة الإرسال (Instance ID) - اختياري:</label>
-            <input
-              type="text"
-              class="apple-input"
-              placeholder="مثال: 7103123456 (أو اتركه فارغاً للإرسال الآلي المباشر)"
-              value={instanceId}
-              onChange={(e) => setInstanceId(e.target.value)}
-            />
-          </div>
-          <div class="form-group" style={{ marginBottom: 0 }}>
-            <label style={{ fontSize: '0.82rem' }}>رمز الأمان (API Token) - اختياري:</label>
-            <input
-              type="password"
-              class="apple-input"
-              placeholder="مثال: e289c878a... (أو اتركه فارغاً للإرسال المباشر)"
-              value={apiToken}
-              onChange={(e) => setApiToken(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Live Auto Sending Progress Bar */}
-        {isSendingAuto && autoProgress && (
-          <div style={{ background: 'rgba(245, 232, 236, 0.5)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(200, 138, 155, 0.3)', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px', color: 'var(--rose-dark)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Loader2 size={16} class="animate-spin" style={{ color: 'var(--rose-primary)' }} />
-                جاري الإرسال الآلي لـ: {autoProgress.currentName}...
-              </span>
-              <span>{autoProgress.sent} / {autoProgress.total} رسالة</span>
-            </div>
-            <div style={{ width: '100%', height: '10px', background: 'rgba(200, 138, 155, 0.2)', borderRadius: '10px', overflow: 'hidden' }}>
-              <div style={{ width: `${(autoProgress.sent / autoProgress.total) * 100}%`, height: '100%', background: 'var(--rose-gradient)', transition: 'width 0.4s ease' }}></div>
-            </div>
-          </div>
-        )}
-
-        <button
-          type="button"
-          class="apple-btn apple-btn-pink btn-block"
-          style={{ fontSize: '1.05rem', padding: '15px' }}
-          onClick={handleStartAutoDispatch}
-          disabled={isSendingAuto}
-        >
-          {isSendingAuto ? (
-            <>
-              <Loader2 size={20} class="animate-spin" /> جاري الإرسال الآلي لجميع الأرقام...
-            </>
-          ) : (
-            <>
-              <Rocket size={20} /> 🚀 البدء بالإرسال التلقائي الفوري لجميع المدعوين
-            </>
-          )}
-        </button>
-      </div>
-
-      <div class="grid-2col">
-        {/* Left: Event Setup Form & Live Image Preview */}
-        <div class="apple-card">
-          <div class="card-title-row">
-            <h2><Calendar class="system-gold" size={22} /> تفاصيل المناسبة وكرت الدعوة</h2>
-            <span class="ios-badge ios-badge-pink">وردي وأبيض هادئ</span>
-          </div>
-
-          <form onSubmit={handleEventSubmit}>
-            <div class="form-group">
-              <label>عنوان المناسبة / الحفل</label>
-              <input
-                type="text"
-                class="apple-input"
-                value={eventData.title}
-                onChange={(e) => setEventData({ ...eventData, title: e.target.value })}
-                required
-              />
-            </div>
-
-            <div class="grid-2col" style={{ gap: '12px' }}>
-              <div class="form-group">
-                <label>تاريخ المناسبة</label>
-                <input
-                  type="date"
-                  class="apple-input"
-                  value={eventData.date}
-                  onChange={(e) => setEventData({ ...eventData, date: e.target.value })}
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label>التوقيت</label>
-                <input
-                  type="time"
-                  class="apple-input"
-                  value={eventData.time}
-                  onChange={(e) => setEventData({ ...eventData, time: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>مكان الحفل / القاعة</label>
-              <input
-                type="text"
-                class="apple-input"
-                value={eventData.location}
-                onChange={(e) => setEventData({ ...eventData, location: e.target.value })}
-                required
-              />
-            </div>
-
-            {/* Card Image Upload & Instant Preview */}
-            <div class="form-group">
-              <label>صورة كرت الدعوة ومعاينتها الحية</label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <label class="apple-btn apple-btn-secondary" style={{ cursor: 'pointer' }}>
-                  <Upload size={16} /> اختيار تصميم كرت الدعوة
-                  <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-                </label>
-                {previewCardImg && (
-                  <button type="button" class="apple-btn apple-btn-danger" onClick={() => setPreviewCardImg(null)}>
-                    حذف الكرت
-                  </button>
-                )}
-              </div>
-
-              {/* Instant Live Image Preview */}
-              <div class="card-preview-container">
-                {previewCardImg ? (
-                  <div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--rose-dark)', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
-                      ✨ معاينة حية للتصميم قبل الحفظ:
-                    </span>
-                    <img src={previewCardImg} alt="معاينة الكرت" class="card-preview-img" />
-                  </div>
-                ) : (
-                  <div style={{ padding: '20px', color: 'var(--text-tertiary)' }}>
-                    <ImageIcon size={36} style={{ color: 'var(--rose-light)', marginBottom: '6px' }} />
-                    <p style={{ fontSize: '0.85rem' }}>لم يتم رفع كرت دعوة بعد. اختر صورة لمعاينتها فوراً هنا.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <button type="submit" class="apple-btn apple-btn-pink btn-block" style={{ marginTop: '10px' }}>
-              حفظ تفاصيل المناسبة والكرت
-            </button>
-          </form>
-        </div>
-
-        {/* Right: Live Widgets & Excel Import */}
+        {/* Left Main Content */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Live Widgets */}
-          <div class="apple-card">
-            <div class="card-title-row">
-              <h2>المؤشرات الإحصائية الحية</h2>
-            </div>
-            <div class="widgets-grid">
-              <div class="apple-widget">
-                <div class="widget-icon pink"><Users size={24} /></div>
-                <div>
-                  <div class="widget-val">{total}</div>
-                  <div class="widget-lbl">إجمالي المدعوين</div>
-                </div>
-              </div>
-              <div class="apple-widget">
-                <div class="widget-icon green"><CheckCircle2 size={24} /></div>
-                <div>
-                  <div class="widget-val">{accepted}</div>
-                  <div class="widget-lbl">تأكيد القبول</div>
-                </div>
-              </div>
-              <div class="apple-widget">
-                <div class="widget-icon red"><XCircle size={24} /></div>
-                <div>
-                  <div class="widget-val">{declined}</div>
-                  <div class="widget-lbl">معتذرون</div>
-                </div>
-              </div>
-              <div class="apple-widget">
-                <div class="widget-icon amber"><Clock size={24} /></div>
-                <div>
-                  <div class="widget-val">{pending}</div>
-                  <div class="widget-lbl">بانتظار الرد</div>
-                </div>
+
+          {/* Active Event Indicator Banner */}
+          <div class="apple-card" style={{ padding: '16px 22px', background: 'var(--pink-light)', border: '1.5px solid var(--pink-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Layers size={24} style={{ color: 'var(--pink-primary)' }} />
+              <div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--pink-dark)', fontWeight: 700 }}>المناسبة النشطة حالياً لإدارة المدعوين:</span>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>{eventData?.title || 'مناسبة بدون عنوان'}</h2>
               </div>
             </div>
+            <button class="apple-btn apple-btn-pink" style={{ fontSize: '0.84rem', padding: '8px 16px' }} onClick={() => setIsNewEventModalOpen(true)}>
+              <Plus size={16} /> إضافة مناسبة جديدة
+            </button>
           </div>
 
-          {/* Excel Import & User Template */}
-          <div class="apple-card">
-            <div class="card-title-row">
-              <h2><FileSpreadsheet class="system-gold" size={20} /> استيراد ومراجعة الإكسل (تمبلت الدعوات.xlsx)</h2>
+          {/* AUTOMATED WHATSAPP DISPATCHER BOX */}
+          <div class="apple-card" style={{ background: '#ffffff', border: '2px solid var(--pink-primary)', padding: '22px' }}>
+            <div class="card-title-row" style={{ marginBottom: '14px' }}>
+              <h2 style={{ color: 'var(--pink-dark)', fontSize: '1.2rem', fontWeight: 800 }}>
+                <Rocket size={24} style={{ color: 'var(--pink-primary)' }} /> الإرسال التلقائي الكلي للواتساب (Auto WhatsApp Dispatcher)
+              </h2>
+              <span class="ios-badge ios-badge-pink">إرسال آلي لمناسبة: {eventData?.title}</span>
             </div>
-            
-            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-              عند اختيار الملف تظهر لك شاشة تحقق لمراجعة صحة الأسماء والأرقام وتعديل الأخطاء قبل الحفظ النهائي.
+
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+              بمجرد رفعك لملف الإكسل، يمكنك البدء بالإرسال الآلي التلقائي لجميع المدعوين دفعة واحدة بدون الحاجة لفتح الواتساب لكل ضيف.
             </p>
 
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
-              <button class="apple-btn apple-btn-secondary" style={{ flex: 1 }} onClick={downloadExcelTemplate}>
-                <Download size={16} /> تحميل تمبلت الدعوات.xlsx الأصلي
-              </button>
-
-              <label class="apple-btn apple-btn-pink" style={{ flex: 1, cursor: 'pointer' }}>
-                <FileSpreadsheet size={16} /> رفع ومراجعة الإكسل
-                <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ display: 'none' }} />
-              </label>
+            {/* Credentials Inputs (Optional) */}
+            <div class="grid-2col" style={{ gap: '12px', marginBottom: '16px' }}>
+              <div class="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ fontSize: '0.82rem' }}>معرف بوابة الإرسال (Instance ID) - اختياري:</label>
+                <input
+                  type="text"
+                  class="apple-input"
+                  placeholder="مثال: 7103123456 (أو اتركه فارغاً للإرسال المباشر)"
+                  value={instanceId}
+                  onChange={(e) => setInstanceId(e.target.value)}
+                />
+              </div>
+              <div class="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ fontSize: '0.82rem' }}>رمز الأمان (API Token) - اختياري:</label>
+                <input
+                  type="password"
+                  class="apple-input"
+                  placeholder="مثال: e289c878a... (أو اتركه فارغاً للإرسال المباشر)"
+                  value={apiToken}
+                  onChange={(e) => setApiToken(e.target.value)}
+                />
+              </div>
             </div>
 
-            {/* Manual Entry */}
-            <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(200, 138, 155, 0.15)', paddingTop: '14px' }}>
-              <div class="form-group">
-                <label>أو كتابة الأرقام يدوياً (الاسم، رقم الجوال):</label>
-                <textarea
-                  class="apple-input"
-                  rows="2"
-                  placeholder="مثال:&#10;عبدالله المحمد, 0501234567"
-                  value={batchText}
-                  onChange={(e) => setBatchText(e.target.value)}
-                ></textarea>
+            {/* Live Auto Sending Progress Bar */}
+            {isSendingAuto && autoProgress && (
+              <div style={{ background: 'rgba(253, 242, 245, 0.8)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(244, 165, 186, 0.4)', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px', color: 'var(--pink-dark)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Loader2 size={16} class="animate-spin" style={{ color: 'var(--pink-primary)' }} />
+                    جاري الإرسال الآلي لـ: {autoProgress.currentName}...
+                  </span>
+                  <span>{autoProgress.sent} / {autoProgress.total} رسالة</span>
+                </div>
+                <div style={{ width: '100%', height: '10px', background: 'rgba(244, 165, 186, 0.2)', borderRadius: '10px', overflow: 'hidden' }}>
+                  <div style={{ width: `${(autoProgress.sent / autoProgress.total) * 100}%`, height: '100%', background: 'var(--pink-gradient)', transition: 'width 0.4s ease' }}></div>
+                </div>
               </div>
-              <button type="submit" class="apple-btn apple-btn-secondary btn-block">
-                <Plus size={16} /> إضافة وحفظ في القائمة
-              </button>
-            </form>
+            )}
+
+            <button
+              type="button"
+              class="apple-btn apple-btn-pink btn-block"
+              style={{ fontSize: '1.05rem', padding: '15px' }}
+              onClick={handleStartAutoDispatch}
+              disabled={isSendingAuto}
+            >
+              {isSendingAuto ? (
+                <>
+                  <Loader2 size={20} class="animate-spin" /> جاري الإرسال الآلي لجميع مدعوي المناسبة...
+                </>
+              ) : (
+                <>
+                  <Rocket size={20} /> 🚀 البدء بالإرسال التلقائي الفوري لمناسبة ({eventData?.title})
+                </>
+              )}
+            </button>
+          </div>
+
+          <div class="grid-2col">
+            {/* Left: Event Setup Form & Live Image Preview */}
+            <div class="apple-card">
+              <div class="card-title-row">
+                <h2><Calendar class="system-gold" size={22} /> تعديل بيانات المناسبة وكرت الدعوة</h2>
+                <span class="ios-badge ios-badge-pink">وردية وأصلية</span>
+              </div>
+
+              <form onSubmit={handleEventSubmit}>
+                <div class="form-group">
+                  <label>عنوان المناسبة / الحفل</label>
+                  <input
+                    type="text"
+                    class="apple-input"
+                    value={eventData?.title || ''}
+                    onChange={(e) => setEventData({ ...eventData, title: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div class="grid-2col" style={{ gap: '12px' }}>
+                  <div class="form-group">
+                    <label>تاريخ المناسبة</label>
+                    <input
+                      type="date"
+                      class="apple-input"
+                      value={eventData?.date || ''}
+                      onChange={(e) => setEventData({ ...eventData, date: e.target.value })}
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>وقت المناسبة</label>
+                    <input
+                      type="time"
+                      class="apple-input"
+                      value={eventData?.time || '20:00'}
+                      onChange={(e) => setEventData({ ...eventData, time: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>مكان المناسبة (اسم القاعة / الفندق / المدينة)</label>
+                  <input
+                    type="text"
+                    class="apple-input"
+                    value={eventData?.location || ''}
+                    onChange={(e) => setEventData({ ...eventData, location: e.target.value })}
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>رابط اللوكيشن في خرائط جوجل (Google Maps)</label>
+                  <input
+                    type="url"
+                    class="apple-input"
+                    style={{ direction: 'ltr', textAlign: 'right' }}
+                    value={eventData?.mapLink || ''}
+                    onChange={(e) => setEventData({ ...eventData, mapLink: e.target.value })}
+                  />
+                </div>
+
+                {/* Live Card Design Image Uploader */}
+                <div class="form-group" style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px' }}>
+                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>صورة كرت الدعوة الخاص بهذه المناسبة:</span>
+                    {previewCardImg && <span class="ios-badge ios-badge-green">تم رفع الكرت ✓</span>}
+                  </label>
+
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '6px' }}>
+                    <label class="apple-btn apple-btn-secondary" style={{ flex: 1, cursor: 'pointer' }}>
+                      <Upload size={16} /> تغيير صورة كرت الدعوة
+                      <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                    </label>
+                  </div>
+
+                  {/* Card Image Preview Box */}
+                  <div class="card-preview-box" style={{ marginTop: '12px' }}>
+                    {previewCardImg ? (
+                      <div>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--pink-dark)', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
+                          ✨ معاينة حية لكرت هذه المناسبة:
+                        </span>
+                        <img src={previewCardImg} alt="معاينة الكرت" class="card-preview-img" />
+                      </div>
+                    ) : (
+                      <div style={{ padding: '20px', color: 'var(--text-tertiary)' }}>
+                        <ImageIcon size={36} style={{ color: 'var(--pink-primary)', marginBottom: '6px' }} />
+                        <p style={{ fontSize: '0.85rem' }}>لم يتم رفع كرت دعوة لهذه المناسبة بعد.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <button type="submit" class="apple-btn apple-btn-pink btn-block" style={{ marginTop: '10px' }}>
+                  حفظ تفاصيل المناسبة والكرت
+                </button>
+              </form>
+            </div>
+
+            {/* Right: Live Widgets & Excel Import */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Live Widgets */}
+              <div class="apple-card">
+                <div class="card-title-row">
+                  <h2>المؤشرات الإحصائية الحية ({eventData?.title})</h2>
+                </div>
+                <div class="widgets-grid">
+                  <div class="apple-widget">
+                    <div class="widget-icon pink"><Users size={24} /></div>
+                    <div>
+                      <div class="widget-val">{total}</div>
+                      <div class="widget-lbl">إجمالي المدعوين</div>
+                    </div>
+                  </div>
+                  <div class="apple-widget">
+                    <div class="widget-icon green"><CheckCircle2 size={24} /></div>
+                    <div>
+                      <div class="widget-val">{accepted}</div>
+                      <div class="widget-lbl">تأكيد القبول</div>
+                    </div>
+                  </div>
+                  <div class="apple-widget">
+                    <div class="widget-icon red"><XCircle size={24} /></div>
+                    <div>
+                      <div class="widget-val">{declined}</div>
+                      <div class="widget-lbl">معتذرون</div>
+                    </div>
+                  </div>
+                  <div class="apple-widget">
+                    <div class="widget-icon amber"><Clock size={24} /></div>
+                    <div>
+                      <div class="widget-val">{pending}</div>
+                      <div class="widget-lbl">بانتظار الرد</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Excel Import & User Template */}
+              <div class="apple-card">
+                <div class="card-title-row">
+                  <h2><FileSpreadsheet class="system-gold" size={20} /> استيراد ومراجعة الإكسل (تمبلت الدعوات.xlsx)</h2>
+                </div>
+                
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+                  عند اختيار الملف تظهر لك شاشة تحقق لمراجعة صحة الأسماء والأرقام وتعديل الأخطاء قبل الحفظ النهائي للمناسبة.
+                </p>
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                  <button class="apple-btn apple-btn-secondary" style={{ flex: 1 }} onClick={downloadExcelTemplate}>
+                    <Download size={16} /> تحميل تمبلت الدعوات.xlsx الأصلي
+                  </button>
+
+                  <label class="apple-btn apple-btn-pink" style={{ flex: 1, cursor: 'pointer' }}>
+                    <FileSpreadsheet size={16} /> رفع ومراجعة الإكسل
+                    <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ display: 'none' }} />
+                  </label>
+                </div>
+
+                {/* Manual Entry */}
+                <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px' }}>
+                  <div class="form-group">
+                    <label>أو كتابة الأرقام يدوياً (الاسم، رقم الجوال):</label>
+                    <textarea
+                      class="apple-input"
+                      rows="2"
+                      placeholder="مثال:&#10;عبدالله المحمد, 0501234567"
+                      value={batchText}
+                      onChange={(e) => setBatchText(e.target.value)}
+                    ></textarea>
+                  </div>
+                  <button type="submit" class="apple-btn apple-btn-secondary btn-block">
+                    <Plus size={16} /> إضافة وحفظ في القائمة
+                  </button>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Recipient Table */}
-      <div class="apple-card" style={{ marginTop: '20px' }}>
+      <div class="apple-card" style={{ marginTop: '10px' }}>
         <div class="card-title-row">
           <div>
-            <h2>قائمة المدعوين المفحوصة والمحفوظة في قاعدة البيانات</h2>
+            <h2>قائمة المدعوين المفحوصة والمحفوظة لمناسبة ({eventData?.title})</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>قائمة المدعوين المعتمدة وجاهزة للإرسال الآلي</p>
           </div>
           {guests.length > 0 && (
@@ -599,14 +669,14 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
               {guests.length === 0 ? (
                 <tr>
                   <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
-                    لا يوجد مدعوين محفوظين حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
+                    لا يوجد مدعوين محفوظين لهذه المناسبة حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
                   </td>
                 </tr>
               ) : (
                 guests.map((guest, idx) => {
                   const guestLink = `${baseUrl}/?guest=${guest.id}`;
                   const waMsg = encodeURIComponent(
-                    `مرحباً ${guest.name} ✨\nيسرنا ويسعدنا دعوتكم لحضور ${eventData.title}.\nيرجى تأكيد حضورك واستلام تذكرتك عبر الرابط التالي:\n` + guestLink
+                    `مرحباً ${guest.name} ✨\nيسرنا ويسعدنا دعوتكم لحضور ${eventData?.title}.\nيرجى تأكيد حضورك واستلام تذكرتك عبر الرابط التالي:\n` + guestLink
                   );
                   const waUrl = `https://api.whatsapp.com/send?phone=${guest.phone}&text=${waMsg}`;
 

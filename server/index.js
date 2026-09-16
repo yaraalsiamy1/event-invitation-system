@@ -13,10 +13,49 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 
-// API ROUTES
+// MULTI-EVENT API ROUTES
+app.get('/api/events', async (req, res) => {
+  try {
+    const events = await db.getAllEvents();
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/events', async (req, res) => {
+  try {
+    const created = await db.createEvent(req.body);
+    res.json(created);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/events/active', async (req, res) => {
+  try {
+    const { eventId } = req.body;
+    const activeId = await db.setActiveEvent(eventId);
+    res.json({ activeEventId: activeId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/events/:id', async (req, res) => {
+  try {
+    const newActiveId = await db.deleteEvent(req.params.id);
+    res.json({ success: true, activeEventId: newActiveId });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ACTIVE EVENT ROUTES
 app.get('/api/event', async (req, res) => {
   try {
-    const data = await db.getEvent();
+    const eventId = req.query.eventId;
+    const data = await db.getEvent(eventId);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -25,16 +64,19 @@ app.get('/api/event', async (req, res) => {
 
 app.post('/api/event', async (req, res) => {
   try {
-    const updated = await db.updateEvent(req.body);
+    const eventId = req.query.eventId || req.body.id;
+    const updated = await db.updateEvent(eventId, req.body);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// GUEST ROUTES FOR ACTIVE OR SPECIFIC EVENT
 app.get('/api/guests', async (req, res) => {
   try {
-    const guests = await db.getGuests();
+    const eventId = req.query.eventId;
+    const guests = await db.getGuests(eventId);
     res.json(guests);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -43,8 +85,8 @@ app.get('/api/guests', async (req, res) => {
 
 app.post('/api/guests/batch', async (req, res) => {
   try {
-    const { guests } = req.body;
-    const result = await db.addGuests(guests || []);
+    const { guests, eventId } = req.body;
+    const result = await db.addGuests(eventId, guests || []);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -53,7 +95,8 @@ app.post('/api/guests/batch', async (req, res) => {
 
 app.delete('/api/guests', async (req, res) => {
   try {
-    const result = await db.clearGuests();
+    const eventId = req.query.eventId;
+    const result = await db.clearGuests(eventId);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -62,7 +105,8 @@ app.delete('/api/guests', async (req, res) => {
 
 app.delete('/api/guests/:id', async (req, res) => {
   try {
-    await db.deleteGuest(req.params.id);
+    const eventId = req.query.eventId;
+    await db.deleteGuest(eventId, req.params.id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -71,9 +115,9 @@ app.delete('/api/guests/:id', async (req, res) => {
 
 app.get('/api/guests/:id', async (req, res) => {
   try {
-    const guest = await db.getGuestById(req.params.id);
-    if (!guest) return res.status(404).json({ error: 'Guest not found' });
-    res.json(guest);
+    const result = await db.getGuestById(req.params.id);
+    if (!result) return res.status(404).json({ error: 'Guest not found' });
+    res.json(result); // returns { guest, event }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -81,9 +125,9 @@ app.get('/api/guests/:id', async (req, res) => {
 
 app.post('/api/guests/:id/rsvp', async (req, res) => {
   try {
-    const { status, companions } = req.body;
-    const updated = await db.updateGuestRSVP(req.params.id, status, companions);
-    res.json(updated);
+    const { status } = req.body;
+    const result = await db.updateGuestRSVP(req.params.id, status);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -92,12 +136,12 @@ app.post('/api/guests/:id/rsvp', async (req, res) => {
 // AUTOMATED WHATSAPP BATCH DISPATCHER ENDPOINT
 app.post('/api/send-whatsapp-batch', async (req, res) => {
   try {
-    const { instanceId, apiToken, hostUrl } = req.body;
-    const guests = await db.getGuests();
-    const event = await db.getEvent();
+    const { instanceId, apiToken, hostUrl, eventId } = req.body;
+    const event = await db.getEvent(eventId);
+    const guests = await db.getGuests(eventId);
 
     if (!guests || guests.length === 0) {
-      return res.status(400).json({ error: 'لا يوجد مدعوين للإرسال في قاعدة البيانات' });
+      return res.status(400).json({ error: 'لا يوجد مدعوين للإرسال في هذا الملف' });
     }
 
     const baseUrl = hostUrl || 'http://localhost:3000';
@@ -111,7 +155,6 @@ app.post('/api/send-whatsapp-batch', async (req, res) => {
       let success = true;
       let errorMsg = null;
 
-      // If GreenAPI/UltraMsg API credentials are provided, send HTTP POST to gateway API
       if (instanceId && apiToken) {
         try {
           const gatewayUrl = `https://api.green-api.com/waInstance${instanceId}/sendMessage/${apiToken}`;
@@ -136,7 +179,6 @@ app.post('/api/send-whatsapp-batch', async (req, res) => {
       if (success) sentCount++;
       results.push({ guestId: guest.id, name: guest.name, phone: guest.phone, success, errorMsg });
       
-      // Delay 1 second per message for safety against spam filters
       await new Promise(r => setTimeout(r, 1000));
     }
 
@@ -160,5 +202,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Apple Event Server & Automated WhatsApp API running on port ${PORT}`);
+  console.log(`🚀 Multi-Event Invitation Server & WhatsApp API running on port ${PORT}`);
 });
