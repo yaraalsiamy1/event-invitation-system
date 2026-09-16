@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إرسال الدعوات وتأكيد الحضور | QR Event Manager</title>
+    <!-- Google Fonts: Cairo & Amiri -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=Amiri:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- QRCode JS Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- HTML5 QR Code Scanner -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+
+    <!-- Navbar / Header -->
+    <header class="app-header">
+        <div class="container header-content">
+            <div class="brand">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-envelope-open-text"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>دعواتنا <span>| QR Events</span></h1>
+                    <p>نظام إدارة الدعوات وبطاقات الدخول الذكية</p>
+                </div>
+            </div>
+
+            <!-- View Switcher Tabs -->
+            <nav class="main-nav">
+                <button class="nav-btn active" data-target="admin-view">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>لوحة التحكم والمدعوين</span>
+                </button>
+                <button class="nav-btn" data-target="guest-view">
+                    <i class="fa-solid fa-ticket"></i>
+                    <span>معاينة واجهة الضيف</span>
+                </button>
+                <button class="nav-btn" data-target="gate-view">
+                    <i class="fa-solid fa-qrcode"></i>
+                    <span>ماسح البوابة (Check-in)</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container main-layout">
+
+        <!-- ==================== VIEW 1: ADMIN DASHBOARD ==================== -->
+        <section id="admin-view" class="app-view active-view">
+            <!-- Event Card Preview & Config -->
+            <div class="grid-2col">
+                <!-- Event Setup Card -->
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-calendar-check gold-icon"></i> تفاصيل المناسبة وكرت الدعوة</h2>
+                        <span class="badge badge-gold">إعداد المناسبة</span>
+                    </div>
+                    <div class="card-body">
+                        <form id="event-form">
+                            <div class="form-group">
+                                <label for="event-title">عنوان المناسبة / الحفل</label>
+                                <input type="text" id="event-title" class="form-control" value="حفل زفاف عبدالمجيد و سارة" placeholder="مثال: حفل زفاف..." required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="event-date">تاريخ المناسبة</label>
+                                    <input type="date" id="event-date" class="form-control" value="2026-10-25" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="event-time">التوقيت</label>
+                                    <input type="time" id="event-time" class="form-control" value="20:00" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="event-location">مكان الحفل / القاعة</label>
+                                <input type="text" id="event-location" class="form-control" value="قاعة الفخامة والمؤتمرات - الرياض" placeholder="القاعة والمدينة..." required>
+                            </div>
+                            <div class="form-group">
+                                <label for="event-map-link">رابط خرائط جوجل (Google Maps)</label>
+                                <input type="url" id="event-map-link" class="form-control" value="https://maps.google.com" placeholder="https://maps.app.goo.gl/..." required>
+                            </div>
+                            <div class="form-group">
+                                <label>صورة / تصميم كرت الدعوة</label>
+                                <div class="image-upload-wrapper">
+                                    <div class="image-preview" id="card-image-preview">
+                                        <!-- Default or Uploaded Image -->
+                                        <div class="default-card-graphic">
+                                            <i class="fa-solid fa-scroll gold-icon"></i>
+                                            <p>كرت الدعوة المعين حالياً</p>
+                                        </div>
+                                    </div>
+                                    <div class="upload-controls">
+                                        <label for="card-file-input" class="btn btn-outline">
+                                            <i class="fa-solid fa-upload"></i> رفع كرت دعوة جديد
+                                        </label>
+                                        <input type="file" id="card-file-input" accept="image/*" style="display: none;">
+                                        <button type="button" id="btn-reset-card" class="btn btn-sm btn-ghost">استعادة التصميم الافتراضي</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-gold btn-block">
+                                <i class="fa-solid fa-floppy-disk"></i> حفظ تفاصيل المناسبة
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Stats Overview & Quick Add -->
+                <div class="flex-col gap-20">
+                    <!-- Quick Statistics -->
+                    <div class="card glass-card">
+                        <div class="card-header">
+                            <h2><i class="fa-solid fa-chart-line gold-icon"></i> ملخص الردود والحضور الحقيقي</h2>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <div class="stat-icon total"><i class="fa-solid fa-users"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="stat-total">0</span>
+                                    <span class="stat-label">إجمالي المدعوين</span>
+                                </div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-icon accepted"><i class="fa-solid fa-circle-check"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="stat-accepted">0</span>
+                                    <span class="stat-label">تأكيد القبول</span>
+                                </div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-icon declined"><i class="fa-solid fa-circle-xmark"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="stat-declined">0</span>
+                                    <span class="stat-label">معتذرون</span>
+                                </div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-icon pending"><i class="fa-solid fa-clock"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="stat-pending">0</span>
+                                    <span class="stat-label">بانتظار الرد</span>
+                                </div>
+                            </div>
+                            <div class="stat-box full-width">
+                                <div class="stat-icon checkedin"><i class="fa-solid fa-user-check"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-number" id="stat-checkedin">0</span>
+                                    <span class="stat-label">تم تسجيل دخولهم بالقاعة (QR Gate)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Batch Add Recipients -->
+                    <div class="card glass-card">
+                        <div class="card-header">
+                            <h2><i class="fa-solid fa-address-book gold-icon"></i> إضافة وإدخال المدعوين (بالجوالات)</h2>
+                        </div>
+                        <div class="card-body">
+                            <form id="add-guests-form">
+                                <div class="form-group">
+                                    <label for="batch-input">إدخال قائمة الأسماء والأرقام (سطر لكل مدعو)</label>
+                                    <small class="form-help">الصيغة: الاسم، رقم الجوال (أو الرقم فقط)</small>
+                                    <textarea id="batch-input" class="form-control" rows="4" placeholder="مثال:&#10;عبدالله المحمد, 0501234567&#10;خالد العتيبي, 966559876543&#10;0541112233"></textarea>
+                                </div>
+                                <div class="flex-row gap-10">
+                                    <button type="submit" class="btn btn-primary flex-1">
+                                        <i class="fa-solid fa-user-plus"></i> إضافة المدعوين للأنظمة
+                                    </button>
+                                    <button type="button" id="btn-load-sample" class="btn btn-outline">
+                                        <i class="fa-solid fa-vial"></i> تحميل أسماء تجريبية
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recipient List Table -->
+            <div class="card glass-card margin-top-20">
+                <div class="card-header flex-between">
+                    <div>
+                        <h2><i class="fa-solid fa-list-check gold-icon"></i> قائمة المدعوين وإرسال الدعوات عبر WhatsApp</h2>
+                        <p class="subtitle">قم بالضغط على زر الواتساب لإرسال كرت الدعوة والرابط المخصص مباشرة للضيف</p>
+                    </div>
+                    <div class="table-actions">
+                        <button id="btn-clear-all" class="btn btn-sm btn-danger">
+                            <i class="fa-solid fa-trash"></i> مسح القائمة
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body padding-0">
+                    <div class="table-responsive">
+                        <table class="data-table" id="guests-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>اسم الضيف</th>
+                                    <th>رقم الجوال</th>
+                                    <th>حالة الدعوة</th>
+                                    <th>رمز الـ QR / التذكرة</th>
+                                    <th>حالة الدخول بالقاعة</th>
+                                    <th>إرسال عبر الواتساب</th>
+                                    <th>خيارات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guests-table-body">
+                                <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== VIEW 2: GUEST INVITATION PORTAL ==================== -->
+        <section id="guest-view" class="app-view">
+            <div class="guest-simulation-container">
+                <div class="guest-view-banner">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                    <span>معاينة حية لشاشة الجوال الخاصة بالضيف عند فتح الرابط المخصص له</span>
+                    <select id="guest-select-simulator" class="form-control select-sm">
+                        <!-- Options filled via JS -->
+                    </select>
+                </div>
+
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <!-- Header Graphic -->
+                        <div class="invitation-header-decor">
+                            <div class="ornament"></div>
+                            <span class="invitation-tag"><i class="fa-solid fa-envelope"></i> دعوة خاصة</span>
+                        </div>
+
+                        <!-- Invitation Graphic / Card View -->
+                        <div class="invitation-card-display" id="guest-card-container">
+                            <div class="card-frame">
+                                <h2 class="invitation-event-title" id="display-event-title">حفل زفاف عبدالمجيد و سارة</h2>
+                                <div class="divider-gold">❖ ❖ ❖</div>
+                                <p class="invitation-text">يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بوجودكم ومشاركتكم</p>
+                                
+                                <div class="guest-personal-greeting">
+                                    <span class="greeting-label">المكرم / المكرمة:</span>
+                                    <h3 class="guest-name-highlight" id="display-guest-name">عبدالله المحمد</h3>
+                                </div>
+
+                                <div class="event-details-grid">
+                                    <div class="detail-item">
+                                        <i class="fa-regular fa-calendar-check"></i>
+                                        <div>
+                                            <strong>التاريخ</strong>
+                                            <span id="display-event-date">الأحد، 25 أكتوبر 2026</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fa-regular fa-clock"></i>
+                                        <div>
+                                            <strong>الوقت</strong>
+                                            <span id="display-event-time">8:00 مساءً</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-item full">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                        <div>
+                                            <strong>المكان</strong>
+                                            <span id="display-event-location">قاعة الفخامة والمؤتمرات - الرياض</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <a href="#" id="display-map-link" target="_blank" class="btn btn-outline btn-sm btn-block margin-top-10">
+                                    <i class="fa-solid fa-map-location-dot"></i> فتح موقع القاعة على الخارطة
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- RSVP Decision Box -->
+                        <div class="rsvp-action-box card glass-card" id="rsvp-decision-section">
+                            <h3><i class="fa-solid fa-reply gold-icon"></i> هل ستتشرفنا بالحضور؟</h3>
+                            <p class="rsvp-subtext">يرجى تأكيد الحضور لتوليد باركود الدخول الخاص بك</p>
+                            
+                            <div class="guest-count-selector form-group">
+                                <label for="guest-companions-count"><i class="fa-solid fa-user-plus"></i> عدد مرافقيك (إن وجد):</label>
+                                <select id="guest-companions-count" class="form-control">
+                                    <option value="1">شخص واحد (أنا فقط)</option>
+                                    <option value="2">شخصان (2)</option>
+                                    <option value="3">3 أشخاص</option>
+                                    <option value="4">4 أشخاص</option>
+                                </select>
+                            </div>
+
+                            <div class="rsvp-buttons">
+                                <button id="btn-rsvp-accept" class="btn btn-success btn-lg flex-1">
+                                    <i class="fa-solid fa-circle-check"></i> قبول الدعوة
+                                </button>
+                                <button id="btn-rsvp-decline" class="btn btn-danger-outline btn-lg flex-1">
+                                    <i class="fa-solid fa-circle-xmark"></i> اعتذار
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Status Alert View when Declined -->
+                        <div class="status-box declined-box hidden" id="declined-notice">
+                            <i class="fa-solid fa-heart-crack status-icon"></i>
+                            <h3>تم تسجيل اعتذارك بنجاح</h3>
+                            <p>نشكرك على إبلاغنا، ونتمنى أن نلتقي بكم في مناسبات قادمة بإذن الله.</p>
+                            <button id="btn-change-rsvp" class="btn btn-sm btn-outline margin-top-10">تغيير الرغبة</button>
+                        </div>
+
+                        <!-- Entry Ticket with QR Code (Generated on Accept) -->
+                        <div class="entry-ticket-box hidden" id="entry-ticket-section">
+                            <div class="ticket">
+                                <div class="ticket-header">
+                                    <span class="ticket-badge"><i class="fa-solid fa-shield-halved"></i> تذكرة دخول معتمدة</span>
+                                    <h3 id="ticket-guest-name">عبدالله المحمد</h3>
+                                    <p class="ticket-phone" id="ticket-guest-phone">0501234567</p>
+                                </div>
+                                <div class="ticket-divider">
+                                    <div class="circle left"></div>
+                                    <div class="dashed-line"></div>
+                                    <div class="circle right"></div>
+                                </div>
+                                <div class="ticket-body">
+                                    <p class="qr-instruction">ابرز هذا الرمز لمنظمي البوابة عند الوصول</p>
+                                    <!-- QR Code Target Container -->
+                                    <div class="qr-wrapper">
+                                        <div id="guest-qr-code-element"></div>
+                                    </div>
+                                    <div class="ticket-code-display">
+                                        <span class="code-label">رمز التذكرة:</span>
+                                        <strong id="ticket-unique-code">EV-897412</strong>
+                                    </div>
+                                    <div class="ticket-meta">
+                                        <div><strong>عدد الدخول:</strong> <span id="ticket-guests-count">1</span> شخص</div>
+                                        <div><strong>حالة التذكرة:</strong> <span class="badge badge-success">صالحة للدخول</span></div>
+                                    </div>
+                                </div>
+                                <div class="ticket-footer">
+                                    <button id="btn-download-ticket" class="btn btn-gold btn-block btn-sm">
+                                        <i class="fa-solid fa-download"></i> حفظ بطاقة الدخول للجوال
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== VIEW 3: GATE SCANNER ==================== -->
+        <section id="gate-view" class="app-view">
+            <div class="card glass-card gate-container">
+                <div class="card-header text-center">
+                    <h2><i class="fa-solid fa-qrcode gold-icon"></i> جهاز فحص باركود البوابة (Gate Check-in)</h2>
+                    <p class="subtitle">امسح رمز الـ QR من جوال الضيف أو أدخل رمز التذكرة للتحقق والتسجيل الفوري</p>
+                </div>
+
+                <div class="grid-2col gate-grid">
+                    <!-- Scanner Side -->
+                    <div class="scanner-section flex-col gap-15">
+                        <div class="qr-camera-box" id="camera-box">
+                            <div id="reader" style="width: 100%;"></div>
+                            <div class="scanner-overlay" id="scanner-visual">
+                                <div class="scanner-laser"></div>
+                                <i class="fa-solid fa-camera camera-placeholder-icon"></i>
+                                <p>وجه الكاميرا نحو رمز الـ QR الخاص بالضيف</p>
+                            </div>
+                        </div>
+                        <div class="flex-row gap-10">
+                            <button id="btn-toggle-camera" class="btn btn-primary flex-1">
+                                <i class="fa-solid fa-video"></i> تشغيل / إيقاف الكاميرا
+                            </button>
+                        </div>
+
+                        <!-- Manual Code Entry Fallback -->
+                        <div class="manual-code-box card margin-top-10">
+                            <label for="manual-ticket-input"><i class="fa-solid fa-keyboard"></i> أو أدخل رمز التذكرة / رقم الجوال يدويًا:</label>
+                            <div class="flex-row gap-10 margin-top-5">
+                                <input type="text" id="manual-ticket-input" class="form-control" placeholder="مثال: EV-897412 أو 0501234567">
+                                <button id="btn-check-manual" class="btn btn-gold">
+                                    <i class="fa-solid fa-magnifying-glass"></i> تحقق
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scan Result Output Box -->
+                    <div class="scan-result-section">
+                        <div class="card scan-result-card" id="scan-result-card">
+                            <div class="result-placeholder" id="result-placeholder">
+                                <i class="fa-solid fa-id-card-clip idle-icon"></i>
+                                <h3>في انتظار مسح التذكرة...</h3>
+                                <p>ستظهر بيانات الضيف هنا فور قراءة الرمز للتأكد من هويته وصلاحية دخوله.</p>
+                            </div>
+
+                            <!-- Success Result State -->
+                            <div class="result-detail-box success-state hidden" id="result-success-state">
+                                <div class="result-icon-badge success">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                </div>
+                                <span class="status-badge badge-success">دخول مسموح - تذكرة صالحة</span>
+                                <h2 id="res-guest-name">عبدالله المحمد</h2>
+                                <div class="res-details">
+                                    <p><strong>رقم الجوال:</strong> <span id="res-guest-phone">0501234567</span></p>
+                                    <p><strong>عدد الأشخاص:</strong> <span id="res-guest-count">1</span></p>
+                                    <p><strong>كود التذكرة:</strong> <span id="res-ticket-code">EV-897412</span></p>
+                                    <p><strong>وقت تسجيل الحضور:</strong> <span id="res-checkin-time">الآن</span></p>
+                                </div>
+                                <div class="alert alert-success margin-top-15">
+                                    <i class="fa-solid fa-bell"></i> تم تسديد وتأكيد دخول الضيف ومرافقيه بنجاح!
+                                </div>
+                            </div>
+
+                            <!-- Error / Duplicate Result State -->
+                            <div class="result-detail-box error-state hidden" id="result-error-state">
+                                <div class="result-icon-badge error">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                </div>
+                                <span class="status-badge badge-danger" id="res-error-badge">تنبيه: التذكرة مستخدمة سابقاً!</span>
+                                <h2 id="res-err-guest-name">عبدالله المحمد</h2>
+                                <p id="res-err-message" class="err-message-text">تم دخول صاحب هذه التذكرة سابقاً الساعة 08:15 مساءً. لا يمكن تكرار الدخول!</p>
+                            </div>
+                        </div>
+
+                        <!-- Recent Gate Activity Log -->
+                        <div class="card margin-top-15">
+                            <div class="card-header flex-between">
+                                <h3><i class="fa-solid fa-history gold-icon"></i> سجل الحضور الأخير عند البوابة</h3>
+                                <small id="gate-log-count">0 سجلات</small>
+                            </div>
+                            <ul class="gate-log-list" id="gate-log-list">
+                                <li class="empty-log">لم يتم تسجيل أي حضور حتى الآن</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="app-footer text-center">
+        <div class="container">
+            <p>نظام إرسال دعوات المناسبات وتأكيد الحضور الذكي بـ QR Code &copy; 2026</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
