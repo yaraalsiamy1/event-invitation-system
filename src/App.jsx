@@ -74,7 +74,12 @@ export default function App() {
               const gu = await safeJsonParse(resGu);
               if (Array.isArray(gu)) {
                 setGuests(gu);
-                if (gu.length > 0) setActiveGuestId(gu[0].id);
+                const urlGuestId = new URLSearchParams(window.location.search).get('guest');
+                if (urlGuestId) {
+                  setActiveGuestId(urlGuestId);
+                } else if (gu.length > 0 && !activeGuestId) {
+                  setActiveGuestId(gu[0].id);
+                }
               }
             }
           } else {

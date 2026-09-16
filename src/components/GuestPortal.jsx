@@ -7,9 +7,12 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
   const [guestRecord, setGuestRecord] = useState(null);
   const [guestEvent, setGuestEvent] = useState(null);
 
+  const urlGuestId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('guest') : null;
+  const effectiveGuestId = urlGuestId || activeGuestId;
+
   React.useEffect(() => {
-    if (activeGuestId) {
-      fetch(`/api/guests/${activeGuestId}`)
+    if (effectiveGuestId) {
+      fetch(`/api/guests/${effectiveGuestId}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (data && data.guest) {
@@ -19,9 +22,12 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
         })
         .catch(() => {});
     }
-  }, [activeGuestId]);
+  }, [effectiveGuestId]);
 
-  const activeGuest = guestRecord || (guests || []).find(g => g.id === activeGuestId) || guests[0];
+  const activeGuest = (guestRecord && guestRecord.id === effectiveGuestId) 
+    ? guestRecord 
+    : ((guests || []).find(g => g.id === effectiveGuestId) || guestRecord || guests[0]);
+
   const activeEv = guestEvent || eventData;
 
   if (!activeGuest) {
