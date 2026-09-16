@@ -31,9 +31,13 @@ export default function AdminDashboard({
     setPreviewCardImg(eventData?.cardImage || null);
   }, [eventData]);
 
-  // WhatsApp Auto Gateway Credentials
+  // WhatsApp Auto Gateway Credentials & Custom Text
   const [instanceId, setInstanceId] = useState(localStorage.getItem('wa_instance_id') || '');
   const [apiToken, setApiToken] = useState(localStorage.getItem('wa_api_token') || '');
+  const [customMessage, setCustomMessage] = useState(
+    localStorage.getItem('wa_custom_message') ||
+    'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.'
+  );
   const [isSendingAuto, setIsSendingAuto] = useState(false);
   const [autoProgress, setAutoProgress] = useState(null);
   // Checkbox selection state for batch sending
@@ -352,6 +356,7 @@ export default function AdminDashboard({
 
     localStorage.setItem('wa_instance_id', cleanInstance);
     localStorage.setItem('wa_api_token', cleanToken);
+    localStorage.setItem('wa_custom_message', customMessage);
 
     const selectedGuestsList = guests.filter(g => selectedGuestIds.includes(g.id));
 
@@ -369,7 +374,8 @@ export default function AdminDashboard({
             apiToken: cleanToken,
             hostUrl: window.location.origin,
             eventId: activeEventId,
-            guestIds: selectedGuestIds
+            guestIds: selectedGuestIds,
+            customMessage: customMessage
           })
         });
 
@@ -391,13 +397,14 @@ export default function AdminDashboard({
 
     // Mode B: Direct Browser Sequential Dispatch (If no paid API credentials)
     const proceedDirect = window.confirm(
-      `لم تقم بإدخال Instance ID و API Token لبوابة الواتساب الآلية.\n\nهل ترغب في البدء بالإرسال المباشر لـ (${selectedGuestsList.length}) مدعو عبر فتح الواتساب بالتتابع وتسجيل حالة الإرسال؟`
+      `لم تقم بإدخال Instance ID و API Token لبوابة الواتساب الآلية.\n\nهل ترغب في البدء بالإرسال المباشر لـ (${selectedGuestsList.length}) مدعو عبر فتح الواتساب بالتتابع وتوجيه الرسالة والصورة؟`
     );
 
     if (!proceedDirect) return;
 
     setIsSendingAuto(true);
     let sentSuccess = 0;
+    const userMsgText = customMessage.trim() || 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
 
     for (let i = 0; i < selectedGuestsList.length; i++) {
       const g = selectedGuestsList[i];
@@ -650,45 +657,106 @@ export default function AdminDashboard({
             </div>
 
             {/* Form 2: Excel Import & Manual Entry */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div className="apple-card" style={{ marginBottom: 0 }}>
-                <div className="card-title-row">
-                  <h2><FileSpreadsheet className="system-gold" size={20} /> 2. استيراد ومراجعة الإكسل (تمبلت الدعوات.xlsx)</h2>
+            <div className="apple-card" style={{ marginBottom: 0 }}>
+              <div className="card-title-row">
+                <h2><FileSpreadsheet className="system-gold" size={20} /> 2. استيراد ومراجعة الإكسل (تمبلت الدعوات.xlsx)</h2>
+              </div>
+              
+              <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+                عند اختيار الملف تظهر لك شاشة تحقق لمراجعة صحة الأسماء والأرقام وتعديل الأخطاء قبل الحفظ النهائي للمناسبة.
+              </p>
+
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                <button className="apple-btn apple-btn-secondary" style={{ flex: 1 }} onClick={downloadExcelTemplate}>
+                  <Download size={16} /> تحميل تمبلت الدعوات.xlsx الأصلي
+                </button>
+
+                <label className="apple-btn apple-btn-pink" style={{ flex: 1, cursor: 'pointer' }}>
+                  <FileSpreadsheet size={16} /> رفع ومراجعة الإكسل
+                  <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ display: 'none' }} />
+                </label>
+              </div>
+
+              {/* Manual Entry */}
+              <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px' }}>
+                <div className="form-group">
+                  <label>أو كتابة الأرقام يدوياً (الاسم، رقم الجوال):</label>
+                  <textarea
+                    className="apple-input"
+                    rows="3"
+                    placeholder="مثال:&#10;عبدالله المحمد, 0501234567&#10;سارة الخالد, 0551234567"
+                    value={batchText}
+                    onChange={(e) => setBatchText(e.target.value)}
+                  ></textarea>
                 </div>
-                
-                <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-                  عند اختيار الملف تظهر لك شاشة تحقق لمراجعة صحة الأسماء والأرقام وتعديل الأخطاء قبل الحفظ النهائي للمناسبة.
-                </p>
+                <button type="submit" className="apple-btn apple-btn-secondary btn-block">
+                  <Plus size={16} /> إضافة وحفظ في القائمة
+                </button>
+              </form>
+            </div>
 
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                  <button className="apple-btn apple-btn-secondary" style={{ flex: 1 }} onClick={downloadExcelTemplate}>
-                    <Download size={16} /> تحميل تمبلت الدعوات.xlsx الأصلي
-                  </button>
+            {/* Form 3: WhatsApp Customization & Gateway Credentials */}
+            <div className="apple-card" style={{ marginBottom: 0 }}>
+              <div className="card-title-row">
+                <h2><MessageCircle className="system-gold" size={20} /> 3. تخصيص نص رسالة الواتساب وبوابة الإرسال وصورة الدعوة</h2>
+              </div>
 
-                  <label className="apple-btn apple-btn-pink" style={{ flex: 1, cursor: 'pointer' }}>
-                    <FileSpreadsheet size={16} /> رفع ومراجعة الإكسل
-                    <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ display: 'none' }} />
-                  </label>
+              <div className="form-group">
+                <label>نص رسالة الدعوة المخصصة (يتم دمج اسم الضيف وتفاصيل المناسبة ورابط التذكرة وصورة الكرت تلقائياً):</label>
+                <textarea
+                  className="apple-input"
+                  rows="3"
+                  value={customMessage}
+                  onChange={(e) => {
+                    setCustomMessage(e.target.value);
+                    localStorage.setItem('wa_custom_message', e.target.value);
+                  }}
+                  placeholder="أدخل نص الدعوة هنا... مثال: يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم."
+                ></textarea>
+              </div>
+
+              {/* Live Message Preview Box */}
+              <div style={{ background: '#fff5f7', border: '1px solid rgba(244, 165, 186, 0.3)', borderRadius: '14px', padding: '14px 18px', marginBottom: '14px', fontSize: '0.86rem' }}>
+                <div style={{ fontWeight: 800, color: 'var(--pink-dark)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={16} /> معاينة حية لشكل رسالة الواتساب المرسلة للضيف:
+                </div>
+                <div style={{ color: 'var(--text-primary)', whiteSpace: 'pre-line', background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)', lineHeight: '1.6' }}>
+                  {`مرحباً [اسم الضيف] 👋\n\n${customMessage || 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.'}\n\nالمناسبة: ${eventData?.title || 'عنوان المناسبة'}\nالتاريخ: ${eventData?.date || ''}\nالمكان: ${eventData?.location || ''}\n\n[📷 يتم إرفاق صورة كرت الدعوة المرفوعة تلقائياً مع هذه الرسالة]\n\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\nhttps://invitation.app/?guest=xxx`}
+                </div>
+              </div>
+
+              {/* Gateway Credentials (Optional Green-API / UltraMsg) */}
+              <div className="grid-2col" style={{ gap: '12px' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Instance ID (بوابة الواتساب الآلية - اختياري)</label>
+                  <input
+                    type="text"
+                    className="apple-input"
+                    placeholder="مثال: 7103847291"
+                    value={instanceId}
+                    onChange={(e) => {
+                      setInstanceId(e.target.value);
+                      localStorage.setItem('wa_instance_id', e.target.value);
+                    }}
+                  />
                 </div>
 
-                {/* Manual Entry */}
-                <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px' }}>
-                  <div className="form-group">
-                    <label>أو كتابة الأرقام يدوياً (الاسم، رقم الجوال):</label>
-                    <textarea
-                      className="apple-input"
-                      rows="3"
-                      placeholder="مثال:&#10;عبدالله المحمد, 0501234567&#10;سارة الخالد, 0551234567"
-                      value={batchText}
-                      onChange={(e) => setBatchText(e.target.value)}
-                    ></textarea>
-                  </div>
-                  <button type="submit" className="apple-btn apple-btn-secondary btn-block">
-                    <Plus size={16} /> إضافة وحفظ في القائمة
-                  </button>
-                </form>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>API Token (اختياري)</label>
+                  <input
+                    type="password"
+                    className="apple-input"
+                    placeholder="أدخل رمز الـ API Token"
+                    value={apiToken}
+                    onChange={(e) => {
+                      setApiToken(e.target.value);
+                      localStorage.setItem('wa_api_token', e.target.value);
+                    }}
+                  />
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>

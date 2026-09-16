@@ -136,7 +136,7 @@ app.post('/api/guests/:id/rsvp', async (req, res) => {
 // AUTOMATED WHATSAPP BATCH DISPATCHER ENDPOINT
 app.post('/api/send-whatsapp-batch', async (req, res) => {
   try {
-    const { instanceId, apiToken, hostUrl, eventId, guestIds } = req.body;
+    const { instanceId, apiToken, hostUrl, eventId, guestIds, customMessage } = req.body;
     let event = await db.getEvent(eventId);
     if (!event) {
       const allEvs = await db.getAllEvents();
@@ -167,40 +167,78 @@ app.post('/api/send-whatsapp-batch', async (req, res) => {
     const results = [];
     const successfullySentIds = [];
 
+    // Image URL resolution
+    let cardImageUrl = null;
+    if (event.cardImage) {
+      if (event.cardImage.startsWith('http://') || event.cardImage.startsWith('https://')) {
+        cardImageUrl = event.cardImage;
+      } else if (!event.cardImage.startsWith('data:image')) {
+        cardImageUrl = `${baseUrl}${event.cardImage.startsWith('/') ? '' : '/'}${event.cardImage}`;
+      }
+    }
+
+    const userMessage = (customMessage && customMessage.trim()) ? customMessage.trim() : 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
+
     for (const guest of targetGuests) {
       const guestLink = `${baseUrl}/?guest=${guest.id}`;
-      const messageText = `مرحباً ${guest.name}\nيسرنا ويسعدنا دعوتكم لحضور ${event.title}.\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
+      const messageText = `مرحباً ${guest.name}\n\n${userMessage}\n\nالمناسبة: ${event.title}\nالتاريخ: ${event.date || ''}\nالمكان: ${event.location || ''}\n\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
       
-      let success = true;
+      let success = false;
       let errorMsg = null;
 
-      try {
-        const gatewayUrl = `https://api.green-api.com/waInstance${instanceId}/sendMessage/${apiToken}`;
-        const apiRes = await fetch(gatewayUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chatId: `${guest.phone}@c.us`,
-            message: messageText
-          })
-        });
+      // 1. Send card image with text caption if card image URL exists
+      if (cardImageUrl) {
+        try {
+          const fileApiUrl = `https://api.green-api.com/waInstance${instanceId}/sendFileByUrl/${apiToken}`;
+          const fileRes = await fetch(fileApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chatId: `${guest.phone}@c.us`,
+              urlFile: cardImageUrl,
+              fileName: 'invitation_card.png',
+              caption: messageText
+            })
+          });
 
-        if (apiRes.ok) {
-          const resData = await apiRes.json();
-          if (resData && (resData.idMessage || resData.id)) {
-            success = true;
-          } else {
-            success = false;
-            errorMsg = 'لم يتم تأكيد استلام الرسالة من البوابة';
+          if (fileRes.ok) {
+            const fileData = await fileRes.json();
+            if (fileData && (fileData.idMessage || fileData.id)) {
+              success = true;
+            }
           }
-        } else {
-          const errText = await apiRes.text();
-          success = false;
-          errorMsg = `خطأ في بوابة الإرسال (${apiRes.status}): ${errText || 'بيانات الاعتماد غير صحيحة'}`;
+        } catch (fileErr) {
+          console.error('File send error, falling back to text:', fileErr.message);
         }
-      } catch (e) {
-        success = false;
-        errorMsg = e.message;
+      }
+
+      // 2. Fallback to standard text message if image send didn't succeed or cardImage wasn't remote URL
+      if (!success) {
+        try {
+          const gatewayUrl = `https://api.green-api.com/waInstance${instanceId}/sendMessage/${apiToken}`;
+          const apiRes = await fetch(gatewayUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chatId: `${guest.phone}@c.us`,
+              message: messageText
+            })
+          });
+
+          if (apiRes.ok) {
+            const resData = await apiRes.json();
+            if (resData && (resData.idMessage || resData.id)) {
+              success = true;
+            } else {
+              errorMsg = 'لم يتم تأكيد استلام الرسالة من البوابة';
+            }
+          } else {
+            const errText = await apiRes.text();
+            errorMsg = `خطأ في بوابة الإرسال (${apiRes.status}): ${errText || 'بيانات الاعتماد غير صحيحة'}`;
+          }
+        } catch (e) {
+          errorMsg = e.message;
+        }
       }
 
       if (success) {
