@@ -6,40 +6,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_FILE = path.join(__dirname, '../data_invitation.json');
 
-// Default Events Data
-const DEFAULT_EVENTS = [
-  {
-    id: "ev_wedding_1",
-    title: "حفل زفاف عبدالمجيد و سارة",
-    type: "wedding",
-    date: "2026-10-25",
-    time: "20:00",
-    location: "قاعة الفخامة والمؤتمرات - الرياض",
-    mapLink: "https://maps.google.com",
-    cardImage: null,
-    guests: [
-      { id: "g_1", name: "عبدالله المحمد", phone: "966501234567", status: "accepted", ticketCode: "EV-897412", checkedIn: false },
-      { id: "g_2", name: "خالد العتيبي", phone: "966559876543", status: "pending", ticketCode: "EV-654321", checkedIn: false },
-      { id: "g_3", name: "فهد الدوسري", phone: "966541112233", status: "declined", ticketCode: "EV-112233", checkedIn: false },
-      { id: "g_4", name: "د. سارة الشمري", phone: "966567778899", status: "accepted", ticketCode: "EV-778899", checkedIn: false }
-    ]
-  },
-  {
-    id: "ev_grad_2",
-    title: "حفل تخرج د. نورة الشمري",
-    type: "graduation",
-    date: "2026-11-15",
-    time: "19:00",
-    location: "قاعة الريادة للمناسبات - جدة",
-    mapLink: "https://maps.google.com",
-    cardImage: null,
-    guests: [
-      { id: "g_201", name: "أثير العنزي", phone: "966551122334", status: "accepted", ticketCode: "EV-332211", checkedIn: false },
-      { id: "g_202", name: "منيرة القحطاني", phone: "966549988776", status: "pending", ticketCode: "EV-998877", checkedIn: false }
-    ]
-  }
-];
-
 class MultiEventJSONDatabase {
   constructor() {
     this.init();
@@ -48,25 +14,15 @@ class MultiEventJSONDatabase {
   init() {
     if (!fs.existsSync(DB_FILE)) {
       const initialData = {
-        activeEventId: DEFAULT_EVENTS[0].id,
-        events: DEFAULT_EVENTS
+        activeEventId: null,
+        events: []
       };
       fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf8');
-      console.log('⚡ Multi-Event Lightweight JSON Database initialized at:', DB_FILE);
+      console.log('⚡ Multi-Event Database initialized (Clean State) at:', DB_FILE);
     } else {
-      // Migrate old format to multi-event if needed
       const data = this.read();
       if (!data.events) {
-        const legacyEvent = data.event || DEFAULT_EVENTS[0];
-        const legacyGuests = data.guests || DEFAULT_EVENTS[0].guests;
-        legacyEvent.guests = legacyGuests;
-        legacyEvent.id = legacyEvent.id || "ev_main";
-        
-        const newData = {
-          activeEventId: legacyEvent.id,
-          events: [legacyEvent]
-        };
-        this.write(newData);
+        this.write({ activeEventId: null, events: [] });
       }
     }
   }
@@ -76,10 +32,10 @@ class MultiEventJSONDatabase {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf8');
         const parsed = JSON.parse(raw);
-        if (parsed.events) return parsed;
+        if (parsed && Array.isArray(parsed.events)) return parsed;
       }
     } catch (e) {}
-    return { activeEventId: DEFAULT_EVENTS[0].id, events: DEFAULT_EVENTS };
+    return { activeEventId: null, events: [] };
   }
 
   write(data) {
@@ -112,7 +68,7 @@ class MultiEventJSONDatabase {
 
   async getActiveEventId() {
     const data = this.read();
-    return data.activeEventId || (data.events[0] && data.events[0].id);
+    return data.activeEventId || (data.events[0] ? data.events[0].id : null);
   }
 
   async setActiveEvent(eventId) {
@@ -127,7 +83,8 @@ class MultiEventJSONDatabase {
   async getEvent(eventId) {
     const data = this.read();
     const targetId = eventId || data.activeEventId;
-    return (data.events || []).find(e => e.id === targetId) || data.events[0] || DEFAULT_EVENTS[0];
+    if (!targetId && data.events.length > 0) return data.events[0];
+    return (data.events || []).find(e => e.id === targetId) || null;
   }
 
   async createEvent(newEvent) {
@@ -163,20 +120,15 @@ class MultiEventJSONDatabase {
 
   async deleteEvent(eventId) {
     const data = this.read();
-    if ((data.events || []).length <= 1) {
-      throw new Error('لا يمكن حذف جميع المناسبات، يجب الاحتفاظ بمناسبة واحدة على الأقل');
-    }
     data.events = (data.events || []).filter(e => e.id !== eventId);
-    if (data.activeEventId === eventId) {
-      data.activeEventId = data.events[0].id;
-    }
+    data.activeEventId = data.events.length > 0 ? data.events[0].id : null;
     this.write(data);
     return data.activeEventId;
   }
 
   async getGuests(eventId) {
     const ev = await this.getEvent(eventId);
-    return ev.guests || [];
+    return ev ? (ev.guests || []) : [];
   }
 
   async addGuests(eventId, newGuests) {

@@ -4,31 +4,13 @@ import AdminDashboard from './components/AdminDashboard';
 import GuestPortal from './components/GuestPortal';
 import './styles/apple.css';
 
-const DEFAULT_EVENT = {
-  id: "ev_wedding_1",
-  title: "حفل زفاف عبدالمجيد و سارة",
-  type: "wedding",
-  date: "2026-10-25",
-  time: "20:00",
-  location: "قاعة الفخامة والمؤتمرات - الرياض",
-  mapLink: "https://maps.google.com",
-  cardImage: null
-};
-
-const DEFAULT_GUESTS = [
-  { id: "g_1", name: "عبدالله المحمد", phone: "966501234567", status: "accepted", ticketCode: "EV-897412", checkedIn: false },
-  { id: "g_2", name: "خالد العتيبي", phone: "966559876543", status: "pending", ticketCode: "EV-654321", checkedIn: false },
-  { id: "g_3", name: "فهد الدوسري", phone: "966541112233", status: "declined", ticketCode: "EV-112233", checkedIn: false },
-  { id: "g_4", name: "د. سارة الشمري", phone: "966567778899", status: "accepted", ticketCode: "EV-778899", checkedIn: false }
-];
-
 export default function App() {
   const [activeTab, setActiveTab] = useState('admin');
   const [events, setEvents] = useState([]);
   const [activeEventId, setActiveEventId] = useState(null);
-  const [eventData, setEventData] = useState(DEFAULT_EVENT);
-  const [guests, setGuests] = useState(DEFAULT_GUESTS);
-  const [activeGuestId, setActiveGuestId] = useState(DEFAULT_GUESTS[0].id);
+  const [eventData, setEventData] = useState(null);
+  const [guests, setGuests] = useState([]);
+  const [activeGuestId, setActiveGuestId] = useState(null);
 
   // Check if URL has ?guest= parameter for direct Guest Portal view
   useEffect(() => {
@@ -46,9 +28,11 @@ export default function App() {
       const resEvents = await fetch('/api/events');
       if (resEvents.ok) {
         const evs = await resEvents.json();
-        if (Array.isArray(evs) && evs.length > 0) {
-          setEvents(evs);
-          const activeEv = evs.find(e => e.isActive) || evs[0];
+        const eventList = Array.isArray(evs) ? evs : [];
+        setEvents(eventList);
+
+        if (eventList.length > 0) {
+          const activeEv = eventList.find(e => e.isActive) || eventList[0];
           const curId = targetEventId || activeEv.id;
           setActiveEventId(curId);
 
@@ -56,7 +40,7 @@ export default function App() {
           const resEv = await fetch(`/api/event?eventId=${curId}`);
           if (resEv.ok) {
             const ev = await resEv.json();
-            if (ev && ev.title) setEventData(ev);
+            if (ev) setEventData(ev);
           }
 
           const resGu = await fetch(`/api/guests?eventId=${curId}`);
@@ -64,9 +48,13 @@ export default function App() {
             const gu = await resGu.json();
             if (Array.isArray(gu)) {
               setGuests(gu);
-              if (gu.length > 0 && !activeGuestId) setActiveGuestId(gu[0].id);
+              if (gu.length > 0) setActiveGuestId(gu[0].id);
             }
           }
+        } else {
+          setActiveEventId(null);
+          setEventData(null);
+          setGuests([]);
         }
       }
     } catch (e) {
@@ -103,7 +91,7 @@ export default function App() {
       });
       if (res.ok) {
         const created = await res.json();
-        alert(`تم إنشاء المناسبة "${created.title}" بنجاح!`);
+        alert(`تم إنشاء المناسبة "${created.title}" بنجاح وحفظها في القائمة الجانبية!`);
         await handleSelectEvent(created.id);
       }
     } catch (e) {
@@ -119,10 +107,14 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         alert('تم حذف المناسبة بنجاح!');
-        await handleSelectEvent(data.activeEventId);
+        if (data.activeEventId) {
+          await handleSelectEvent(data.activeEventId);
+        } else {
+          await refreshData();
+        }
       } else {
         const err = await res.json();
-        alert(err.error || 'لا يمكن حذف هذه المناسبة');
+        alert(err.error || 'تعذر حذف هذه المناسبة');
       }
     } catch (e) {
       alert('تعذر حذف المناسبة');
