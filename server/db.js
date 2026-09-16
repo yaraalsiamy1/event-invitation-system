@@ -12,17 +12,28 @@ class MultiEventJSONDatabase {
   }
 
   init() {
-    if (!fs.existsSync(DB_FILE)) {
-      const initialData = {
-        activeEventId: null,
-        events: []
+    const createDefault = () => {
+      const defaultEv = {
+        id: "ev_default",
+        title: "حفل زفاف د. محمد و أ. نورة",
+        type: "wedding",
+        date: new Date().toISOString().split('T')[0],
+        time: "20:00",
+        location: "قاعة الفخامة الكبرى - الرياض",
+        mapLink: "https://maps.google.com",
+        cardImage: null,
+        guests: []
       };
-      fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf8');
-      console.log('Multi-Event Database initialized (Clean State) at:', DB_FILE);
+      return { activeEventId: defaultEv.id, events: [defaultEv] };
+    };
+
+    if (!fs.existsSync(DB_FILE)) {
+      this.write(createDefault());
+      console.log('Multi-Event Database initialized at:', DB_FILE);
     } else {
       const data = this.read();
-      if (!data.events) {
-        this.write({ activeEventId: null, events: [] });
+      if (!data.events || data.events.length === 0) {
+        this.write(createDefault());
       }
     }
   }
@@ -133,9 +144,28 @@ class MultiEventJSONDatabase {
 
   async addGuests(eventId, newGuests) {
     const data = this.read();
-    const targetId = eventId || data.activeEventId;
-    const ev = (data.events || []).find(e => e.id === targetId);
-    if (!ev) return [];
+    let targetId = eventId || data.activeEventId;
+    let ev = (data.events || []).find(e => e.id === targetId);
+    if (!ev && data.events && data.events.length > 0) {
+      ev = data.events[0];
+      targetId = ev.id;
+    }
+    if (!ev) {
+      ev = {
+        id: "ev_default",
+        title: "حفل زفاف د. محمد و أ. نورة",
+        type: "wedding",
+        date: new Date().toISOString().split('T')[0],
+        time: "20:00",
+        location: "قاعة الفخامة الكبرى - الرياض",
+        mapLink: "https://maps.google.com",
+        cardImage: null,
+        guests: []
+      };
+      data.events = [ev];
+      data.activeEventId = ev.id;
+      targetId = ev.id;
+    }
 
     const existing = ev.guests || [];
     const uniqueNew = [];

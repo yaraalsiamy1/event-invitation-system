@@ -85,14 +85,24 @@ export default function AdminDashboard({
   // Save batch guests to API / LocalState
   const saveBatchToApi = async (newGuests) => {
     try {
-      await fetch('/api/guests/batch', {
+      const res = await fetch('/api/guests/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guests: newGuests, eventId: activeEventId })
       });
+      if (res.ok) {
+        const updatedList = await res.json();
+        if (Array.isArray(updatedList) && updatedList.length > 0) {
+          setGuests(updatedList);
+        } else {
+          setGuests(prev => [...(prev || []), ...newGuests]);
+        }
+      } else {
+        setGuests(prev => [...(prev || []), ...newGuests]);
+      }
       if (refreshData) refreshData();
     } catch (e) {
-      setGuests([...guests, ...newGuests]);
+      setGuests(prev => [...(prev || []), ...newGuests]);
     }
   };
 
