@@ -386,6 +386,46 @@ export default function AdminDashboard({
             </button>
           </div>
 
+          {/* LIVE STATISTICAL METRICS WIDGETS (TOP POSITION) */}
+          <div class="apple-card" style={{ background: '#ffffff', border: '1.5px solid rgba(244, 165, 186, 0.35)' }}>
+            <div class="card-title-row" style={{ marginBottom: '14px' }}>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                📊 المؤشرات الإحصائية الحية لمناسبة ({eventData?.title || 'المناسبة الحالية'})
+              </h2>
+              <span class="ios-badge ios-badge-pink">تحديث مباشر لحظي</span>
+            </div>
+            <div class="widgets-grid">
+              <div class="apple-widget">
+                <div class="widget-icon pink"><Users size={24} /></div>
+                <div>
+                  <div class="widget-val">{total}</div>
+                  <div class="widget-lbl">إجمالي المدعوين</div>
+                </div>
+              </div>
+              <div class="apple-widget">
+                <div class="widget-icon green"><CheckCircle2 size={24} /></div>
+                <div>
+                  <div class="widget-val">{accepted}</div>
+                  <div class="widget-lbl">تأكيد القبول</div>
+                </div>
+              </div>
+              <div class="apple-widget">
+                <div class="widget-icon red"><XCircle size={24} /></div>
+                <div>
+                  <div class="widget-val">{declined}</div>
+                  <div class="widget-lbl">معتذرون</div>
+                </div>
+              </div>
+              <div class="apple-widget">
+                <div class="widget-icon amber"><Clock size={24} /></div>
+                <div>
+                  <div class="widget-val">{pending}</div>
+                  <div class="widget-lbl">بانتظار الرد</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* AUTOMATED WHATSAPP DISPATCHER BOX */}
           <div class="apple-card" style={{ background: '#ffffff', border: '2px solid var(--pink-primary)', padding: '22px' }}>
             <div class="card-title-row" style={{ marginBottom: '14px' }}>
@@ -559,45 +599,8 @@ export default function AdminDashboard({
               </form>
             </div>
 
-            {/* Right: Live Widgets & Excel Import */}
+            {/* Right: Excel Import */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Live Widgets */}
-              <div class="apple-card">
-                <div class="card-title-row">
-                  <h2>المؤشرات الإحصائية الحية ({eventData?.title})</h2>
-                </div>
-                <div class="widgets-grid">
-                  <div class="apple-widget">
-                    <div class="widget-icon pink"><Users size={24} /></div>
-                    <div>
-                      <div class="widget-val">{total}</div>
-                      <div class="widget-lbl">إجمالي المدعوين</div>
-                    </div>
-                  </div>
-                  <div class="apple-widget">
-                    <div class="widget-icon green"><CheckCircle2 size={24} /></div>
-                    <div>
-                      <div class="widget-val">{accepted}</div>
-                      <div class="widget-lbl">تأكيد القبول</div>
-                    </div>
-                  </div>
-                  <div class="apple-widget">
-                    <div class="widget-icon red"><XCircle size={24} /></div>
-                    <div>
-                      <div class="widget-val">{declined}</div>
-                      <div class="widget-lbl">معتذرون</div>
-                    </div>
-                  </div>
-                  <div class="apple-widget">
-                    <div class="widget-icon amber"><Clock size={24} /></div>
-                    <div>
-                      <div class="widget-val">{pending}</div>
-                      <div class="widget-lbl">بانتظار الرد</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Excel Import & User Template */}
               <div class="apple-card">
                 <div class="card-title-row">
