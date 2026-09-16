@@ -467,9 +467,6 @@ export default function AdminDashboard({
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{eventData?.title || 'مناسبة بدون عنوان'}</h2>
               </div>
             </div>
-            <button className="apple-btn apple-btn-pink" style={{ fontSize: '0.86rem', padding: '10px 18px' }} onClick={() => setIsNewEventModalOpen(true)}>
-              <Plus size={16} /> إنشاء مناسبة جديدة
-            </button>
           </div>
 
           {/* LIVE STATISTICAL METRICS WIDGETS */}
@@ -519,7 +516,6 @@ export default function AdminDashboard({
             <div className="apple-card" style={{ marginBottom: 0 }}>
               <div className="card-title-row">
                 <h2><Calendar className="system-gold" size={22} /> 1. تعديل بيانات المناسبة وكرت الدعوة</h2>
-                <span className="ios-badge ios-badge-pink">وردية وأصلية</span>
               </div>
 
               <form onSubmit={handleEventSubmit}>
@@ -658,6 +654,8 @@ export default function AdminDashboard({
           </div>
         </div>
       </div>
+
+      {/* STREAMLINED GUESTS TABLE CARD */}
       <div className="apple-card" style={{ marginBottom: '28px' }}>
         <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '12px' }}>
           <div>
@@ -672,8 +670,28 @@ export default function AdminDashboard({
               {isAllSelected ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
             </button>
             <button className="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
-              تحديد غير المركسل لهم فقط
+              تحديد غير المرسل لهم فقط
             </button>
+
+            {/* Auto Dispatch Rocket Button integrated in Table Header */}
+            <button
+              type="button"
+              className="apple-btn apple-btn-pink"
+              style={{ padding: '8px 16px', fontSize: '0.88rem', fontWeight: 700 }}
+              onClick={handleStartAutoDispatch}
+              disabled={isSendingAuto || selectedGuestIds.length === 0}
+            >
+              {isSendingAuto ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> جاري الإرسال الآلي...
+                </>
+              ) : (
+                <>
+                  <Rocket size={16} /> بدء الإرسال التلقائي ({selectedGuestIds.length})
+                </>
+              )}
+            </button>
+
             {guests.length > 0 && (
               <button className="apple-btn apple-btn-danger" onClick={handleClearAll} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
                 مسح القائمة
@@ -682,7 +700,23 @@ export default function AdminDashboard({
           </div>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        {/* Live Auto Sending Progress Bar */}
+        {isSendingAuto && autoProgress && (
+          <div style={{ background: 'rgba(253, 242, 245, 0.9)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(244, 165, 186, 0.4)', marginTop: '14px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', fontWeight: 700, marginBottom: '6px', color: 'var(--pink-dark)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Loader2 size={16} className="animate-spin" style={{ color: 'var(--pink-primary)' }} />
+                جاري الإرسال الآلي لـ: {autoProgress.currentName}...
+              </span>
+              <span>{autoProgress.sent} / {autoProgress.total} رسالة</span>
+            </div>
+            <div style={{ width: '100%', height: '10px', background: 'rgba(244, 165, 186, 0.2)', borderRadius: '10px', overflow: 'hidden' }}>
+              <div style={{ width: `${(autoProgress.sent / autoProgress.total) * 100}%`, height: '100%', background: 'var(--pink-gradient)', transition: 'width 0.4s ease' }}></div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ overflowX: 'auto', marginTop: '12px' }}>
           <table className="apple-table">
             <thead>
               <tr>
@@ -697,19 +731,18 @@ export default function AdminDashboard({
                 </th>
                 <th>#</th>
                 <th>اسم الضيف</th>
-                <th>رقم الجوال المفحوص</th>
-                <th>حالة الإرسال بالواتساب</th>
+                <th>رقم الجوال</th>
+                <th>حالة الإرسال</th>
                 <th>حالة الدعوة</th>
-                <th>كود التذكرة</th>
-                <th>إرسال يدوي فردي</th>
-                <th>معاينة التذكرة</th>
+                <th>إرسال الواتساب</th>
+                <th>معاينة الكرت</th>
                 <th>حذف</th>
               </tr>
             </thead>
             <tbody>
               {guests.length === 0 ? (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                  <td colSpan="9" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
                     لا يوجد مدعوين محفوظين لهذه المناسبة حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
                   </td>
                 </tr>
@@ -738,11 +771,11 @@ export default function AdminDashboard({
                       <td>
                         {guest.sent ? (
                           <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Check size={13} /> تم الإرسال 📩
+                            <Check size={13} /> تم الإرسال
                           </span>
                         ) : (
                           <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Clock size={13} /> لم يُرسل بعد ⏳
+                            <Clock size={13} /> لم يُرسل بعد
                           </span>
                         )}
                       </td>
@@ -751,10 +784,9 @@ export default function AdminDashboard({
                         {guest.status === 'declined' && <span className="ios-badge ios-badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><X size={13} /> معتذر</span>}
                         {guest.status === 'pending' && <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Clock size={13} /> بانتظار الرد</span>}
                       </td>
-                      <td><code>{guest.ticketCode}</code></td>
                       <td>
-                        <a href={waUrl} target="_blank" rel="noreferrer" className="apple-btn apple-btn-whatsapp" style={{ padding: '7px 14px', fontSize: '0.84rem' }}>
-                          <Send size={14} /> إرسال الواتساب
+                        <a href={waUrl} target="_blank" rel="noreferrer" className="apple-btn apple-btn-whatsapp" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                          <Send size={13} /> إرسال الواتساب
                         </a>
                       </td>
                       <td>
@@ -766,17 +798,17 @@ export default function AdminDashboard({
                             setActiveTab('guest');
                           }}
                         >
-                          <Eye size={14} /> معاينة كرت الضيف
+                          <Eye size={13} /> معاينة كرت الضيف
                         </button>
                       </td>
                       <td>
                         <button
                           className="apple-btn apple-btn-danger"
-                          style={{ padding: '6px 10px' }}
+                          style={{ padding: '5px 9px' }}
                           title="حذف هذا المدعو"
                           onClick={() => handleDeleteGuest(guest.id)}
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={13} />
                         </button>
                       </td>
                     </tr>
@@ -786,95 +818,6 @@ export default function AdminDashboard({
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* STEP 4: FINAL STEP - AUTOMATED WHATSAPP DISPATCHER BOX AT THE VERY BOTTOM */}
-      <div className="apple-card" style={{ background: '#ffffff', border: '2px solid var(--pink-primary)', padding: '26px', marginBottom: '32px' }}>
-        <div className="card-title-row" style={{ marginBottom: '16px' }}>
-          <h2 style={{ color: 'var(--pink-dark)', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Rocket size={24} style={{ color: 'var(--pink-primary)' }} /> 4. الإرسال التلقائي المباشر للواتساب (Auto WhatsApp Dispatcher)
-          </h2>
-          <span className="ios-badge ios-badge-pink">سيتم الإرسال لـ ({selectedGuestIds.length}) مدعو محدد</span>
-        </div>
-
-        {/* Easy Step-by-Step WhatsApp Binding Guide */}
-        <div style={{ background: 'rgba(253, 240, 244, 0.8)', borderRadius: '18px', padding: '18px 22px', border: '1px solid rgba(244, 165, 186, 0.35)', marginBottom: '22px' }}>
-          <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--pink-dark)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <HelpCircle size={20} style={{ color: 'var(--pink-primary)' }} /> كيف تقوم بربط رقمك الشخصي ليتم إرسال الدعوات تلقائياً للناس؟
-          </h3>
-          <ol style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', paddingRight: '22px', lineHeight: '1.9' }}>
-            <li>
-              افتح موقع بوابة الإرسال المعتمدة برمجياً (مثل <strong>Green-API.com</strong> أو <strong>UltraMsg.com</strong>) وقم بالتسجيل مجاناً.
-            </li>
-            <li>
-              من شاشة البوابة الرئيسية، اضغط على <strong>"Scan QR Code" (مسح رمز الـ QR)</strong>.
-            </li>
-            <li>
-              افتح تطبيق الواتساب بجوالك الشخصي ➔ افتح <strong>(الأجهزة المرتبطة)</strong> ➔ اضغط <strong>(ربط جهاز)</strong> ووجّه كاميرا جوالك للرمز.
-            </li>
-            <li>
-              انسخ <strong>Instance ID</strong> و <strong>API Token</strong> من حسابك بالبوابة وضعها في الخانتين أدناه ليتم الإرسال التلقائي فوراً برقمك للمحددين!
-            </li>
-          </ol>
-        </div>
-
-        {/* Credentials Inputs */}
-        <div className="grid-2col" style={{ gap: '16px', marginBottom: '20px' }}>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>معرف بوابة الإرسال (Instance ID) - اختياري:</label>
-            <input
-              type="text"
-              className="apple-input"
-              placeholder="مثال: 7103123456 (أو اتركه فارغاً للإرسال المباشر)"
-              value={instanceId}
-              onChange={(e) => setInstanceId(e.target.value)}
-            />
-          </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>رمز الأمان (API Token) - اختياري:</label>
-            <input
-              type="password"
-              className="apple-input"
-              placeholder="مثال: e289c878a... (أو اتركه فارغاً للإرسال المباشر)"
-              value={apiToken}
-              onChange={(e) => setApiToken(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Live Auto Sending Progress Bar */}
-        {isSendingAuto && autoProgress && (
-          <div style={{ background: 'rgba(253, 242, 245, 0.9)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(244, 165, 186, 0.4)', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 700, marginBottom: '8px', color: 'var(--pink-dark)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Loader2 size={18} className="animate-spin" style={{ color: 'var(--pink-primary)' }} />
-                جاري الإرسال الآلي لـ: {autoProgress.currentName}...
-              </span>
-              <span>{autoProgress.sent} / {autoProgress.total} رسالة</span>
-            </div>
-            <div style={{ width: '100%', height: '12px', background: 'rgba(244, 165, 186, 0.2)', borderRadius: '10px', overflow: 'hidden' }}>
-              <div style={{ width: `${(autoProgress.sent / autoProgress.total) * 100}%`, height: '100%', background: 'var(--pink-gradient)', transition: 'width 0.4s ease' }}></div>
-            </div>
-          </div>
-        )}
-
-        <button
-          type="button"
-          className="apple-btn apple-btn-pink btn-block"
-          style={{ fontSize: '1.1rem', padding: '16px', cursor: 'pointer' }}
-          onClick={handleStartAutoDispatch}
-          disabled={isSendingAuto || selectedGuestIds.length === 0}
-        >
-          {isSendingAuto ? (
-            <>
-              <Loader2 size={22} className="animate-spin" /> جاري الإرسال الآلي للمدعويين المحددين...
-            </>
-          ) : (
-            <>
-              <Rocket size={22} /> البدء بالإرسال التلقائي الفوري لـ ({selectedGuestIds.length}) مدعو محدد لمناسبة ({eventData?.title})
-            </>
-          )}
-        </button>
       </div>
     </div>
   );

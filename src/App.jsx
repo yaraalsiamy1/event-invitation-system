@@ -249,9 +249,9 @@ export default function App() {
         )}
       </main>
 
-      <footer style={{ borderTop: '1px solid var(--apple-border)', padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+      <footer style={{ borderTop: '1px solid var(--apple-border)', padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.88rem', fontWeight: 600 }}>
         <div className="apple-container">
-          نظام دعواتنا المتعدد للمناسبات وتأكيد الحضور تلقائياً عبر الواتساب &copy; 2026 — جاهز ومربوط بالنشر على Railway
+          تم تطوير النظام بواسطة YaraAlsiamy &copy; 2026 —
         </div>
       </footer>
     </div>
