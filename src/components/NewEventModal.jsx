@@ -22,21 +22,26 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!title.trim()) {
-      alert('يرجى كتابة عنوان المناسبة (مثل: حفل تخرج د. نورة)');
+    if (e && e.preventDefault) e.preventDefault();
+    
+    if (!title || !title.trim()) {
+      alert('يرجى كتابة عنوان المناسبة (مثال: حفل تخرج د. نورة الشمري)');
       return;
     }
 
-    onCreateEvent({
-      title: title.trim(),
-      type,
-      date: date || new Date().toISOString().split('T')[0],
-      time,
-      location: location.trim() || 'القاعة الرئيسية',
-      mapLink: mapLink.trim() || 'https://maps.google.com',
-      cardImage
-    });
+    try {
+      onCreateEvent({
+        title: title.trim(),
+        type: type || 'wedding',
+        date: date || new Date().toISOString().split('T')[0],
+        time: time || '20:00',
+        location: location.trim() || 'القاعة الرئيسية',
+        mapLink: mapLink.trim() || 'https://maps.google.com',
+        cardImage
+      });
+    } catch (err) {
+      console.error('Error creating new event:', err);
+    }
   };
 
   return (
@@ -106,7 +111,6 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
               placeholder="مثال: حفل تخرج د. نورة الشمري"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              required
             />
           </div>
 
@@ -145,7 +149,7 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
           <div class="form-group" style={{ marginBottom: '16px' }}>
             <label>رابط اللوكيشن في خرائط جوجل:</label>
             <input
-              type="url"
+              type="text"
               class="apple-input"
               style={{ direction: 'ltr', textAlign: 'right' }}
               placeholder="https://maps.google.com/..."
@@ -170,7 +174,12 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
             </div>
           </div>
 
-          <button type="submit" class="apple-btn apple-btn-pink btn-block" style={{ padding: '14px' }}>
+          <button
+            type="button"
+            class="apple-btn apple-btn-pink btn-block"
+            style={{ padding: '14px', fontSize: '1rem', cursor: 'pointer' }}
+            onClick={handleSubmit}
+          >
             <Plus size={18} /> إنشاء المناسبة والبدء بإضافة المدعوين
           </button>
         </form>

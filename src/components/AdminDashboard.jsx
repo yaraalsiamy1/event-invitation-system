@@ -513,11 +513,11 @@ export default function AdminDashboard({
                 <div class="form-group">
                   <label>رابط اللوكيشن في خرائط جوجل (Google Maps)</label>
                   <input
-                    type="url"
+                    type="text"
                     class="apple-input"
                     style={{ direction: 'ltr', textAlign: 'right' }}
                     value={eventData?.mapLink || ''}
-                    onChange={(e) => setEventData({ ...eventData, mapLink: e.target.value })}
+                    onChange={(e) => setEventData({ ...(eventData || {}), mapLink: e.target.value })}
                   />
                 </div>
 
@@ -553,7 +553,7 @@ export default function AdminDashboard({
                   </div>
                 </div>
 
-                <button type="submit" class="apple-btn apple-btn-pink btn-block" style={{ marginTop: '10px' }}>
+                <button type="button" onClick={handleEventSubmit} class="apple-btn apple-btn-pink btn-block" style={{ marginTop: '10px', cursor: 'pointer' }}>
                   حفظ تفاصيل المناسبة والكرت
                 </button>
               </form>
