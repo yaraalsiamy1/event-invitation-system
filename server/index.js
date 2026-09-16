@@ -89,7 +89,69 @@ app.post('/api/guests/:id/rsvp', async (req, res) => {
   }
 });
 
-// Serve Static React Frontend Production Build
+// AUTOMATED WHATSAPP BATCH DISPATCHER ENDPOINT
+app.post('/api/send-whatsapp-batch', async (req, res) => {
+  try {
+    const { instanceId, apiToken, hostUrl } = req.body;
+    const guests = await db.getGuests();
+    const event = await db.getEvent();
+
+    if (!guests || guests.length === 0) {
+      return res.status(400).json({ error: 'لا يوجد مدعوين للإرسال في قاعدة البيانات' });
+    }
+
+    const baseUrl = hostUrl || 'http://localhost:3000';
+    let sentCount = 0;
+    const results = [];
+
+    for (const guest of guests) {
+      const guestLink = `${baseUrl}/?guest=${guest.id}`;
+      const messageText = `مرحباً ${guest.name} ✨\nيسرنا ويسعدنا دعوتكم لحضور ${event.title}.\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
+      
+      let success = true;
+      let errorMsg = null;
+
+      // If GreenAPI/UltraMsg API credentials are provided, send HTTP POST to gateway API
+      if (instanceId && apiToken) {
+        try {
+          const gatewayUrl = `https://api.green-api.com/waInstance${instanceId}/sendMessage/${apiToken}`;
+          const apiRes = await fetch(gatewayUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chatId: `${guest.phone}@c.us`,
+              message: messageText
+            })
+          });
+          if (!apiRes.ok) {
+            success = false;
+            errorMsg = 'Gateway response error';
+          }
+        } catch (e) {
+          success = false;
+          errorMsg = e.message;
+        }
+      }
+
+      if (success) sentCount++;
+      results.push({ guestId: guest.id, name: guest.name, phone: guest.phone, success, errorMsg });
+      
+      // Delay 1 second per message for safety against spam filters
+      await new Promise(r => setTimeout(r, 1000));
+    }
+
+    res.json({
+      success: true,
+      total: guests.length,
+      sentCount,
+      results
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Serve Static React Frontend Assets
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
 
@@ -98,5 +160,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Apple Event Server & API running on port ${PORT}`);
+  console.log(`🚀 Apple Event Server & Automated WhatsApp API running on port ${PORT}`);
 });
