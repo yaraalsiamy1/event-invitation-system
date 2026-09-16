@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2 } from 'lucide-react';
+import ExcelValidationModal from './ExcelValidationModal';
 
 export default function AdminDashboard({ eventData, setEventData, guests, setGuests, setActiveGuestId, setActiveTab, refreshData }) {
   const [batchText, setBatchText] = useState('');
   const [previewCardImg, setPreviewCardImg] = useState(eventData.cardImage || null);
   
+  // Validation Modal state
+  const [pendingExcelRows, setPendingExcelRows] = useState(null);
+
   // WhatsApp Auto Gateway Credentials
   const [instanceId, setInstanceId] = useState(localStorage.getItem('wa_instance_id') || '');
   const [apiToken, setApiToken] = useState(localStorage.getItem('wa_api_token') || '');
@@ -67,13 +71,13 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
     }
   };
 
-  // Parse Uploaded Excel (.xlsx / .xls / .csv) File with SheetJS matching "تمبلت الدعوات.xlsx"
+  // Parse Uploaded Excel (.xlsx / .xls / .csv) File & Trigger Validation Modal
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (event) => {
+    reader.onload = (event) => {
       try {
         const data = new Uint8Array(event.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
@@ -81,7 +85,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
         const worksheet = workbook.Sheets[firstSheetName];
         const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        const newGuests = [];
+        const extractedRows = [];
         jsonRows.forEach((row) => {
           if (!row || row.length === 0) return;
           
@@ -108,23 +112,17 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
           });
 
           if (phoneRaw && name !== 'اسم الضيف' && name !== 'الاسم') {
-            newGuests.push({
-              id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
+            extractedRows.push({
               name: name || "ضيف عزيز",
-              phone: formatPhone(phoneRaw),
-              status: "pending",
-              ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
-              checkedIn: false,
-              checkInTime: null
+              phone: phoneRaw
             });
           }
         });
 
-        if (newGuests.length > 0) {
-          await saveBatchToApi(newGuests);
-          alert(`تم استيراد وحفظ ${newGuests.length} مدعو بنجاح من ملف "تمبلت الدعوات.xlsx"!`);
+        if (extractedRows.length > 0) {
+          setPendingExcelRows(extractedRows);
         } else {
-          alert('لم يتم العثور على أرقام وأسماء مدعوين صالحة في ملف الإكسل. يرجى التأكد من رفع ملف "تمبلت الدعوات.xlsx" بعد تعبئته.');
+          alert('لم يتم العثور على بيانات مدعوين صالحة في ملف الإكسل. يرجى التأكد من تعبئة تمبلت الدعوات.xlsx.');
         }
       } catch (err) {
         alert('حدث خطأ أثناء قراءة ملف الإكسل. يرجى التأكد من رفع ملف XLSX صالحة.');
@@ -132,6 +130,13 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
     };
     reader.readAsArrayBuffer(file);
     e.target.value = '';
+  };
+
+  // Confirm Save Validated Excel Guests to DB
+  const handleConfirmValidationSave = async (validGuests) => {
+    setPendingExcelRows(null);
+    await saveBatchToApi(validGuests);
+    alert(`تم فتح وتدقيق واعتماد ${validGuests.length} مدعو بنجاح في قاعدة البيانات!`);
   };
 
   // Process Batch Text Entry
@@ -237,6 +242,15 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
 
   return (
     <div class="apple-dashboard">
+
+      {/* EXCEL VALIDATION MODAL OVERLAY */}
+      {pendingExcelRows && (
+        <ExcelValidationModal
+          rawRows={pendingExcelRows}
+          onConfirmSave={handleConfirmValidationSave}
+          onClose={() => setPendingExcelRows(null)}
+        />
+      )}
 
       {/* AUTOMATED WHATSAPP DISPATCHER BOX */}
       <div class="apple-card" style={{ background: '#ffffff', border: '2px solid var(--rose-primary)', padding: '22px', marginBottom: '24px' }}>
@@ -445,11 +459,11 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
           {/* Excel Import & User Template */}
           <div class="apple-card">
             <div class="card-title-row">
-              <h2><FileSpreadsheet class="system-gold" size={20} /> استيراد الأرقام من (تمبلت الدعوات.xlsx)</h2>
+              <h2><FileSpreadsheet class="system-gold" size={20} /> استيراد ومراجعة الإكسل (تمبلت الدعوات.xlsx)</h2>
             </div>
             
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-              يمكنك تحميل ملفك الأصلي <code>تمبلت الدعوات.xlsx</code> وتعبئة الأسماء والأرقام فيه ثم رفعه فوراً.
+              عند اختيار الملف تظهر لك شاشة تحقق لمراجعة صحة الأرقام وتعديل الأخطاء قبل الحفظ النهائي.
             </p>
 
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -458,7 +472,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
               </button>
 
               <label class="apple-btn apple-btn-pink" style={{ flex: 1, cursor: 'pointer' }}>
-                <FileSpreadsheet size={16} /> رفع تمبلت الدعوات ومزامنة
+                <FileSpreadsheet size={16} /> رفع ومراجعة الإكسل
                 <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ display: 'none' }} />
               </label>
             </div>
@@ -487,8 +501,8 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
       <div class="apple-card" style={{ marginTop: '20px' }}>
         <div class="card-title-row">
           <div>
-            <h2>قائمة المدعوين وحالة الإرسال</h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>قائمة المدعوين المسجلة من ملف تمبلت الدعوات وجاهزة للإرسال الآلي</p>
+            <h2>قائمة المدعوين المفحوصة والمحفوظة في قاعدة البيانات</h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>قائمة المدعوين المعتمدة وجاهزة للإرسال الآلي</p>
           </div>
           {guests.length > 0 && (
             <button class="apple-btn apple-btn-danger" onClick={handleClearAll} style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
@@ -503,7 +517,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
               <tr>
                 <th>#</th>
                 <th>اسم الضيف</th>
-                <th>رقم الجوال</th>
+                <th>رقم الجوال المفحوص</th>
                 <th>حالة الدعوة</th>
                 <th>كود التذكرة</th>
                 <th>إرسال يدوي فردي</th>
@@ -514,7 +528,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
               {guests.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
-                    لا يوجد مدعوين حالياً. قم برفع تمبلت الدعوات.xlsx للبدء بالإرسال التلقائي.
+                    لا يوجد مدعوين محفطوين حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
                   </td>
                 </tr>
               ) : (
