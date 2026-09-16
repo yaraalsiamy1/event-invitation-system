@@ -39,6 +39,44 @@ export default function AdminDashboard({
   // Checkbox selection state for batch sending
   const [selectedGuestIds, setSelectedGuestIds] = useState([]);
 
+  // Pagination State (50 records per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeEventId]);
+
+  // Render single unified status badge per guest
+  const renderSingleStatus = (guest) => {
+    if (guest.status === 'accepted') {
+      return (
+        <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+          <Check size={13} /> مقبول
+        </span>
+      );
+    }
+    if (guest.status === 'declined') {
+      return (
+        <span className="ios-badge ios-badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+          <X size={13} /> معتذر
+        </span>
+      );
+    }
+    if (guest.sent) {
+      return (
+        <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+          <Check size={13} /> تم الإرسال
+        </span>
+      );
+    }
+    return (
+      <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+        <Clock size={13} /> لم يُرسل بعد
+      </span>
+    );
+  };
+
   // Auto-sync selection state when guests change
   useEffect(() => {
     if (guests && guests.length > 0) {
@@ -657,46 +695,48 @@ export default function AdminDashboard({
 
       {/* STREAMLINED GUESTS TABLE CARD */}
       <div className="apple-card" style={{ marginBottom: '28px' }}>
-        <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '12px' }}>
+        <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
           <div>
             <h2>3. قائمة المدعوين المفحوصة والمحفوظة لمناسبة ({eventData?.title})</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>حدد المدعوين الذين ترغب في إرسال الدعوة لهم تلقائياً</p>
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.84rem', padding: '6px 14px', fontWeight: 800 }}>
-              تم تحديد ({selectedGuestIds.length}) من أصل ({guests.length})
-            </span>
-            <button className="apple-btn apple-btn-secondary" onClick={handleToggleSelectAll} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
-              {isAllSelected ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
-            </button>
-            <button className="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
-              تحديد غير المرسل لهم فقط
-            </button>
 
-            {/* Auto Dispatch Rocket Button integrated in Table Header */}
-            <button
-              type="button"
-              className="apple-btn apple-btn-pink"
-              style={{ padding: '8px 16px', fontSize: '0.88rem', fontWeight: 700 }}
-              onClick={handleStartAutoDispatch}
-              disabled={isSendingAuto || selectedGuestIds.length === 0}
-            >
-              {isSendingAuto ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" /> جاري الإرسال الآلي...
-                </>
-              ) : (
-                <>
-                  <Rocket size={16} /> بدء الإرسال التلقائي ({selectedGuestIds.length})
-                </>
-              )}
-            </button>
-
-            {guests.length > 0 && (
-              <button className="apple-btn apple-btn-danger" onClick={handleClearAll} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
-                مسح القائمة
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', width: '100%', justifyContent: 'space-between', marginTop: '4px' }}>
+            {/* Right side controls */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.84rem', padding: '6px 14px', fontWeight: 800 }}>
+                تم تحديد ({selectedGuestIds.length}) من أصل ({guests.length})
+              </span>
+              <button className="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
+                تحديد غير المرسل لهم فقط
               </button>
-            )}
+              {guests.length > 0 && (
+                <button className="apple-btn apple-btn-danger" onClick={handleClearAll} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
+                  مسح القائمة
+                </button>
+              )}
+            </div>
+
+            {/* Left side standing alone: Rocket Auto Dispatch Button */}
+            <div>
+              <button
+                type="button"
+                className="apple-btn apple-btn-pink"
+                style={{ padding: '8px 18px', fontSize: '0.88rem', fontWeight: 800, boxShadow: '0 4px 14px rgba(244, 165, 186, 0.4)' }}
+                onClick={handleStartAutoDispatch}
+                disabled={isSendingAuto || selectedGuestIds.length === 0}
+              >
+                {isSendingAuto ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> جاري الإرسال الآلي...
+                  </>
+                ) : (
+                  <>
+                    <Rocket size={16} /> بدء الإرسال التلقائي ({selectedGuestIds.length})
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -716,97 +756,129 @@ export default function AdminDashboard({
           </div>
         )}
 
-        <div style={{ overflowX: 'auto', marginTop: '12px' }}>
-          <table className="apple-table">
-            <thead>
-              <tr>
-                <th style={{ width: '40px', textAlign: 'center' }}>
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={handleToggleSelectAll}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--pink-primary)' }}
-                    title="تحديد / إلغاء تحديد الكل"
-                  />
-                </th>
-                <th>#</th>
-                <th>اسم الضيف</th>
-                <th>رقم الجوال</th>
-                <th>الحالة</th>
-                <th>معاينة الكرت</th>
-                <th>حذف</th>
-              </tr>
-            </thead>
-            <tbody>
-              {guests.length === 0 ? (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
-                    لا يوجد مدعوين محفوظين لهذه المناسبة حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
-                  </td>
-                </tr>
-              ) : (
-                guests.map((guest, idx) => {
-                  const isChecked = selectedGuestIds.includes(guest.id);
+        {/* Paginated Calculations */}
+        {(() => {
+          const totalPages = Math.max(1, Math.ceil((guests || []).length / pageSize));
+          const safePage = Math.min(currentPage, totalPages);
+          const startIndex = (safePage - 1) * pageSize;
+          const paginatedGuests = (guests || []).slice(startIndex, startIndex + pageSize);
 
-                  return (
-                    <tr key={guest.id} style={{ background: isChecked ? 'rgba(253, 242, 245, 0.4)' : 'transparent' }}>
-                      <td style={{ textAlign: 'center' }}>
+          return (
+            <>
+              <div style={{ overflowX: 'auto', marginTop: '12px' }}>
+                <table className="apple-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '40px', textAlign: 'center' }}>
                         <input
                           type="checkbox"
-                          checked={isChecked}
-                          onChange={() => handleToggleSelectGuest(guest.id)}
+                          checked={isAllSelected}
+                          onChange={handleToggleSelectAll}
                           style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--pink-primary)' }}
+                          title="تحديد / إلغاء تحديد الكل"
                         />
-                      </td>
-                      <td>{idx + 1}</td>
-                      <td><strong>{guest.name}</strong></td>
-                      <td dir="ltr">{guest.phone}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                          {guest.sent ? (
-                            <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}>
-                              <Check size={12} /> تم الإرسال
-                            </span>
-                          ) : (
-                            <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}>
-                              <Clock size={12} /> لم يُرسل بعد
-                            </span>
-                          )}
-
-                          {guest.status === 'accepted' && <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}><Check size={12} /> مقبول</span>}
-                          {guest.status === 'declined' && <span className="ios-badge ios-badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}><X size={12} /> معتذر</span>}
-                          {guest.status === 'pending' && <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}><Clock size={12} /> بانتظار الرد</span>}
-                        </div>
-                      </td>
-                      <td>
-                        <button
-                          className="apple-btn apple-btn-secondary"
-                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                          onClick={() => {
-                            setActiveGuestId(guest.id);
-                            setActiveTab('guest');
-                          }}
-                        >
-                          <Eye size={13} /> معاينة كرت الضيف
-                        </button>
-                      </td>
-                      <td>
-                        <button
-                          className="apple-btn apple-btn-danger"
-                          style={{ padding: '5px 9px' }}
-                          title="حذف هذا المدعو"
-                          onClick={() => handleDeleteGuest(guest.id)}
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </td>
+                      </th>
+                      <th>#</th>
+                      <th>اسم الضيف</th>
+                      <th>رقم الجوال</th>
+                      <th>الحالة</th>
+                      <th>معاينة الكرت</th>
+                      <th>حذف</th>
                     </tr>
-                  );
-                })
+                  </thead>
+                  <tbody>
+                    {guests.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                          لا يوجد مدعوين محفوظين لهذه المناسبة حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedGuests.map((guest, idx) => {
+                        const isChecked = selectedGuestIds.includes(guest.id);
+                        const displayIndex = startIndex + idx + 1;
+
+                        return (
+                          <tr key={guest.id} style={{ background: isChecked ? 'rgba(253, 242, 245, 0.4)' : 'transparent' }}>
+                            <td style={{ textAlign: 'center' }}>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleToggleSelectGuest(guest.id)}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--pink-primary)' }}
+                              />
+                            </td>
+                            <td>{displayIndex}</td>
+                            <td><strong>{guest.name}</strong></td>
+                            <td dir="ltr">{guest.phone}</td>
+                            <td>
+                              {renderSingleStatus(guest)}
+                            </td>
+                            <td>
+                              <button
+                                className="apple-btn apple-btn-secondary"
+                                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                                onClick={() => {
+                                  setActiveGuestId(guest.id);
+                                  setActiveTab('guest');
+                                }}
+                              >
+                                <Eye size={13} /> معاينة كرت الضيف
+                              </button>
+                            </td>
+                            <td>
+                              <button
+                                className="apple-btn apple-btn-danger"
+                                style={{ padding: '5px 9px' }}
+                                title="حذف هذا المدعو"
+                                onClick={() => handleDeleteGuest(guest.id)}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls (50 per page) */}
+              {guests.length > pageSize && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(244, 165, 186, 0.2)', flexWrap: 'wrap', gap: '10px' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    عرض {startIndex + 1} - {Math.min(startIndex + pageSize, guests.length)} من أصل {guests.length} مدعو
+                  </span>
+
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <button
+                      className="apple-btn apple-btn-secondary"
+                      style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={safePage === 1}
+                    >
+                      السابقة
+                    </button>
+
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, padding: '0 10px', color: 'var(--pink-dark)' }}>
+                      صفحة {safePage} من {totalPages}
+                    </span>
+
+                    <button
+                      className="apple-btn apple-btn-secondary"
+                      style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={safePage === totalPages}
+                    >
+                      التالية
+                    </button>
+                  </div>
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
+            </>
+          );
+        })()}
       </div>
     </div>
   );
