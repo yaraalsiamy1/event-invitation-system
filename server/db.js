@@ -194,17 +194,14 @@ class MultiEventJSONDatabase {
     const uniqueNew = [];
 
     (newGuests || []).forEach(g => {
-      const gName = (g.name || '').trim().toLowerCase();
       const gPhone = (g.phone || '').trim();
 
       const isDup = existing.some(e => {
-        const eName = (e.name || '').trim().toLowerCase();
         const ePhone = (e.phone || '').trim();
-        return (gPhone && ePhone === gPhone) || (gName && eName === gName);
+        return gPhone && ePhone === gPhone;
       }) || uniqueNew.some(u => {
-        const uName = (u.name || '').trim().toLowerCase();
         const uPhone = (u.phone || '').trim();
-        return (gPhone && uPhone === gPhone) || (gName && uName === gName);
+        return gPhone && uPhone === gPhone;
       });
 
       if (!isDup) {

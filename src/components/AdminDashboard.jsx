@@ -249,7 +249,6 @@ export default function AdminDashboard({
     const lines = batchText.trim().split('\n');
     const newGuests = [];
     const existingPhones = new Set((guests || []).map(g => (g.phone || '').trim()));
-    const existingNames = new Set((guests || []).map(g => (g.name || '').trim().toLowerCase()));
 
     let skippedDups = 0;
 
@@ -268,16 +267,14 @@ export default function AdminDashboard({
 
       const formattedPhone = formatPhone(phoneRaw);
       const cleanName = name || "ضيف عزيز";
-      const lowerName = cleanName.toLowerCase();
 
       if (formattedPhone) {
-        if (existingPhones.has(formattedPhone) || existingNames.has(lowerName)) {
+        if (existingPhones.has(formattedPhone)) {
           skippedDups++;
           return;
         }
 
         existingPhones.add(formattedPhone);
-        existingNames.add(lowerName);
 
         newGuests.push({
           id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 100000),

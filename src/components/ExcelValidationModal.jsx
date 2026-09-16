@@ -16,43 +16,33 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
   // Validate items list including duplicate detection against existing DB and self-duplicates
   const runValidation = (rawList) => {
     const seenPhones = new Set();
-    const seenNames = new Set();
 
-    // Collect existing DB phones & names
+    // Collect existing DB phones
     (existingGuests || []).forEach(g => {
       if (g.phone) seenPhones.add(g.phone.trim());
-      if (g.name) seenNames.add(g.name.trim().toLowerCase());
     });
 
     return rawList.map((item) => {
       const formattedPhone = formatPhone(item.phone);
       const cleanName = (item.name || '').trim();
-      const lowerName = cleanName.toLowerCase();
 
       const isValidPhone = formattedPhone.length >= 11 && formattedPhone.length <= 13 && formattedPhone.startsWith('9665');
-      const isValidName = cleanName.length > 1;
+      const isValidName = cleanName.length >= 1;
 
-      // Duplicate Check
-      const isDupPhone = isValidPhone && seenPhones.has(formattedPhone);
-      const isDupName = isValidName && seenNames.has(lowerName);
-      const isDuplicate = isDupPhone || isDupName;
+      // Duplicate Check (by phone number only)
+      const isDuplicate = isValidPhone && seenPhones.has(formattedPhone);
 
-      // Mark seen for self-duplication inside the same file
+      // Mark phone seen for self-duplication inside the same file
       if (isValidPhone) seenPhones.add(formattedPhone);
-      if (isValidName) seenNames.add(lowerName);
 
       let errorMsg = null;
-      if (!isValidName) errorMsg = 'اسم الضيف غير مدخل أو قصير جداً';
+      if (!isValidName) errorMsg = 'اسم الضيف غير مدخل';
       else if (!isValidPhone) errorMsg = 'رقم غير مكتمل (يجب أن يبدأ بـ 05 ويتكون من 10 أرقام)';
-      else if (isDuplicate) {
-        if (isDupPhone && isDupName) errorMsg = 'مكرر: الاسم ورقم الجوال موجودان مسبقاً';
-        else if (isDupPhone) errorMsg = 'مكرر: رقم الجوال موجود مسبقاً في البيانات';
-        else errorMsg = 'مكرر: اسم الضيف موجود مسبقاً في البيانات';
-      }
+      else if (isDuplicate) errorMsg = 'مكرر: رقم الجوال موجود مسبقاً في البيانات';
 
       return {
         ...item,
-        name: cleanName,
+        name: cleanName || "ضيف عزيز",
         phone: formattedPhone || item.phone,
         isValid: isValidPhone && isValidName && !isDuplicate,
         isDuplicate,
