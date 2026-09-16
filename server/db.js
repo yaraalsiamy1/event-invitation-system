@@ -1,7 +1,12 @@
-import pkg from 'pg';
-const { Pool } = pkg;
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Default Event & Sample Guests Data
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DB_FILE = path.join(__dirname, '../data_invitation.json');
+
+// Default Data
 const DEFAULT_EVENT = {
   id: "event_main",
   title: "حفل زفاف عبدالمجيد و سارة",
@@ -19,154 +24,93 @@ const DEFAULT_GUESTS = [
   { id: "g_4", name: "د. سارة الشمري", phone: "966567778899", status: "accepted", companions: 3, ticketCode: "EV-778899", checkedIn: false, checkInTime: null }
 ];
 
-// In-Memory Storage Fallback if DB connection is offline locally
-class LocalFallbackDB {
+// Lightweight File-based JSON Database (No heavy database server required!)
+class LightweightJSONDatabase {
   constructor() {
-    this.eventData = { ...DEFAULT_EVENT };
-    this.guests = [...DEFAULT_GUESTS];
+    this.init();
   }
 
-  async getEvent() { return this.eventData; }
-  async updateEvent(data) { this.eventData = { ...this.eventData, ...data }; return this.eventData; }
-  async getGuests() { return this.guests; }
-  async addGuests(newGuests) { this.guests = [...this.guests, ...newGuests]; return this.guests; }
-  async clearGuests() { this.guests = []; return []; }
-  async deleteGuest(id) { this.guests = this.guests.filter(g => g.id !== id); return true; }
-  async getGuestById(id) { return this.guests.find(g => g.id === id) || null; }
+  init() {
+    if (!fs.existsSync(DB_FILE)) {
+      const initialData = {
+        event: DEFAULT_EVENT,
+        guests: DEFAULT_GUESTS
+      };
+      fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf8');
+      console.log('⚡ Lightweight JSON Database initialized at:', DB_FILE);
+    }
+  }
+
+  read() {
+    try {
+      if (fs.existsSync(DB_FILE)) {
+        const raw = fs.readFileSync(DB_FILE, 'utf8');
+        return JSON.parse(raw);
+      }
+    } catch (e) {}
+    return { event: DEFAULT_EVENT, guests: DEFAULT_GUESTS };
+  }
+
+  write(data) {
+    try {
+      fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {}
+  }
+
+  async getEvent() {
+    const data = this.read();
+    return data.event || DEFAULT_EVENT;
+  }
+
+  async updateEvent(newEv) {
+    const data = this.read();
+    data.event = { ...data.event, ...newEv };
+    this.write(data);
+    return data.event;
+  }
+
+  async getGuests() {
+    const data = this.read();
+    return data.guests || [];
+  }
+
+  async addGuests(newGuests) {
+    const data = this.read();
+    data.guests = [...(data.guests || []), ...newGuests];
+    this.write(data);
+    return data.guests;
+  }
+
+  async clearGuests() {
+    const data = this.read();
+    data.guests = [];
+    this.write(data);
+    return [];
+  }
+
+  async deleteGuest(id) {
+    const data = this.read();
+    data.guests = (data.guests || []).filter(g => g.id !== id);
+    this.write(data);
+    return true;
+  }
+
+  async getGuestById(id) {
+    const data = this.read();
+    return (data.guests || []).find(g => g.id === id) || null;
+  }
+
   async updateGuestRSVP(id, status, companions) {
-    const guest = this.guests.find(g => g.id === id);
+    const data = this.read();
+    const guest = (data.guests || []).find(g => g.id === id);
     if (guest) {
       guest.status = status;
       if (companions) guest.companions = companions;
+      this.write(data);
       return guest;
     }
     return null;
   }
 }
 
-class RailwayDatabase {
-  constructor() {
-    this.usePg = Boolean(process.env.DATABASE_URL);
-    if (this.usePg) {
-      this.pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-      });
-      this.initPgTables();
-    } else {
-      console.log('⚡ Running with In-Memory / Local Storage engine (Railway PostgreSQL will auto-enable when DATABASE_URL is attached on Railway)');
-      this.localDb = new LocalFallbackDB();
-    }
-  }
-
-  async initPgTables() {
-    try {
-      await this.pool.query(`
-        CREATE TABLE IF NOT EXISTS events (
-          id VARCHAR(50) PRIMARY KEY,
-          title TEXT,
-          date TEXT,
-          time TEXT,
-          location TEXT,
-          map_link TEXT,
-          card_image TEXT
-        );
-      `);
-
-      await this.pool.query(`
-        CREATE TABLE IF NOT EXISTS guests (
-          id VARCHAR(50) PRIMARY KEY,
-          name TEXT,
-          phone TEXT,
-          status VARCHAR(20),
-          companions INT,
-          ticket_code VARCHAR(20),
-          checked_in BOOLEAN DEFAULT FALSE,
-          check_in_time TEXT
-        );
-      `);
-
-      // Seed if empty
-      const res = await this.pool.query(`SELECT COUNT(*) FROM events`);
-      if (parseInt(res.rows[0].count, 10) === 0) {
-        await this.pool.query(
-          `INSERT INTO events (id, title, date, time, location, map_link, card_image) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [DEFAULT_EVENT.id, DEFAULT_EVENT.title, DEFAULT_EVENT.date, DEFAULT_EVENT.time, DEFAULT_EVENT.location, DEFAULT_EVENT.mapLink, DEFAULT_EVENT.cardImage]
-        );
-        for (const g of DEFAULT_GUESTS) {
-          await this.pool.query(
-            `INSERT INTO guests (id, name, phone, status, companions, ticket_code, checked_in, check_in_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [g.id, g.name, g.phone, g.status, g.companions, g.ticketCode, g.checkedIn, g.checkInTime]
-          );
-        }
-      }
-      console.log('✅ Railway PostgreSQL database initialized successfully!');
-    } catch (err) {
-      console.error('PostgreSQL init error:', err);
-      this.usePg = false;
-      this.localDb = new LocalFallbackDB();
-    }
-  }
-
-  async getEvent() {
-    if (!this.usePg) return this.localDb.getEvent();
-    const res = await this.pool.query(`SELECT id, title, date, time, location, map_link AS "mapLink", card_image AS "cardImage" FROM events LIMIT 1`);
-    return res.rows[0] || DEFAULT_EVENT;
-  }
-
-  async updateEvent(data) {
-    if (!this.usePg) return this.localDb.updateEvent(data);
-    await this.pool.query(
-      `UPDATE events SET title=$1, date=$2, time=$3, location=$4, map_link=$5, card_image=$6 WHERE id=$7`,
-      [data.title, data.date, data.time, data.location, data.mapLink, data.cardImage, DEFAULT_EVENT.id]
-    );
-    return this.getEvent();
-  }
-
-  async getGuests() {
-    if (!this.usePg) return this.localDb.getGuests();
-    const res = await this.pool.query(`SELECT id, name, phone, status, companions, ticket_code AS "ticketCode", checked_in AS "checkedIn", check_in_time AS "checkInTime" FROM guests ORDER BY id DESC`);
-    return res.rows;
-  }
-
-  async addGuests(newGuests) {
-    if (!this.usePg) return this.localDb.addGuests(newGuests);
-    for (const g of newGuests) {
-      await this.pool.query(
-        `INSERT INTO guests (id, name, phone, status, companions, ticket_code, checked_in, check_in_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (id) DO UPDATE SET name=$2, phone=$3, status=$4, companions=$5`,
-        [g.id, g.name, g.phone, g.status || 'pending', g.companions || 1, g.ticketCode, false, null]
-      );
-    }
-    return this.getGuests();
-  }
-
-  async clearGuests() {
-    if (!this.usePg) return this.localDb.clearGuests();
-    await this.pool.query(`DELETE FROM guests`);
-    return [];
-  }
-
-  async deleteGuest(id) {
-    if (!this.usePg) return this.localDb.deleteGuest(id);
-    await this.pool.query(`DELETE FROM guests WHERE id=$1`, [id]);
-    return true;
-  }
-
-  async getGuestById(id) {
-    if (!this.usePg) return this.localDb.getGuestById(id);
-    const res = await this.pool.query(`SELECT id, name, phone, status, companions, ticket_code AS "ticketCode", checked_in AS "checkedIn", check_in_time AS "checkInTime" FROM guests WHERE id=$1`, [id]);
-    return res.rows[0] || null;
-  }
-
-  async updateGuestRSVP(id, status, companions) {
-    if (!this.usePg) return this.localDb.updateGuestRSVP(id, status, companions);
-    await this.pool.query(
-      `UPDATE guests SET status=$1, companions=$2 WHERE id=$3`,
-      [status, companions || 1, id]
-    );
-    return this.getGuestById(id);
-  }
-}
-
-export const db = new RailwayDatabase();
+export const db = new LightweightJSONDatabase();
