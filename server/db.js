@@ -14,14 +14,14 @@ class MultiEventJSONDatabase {
   init() {
     const createDefault = () => {
       const defaultEv = {
-        id: "ev_default",
-        title: "حفل زفاف د. محمد و أ. نورة",
+        id: "ev_1789587103668_307",
+        title: "عقد قران تركي قاري & لمار السيامي",
         type: "wedding",
-        date: new Date().toISOString().split('T')[0],
+        date: "2026-09-30",
         time: "20:00",
-        location: "قاعة الفخامة الكبرى - الرياض",
-        mapLink: "https://maps.google.com",
-        cardImage: null,
+        location: "قاعة ميلا | مكة-العوالي",
+        mapLink: "https://maps.app.goo.gl/eGuQzLPJbqEkNk1W6",
+        cardImage: "/uploads/card_ev_1789587103668_307_1789592678834.jpg",
         guests: []
       };
       return { activeEventId: defaultEv.id, events: [defaultEv] };
@@ -41,14 +41,14 @@ class MultiEventJSONDatabase {
   read() {
     const createDefault = () => {
       const defaultEv = {
-        id: "ev_default",
-        title: "حفل زفاف د. محمد و أ. نورة",
+        id: "ev_1789587103668_307",
+        title: "عقد قران تركي قاري & لمار السيامي",
         type: "wedding",
-        date: new Date().toISOString().split('T')[0],
+        date: "2026-09-30",
         time: "20:00",
-        location: "قاعة الفخامة الكبرى - الرياض",
-        mapLink: "https://maps.google.com",
-        cardImage: null,
+        location: "قاعة ميلا | مكة-العوالي",
+        mapLink: "https://maps.app.goo.gl/eGuQzLPJbqEkNk1W6",
+        cardImage: "/uploads/card_ev_1789587103668_307_1789592678834.jpg",
         guests: []
       };
       return { activeEventId: defaultEv.id, events: [defaultEv] };
@@ -177,14 +177,14 @@ class MultiEventJSONDatabase {
     }
     if (!ev) {
       ev = {
-        id: "ev_default",
-        title: "حفل زفاف د. محمد و أ. نورة",
+        id: "ev_1789587103668_307",
+        title: "عقد قران تركي قاري & لمار السيامي",
         type: "wedding",
-        date: new Date().toISOString().split('T')[0],
+        date: "2026-09-30",
         time: "20:00",
-        location: "قاعة الفخامة الكبرى - الرياض",
-        mapLink: "https://maps.google.com",
-        cardImage: null,
+        location: "قاعة ميلا | مكة-العوالي",
+        mapLink: "https://maps.app.goo.gl/eGuQzLPJbqEkNk1W6",
+        cardImage: "/uploads/card_ev_1789587103668_307_1789592678834.jpg",
         guests: []
       };
       data.events = [ev];
