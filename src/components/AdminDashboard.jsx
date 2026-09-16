@@ -513,7 +513,6 @@ export default function AdminDashboard({
               <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <BarChart3 size={20} style={{ color: 'var(--pink-primary)' }} /> المؤشرات الإحصائية الحية لمناسبة ({eventData?.title || 'المناسبة الحالية'})
               </h2>
-              <span className="ios-badge ios-badge-pink">تحديث مباشر لحظي</span>
             </div>
             <div className="widgets-grid">
               <div className="apple-widget">
@@ -547,8 +546,8 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          {/* STEP 1 & 2: SETUP EVENT & EXCEL UPLOAD GRID */}
-          <div className="grid-2col" style={{ gap: '20px' }}>
+          {/* STEP 1 & 2: SETUP EVENT & EXCEL UPLOAD STACK */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
             {/* Form 1: Event Details & Card Upload */}
             <div className="apple-card" style={{ marginBottom: 0 }}>

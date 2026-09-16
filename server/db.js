@@ -252,8 +252,11 @@ class MultiEventJSONDatabase {
     for (const ev of (data.events || [])) {
       const guest = (ev.guests || []).find(g => g.id === guestId);
       if (guest) {
-        guest.status = status;
-        this.write(data);
+        // Only allow changing RSVP status if guest status is currently pending or empty
+        if (!guest.status || guest.status === 'pending') {
+          guest.status = status;
+          this.write(data);
+        }
         return { guest, event: ev };
       }
     }

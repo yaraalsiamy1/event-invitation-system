@@ -98,7 +98,7 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
           {/* Header Tag */}
           <div style={{ textAlign: 'center' }}>
             <span className="ios-badge ios-badge-pink" style={{ padding: '6px 18px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <Mail size={16} /> دعوة خاصة رسمية
+              <Mail size={16} /> دعوة خاصة
             </span>
           </div>
 
@@ -171,10 +171,7 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
             <div className="apple-card" style={{ padding: '24px', textAlign: 'center', borderColor: 'var(--system-red)' }}>
               <HeartHandshake size={52} style={{ color: 'var(--system-red)', margin: '0 auto 12px' }} />
               <h3 style={{ color: 'var(--system-red)', marginBottom: '6px', fontSize: '1.25rem', fontWeight: 800 }}>تم تسجيل اعتذارك بنجاح</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>نشكرك على إبلاغنا ونتمنى لك كل التوفيق.</p>
-              <button className="apple-btn apple-btn-secondary" style={{ fontSize: '0.85rem', padding: '8px 16px' }} onClick={() => handleRSVP('pending')}>
-                تغيير الرغبة
-              </button>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 0 }}>نشكرك على إبلاغنا ونتمنى لك كل التوفيق.</p>
             </div>
           )}
 
