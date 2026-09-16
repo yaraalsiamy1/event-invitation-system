@@ -43,19 +43,14 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
     return clean;
   };
 
-  // Download Exact Template Excel matching "تمبلت الدعوات.xlsx"
+  // Download EXACT original user template file "تمبلت الدعوات.xlsx"
   const downloadExcelTemplate = () => {
-    const wsData = [
-      ["م", "اسم الضيف", "رقم الجوال"],
-      [1, "عبدالله المحمد", "0501234567"],
-      [2, "خالد العتيبي", "0559876543"],
-      [3, "د. سارة الشمري", "0567778899"],
-      [4, "م. فهد الدوسري", "0541112233"]
-    ];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "المدعوين");
-    XLSX.writeFile(wb, "تمبلت_الدعوات.xlsx");
+    const link = document.createElement('a');
+    link.href = '/تمبلت الدعوات.xlsx';
+    link.setAttribute('download', 'تمبلت الدعوات.xlsx');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Save batch guests to API / LocalState
@@ -72,7 +67,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
     }
   };
 
-  // Parse Uploaded Excel (.xlsx / .xls / .csv) File with SheetJS
+  // Parse Uploaded Excel (.xlsx / .xls / .csv) File with SheetJS matching "تمبلت الدعوات.xlsx"
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -127,12 +122,12 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
 
         if (newGuests.length > 0) {
           await saveBatchToApi(newGuests);
-          alert(`تم استيراد وحفظ ${newGuests.length} مدعو بنجاح من ملف الإكسل!`);
+          alert(`تم استيراد وحفظ ${newGuests.length} مدعو بنجاح من ملف "تمبلت الدعوات.xlsx"!`);
         } else {
-          alert('لم يتم العثور على أرقام وأسماء مدعوين صالحة في ملف الإكسل. يرجى التأكد من رفع التمبلت المعتمد.');
+          alert('لم يتم العثور على أرقام وأسماء مدعوين صالحة في ملف الإكسل. يرجى التأكد من رفع ملف "تمبلت الدعوات.xlsx" بعد تعبئته.');
         }
       } catch (err) {
-        alert('حدث خطأ أثناء قراءة ملف الإكسل. يرجى التأكد من رفع ملف XLSX أو CSV صالحة.');
+        alert('حدث خطأ أثناء قراءة ملف الإكسل. يرجى التأكد من رفع ملف XLSX صالحة.');
       }
     };
     reader.readAsArrayBuffer(file);
@@ -181,7 +176,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
   // Trigger Automatic Batch Dispatcher
   const handleStartAutoDispatch = async () => {
     if (guests.length === 0) {
-      alert('يرجى رفع ملف الإكسل وإضافة أرقام المدعوين أولاً.');
+      alert('يرجى رفع ملف تمبلت الدعوات وإضافة أرقام المدعوين أولاً.');
       return;
     }
 
@@ -447,23 +442,23 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
             </div>
           </div>
 
-          {/* Excel Import & Template */}
+          {/* Excel Import & User Template */}
           <div class="apple-card">
             <div class="card-title-row">
-              <h2><FileSpreadsheet class="system-gold" size={20} /> استيراد الأرقام من تمبلت الإكسل (.xlsx)</h2>
+              <h2><FileSpreadsheet class="system-gold" size={20} /> استيراد الأرقام من (تمبلت الدعوات.xlsx)</h2>
             </div>
             
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-              رفع ملف تمبلت الإكسل (تمبلت الدعوات.xlsx) الذي يحتوي على أعمدة <code>اسم الضيف</code> و <code>رقم الجوال</code>.
+              يمكنك تحميل ملفك الأصلي <code>تمبلت الدعوات.xlsx</code> وتعبئة الأسماء والأرقام فيه ثم رفعه فوراً.
             </p>
 
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
               <button class="apple-btn apple-btn-secondary" style={{ flex: 1 }} onClick={downloadExcelTemplate}>
-                <Download size={16} /> تحميل تمبلت الدعوات (.xlsx)
+                <Download size={16} /> تحميل تمبلت الدعوات.xlsx الأصلي
               </button>
 
               <label class="apple-btn apple-btn-pink" style={{ flex: 1, cursor: 'pointer' }}>
-                <FileSpreadsheet size={16} /> رفع ملف الإكسل ومزامنة
+                <FileSpreadsheet size={16} /> رفع تمبلت الدعوات ومزامنة
                 <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ display: 'none' }} />
               </label>
             </div>
@@ -493,7 +488,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
         <div class="card-title-row">
           <div>
             <h2>قائمة المدعوين وحالة الإرسال</h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>قائمة المدعوين المسجلة من ملف الإكسل وجاهزة للإرسال الآلي</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>قائمة المدعوين المسجلة من ملف تمبلت الدعوات وجاهزة للإرسال الآلي</p>
           </div>
           {guests.length > 0 && (
             <button class="apple-btn apple-btn-danger" onClick={handleClearAll} style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
@@ -519,7 +514,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
               {guests.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
-                    لا يوجد مدعوين حالياً. قم برفع تمبلت الإكسل للبدء بالإرسال التلقائي.
+                    لا يوجد مدعوين حالياً. قم برفع تمبلت الدعوات.xlsx للبدء بالإرسال التلقائي.
                   </td>
                 </tr>
               ) : (
