@@ -21,6 +21,11 @@ export default function App() {
   const [guests, setGuests] = useState([]);
   const [activeGuestId, setActiveGuestId] = useState(null);
 
+  const [isGuestMode, setIsGuestMode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return Boolean(params.get('guest'));
+  });
+
   // Check if URL has ?guest= parameter for direct Guest Portal view
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -28,6 +33,7 @@ export default function App() {
     if (guestParam) {
       setActiveTab('guest');
       setActiveGuestId(guestParam);
+      setIsGuestMode(true);
     }
   }, []);
 
@@ -120,9 +126,9 @@ export default function App() {
     }
   };
 
-  // Create New Event (100% resilient with local state + backend persistence)
+  // Create New Event (100% persistent to backend DB & state)
   const handleCreateEvent = async (newEventData) => {
-    const createdId = "ev_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+    const createdId = newEventData.id || ("ev_" + Date.now() + "_" + Math.floor(Math.random() * 1000));
     const newEv = {
       id: createdId,
       title: newEventData.title || "مناسبة جديدة",
@@ -154,7 +160,7 @@ export default function App() {
       if (res.ok) {
         const serverCreated = await safeJsonParse(res);
         if (serverCreated) {
-          setEventData(serverCreated);
+          await refreshData(serverCreated.id);
         }
       }
     } catch (e) {
@@ -180,8 +186,14 @@ export default function App() {
     try {
       const res = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
       if (res.ok) {
+        if (nextActiveId) {
+          await handleSelectEvent(nextActiveId);
+        } else {
+          setEventData(null);
+          setGuests([]);
+          await refreshData();
+        }
         alert('تم حذف المناسبة بنجاح!');
-        if (nextActiveId) await handleSelectEvent(nextActiveId);
       }
     } catch (e) {
       alert('تم حذف المناسبة من القائمة المحلية.');
@@ -215,12 +227,12 @@ export default function App() {
 
   return (
     <div className="apple-app-root">
-      {/* Apple Light Navbar */}
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Hide Header completely in Guest mode so guests cannot switch tabs or access Admin Dashboard */}
+      {!isGuestMode && <Header activeTab={activeTab} setActiveTab={setActiveTab} />}
 
       {/* Main Container */}
-      <main className="apple-container" style={{ paddingTop: '28px', paddingBottom: '60px' }}>
-        {activeTab === 'admin' && (
+      <main className="apple-container" style={{ paddingTop: isGuestMode ? '16px' : '28px', paddingBottom: '60px' }}>
+        {!isGuestMode && activeTab === 'admin' && (
           <AdminDashboard
             events={events}
             activeEventId={activeEventId}
@@ -237,7 +249,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'guest' && (
+        {(isGuestMode || activeTab === 'guest') && (
           <GuestPortal
             eventData={eventData}
             guests={guests}
@@ -245,6 +257,7 @@ export default function App() {
             activeGuestId={activeGuestId}
             setActiveGuestId={setActiveGuestId}
             refreshData={() => refreshData(activeEventId)}
+            isGuestMode={isGuestMode}
           />
         )}
       </main>

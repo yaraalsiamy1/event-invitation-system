@@ -124,7 +124,7 @@ class MultiEventJSONDatabase {
   async createEvent(newEvent) {
     const data = this.read();
     const created = {
-      id: "ev_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+      id: newEvent.id || ("ev_" + Date.now() + "_" + Math.floor(Math.random() * 1000)),
       title: newEvent.title || "مناسبة جديدة",
       type: newEvent.type || "wedding",
       date: newEvent.date || new Date().toISOString().split('T')[0],
@@ -132,9 +132,9 @@ class MultiEventJSONDatabase {
       location: newEvent.location || "القاعة الرئيسية",
       mapLink: newEvent.mapLink || "https://maps.google.com",
       cardImage: newEvent.cardImage || null,
-      guests: []
+      guests: newEvent.guests || []
     };
-    data.events = [...(data.events || []), created];
+    data.events = [...(data.events || []).filter(e => e.id !== created.id), created];
     data.activeEventId = created.id;
     this.write(data);
     return created;
@@ -155,7 +155,9 @@ class MultiEventJSONDatabase {
   async deleteEvent(eventId) {
     const data = this.read();
     data.events = (data.events || []).filter(e => e.id !== eventId);
-    data.activeEventId = data.events.length > 0 ? data.events[0].id : null;
+    if (data.activeEventId === eventId) {
+      data.activeEventId = data.events.length > 0 ? data.events[0].id : null;
+    }
     this.write(data);
     return data.activeEventId;
   }

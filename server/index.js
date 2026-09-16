@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { db } from './db.js';
 
@@ -11,7 +12,51 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json({ limit: '15mb' }));
+app.use(express.json({ limit: '50mb' }));
+
+// Static uploads setup for card images
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsDir));
+
+// Helper to save base64 image strings to server disk and return clean relative URL (/uploads/card_xxx.png)
+function saveBase64Image(base64Data, eventId) {
+  if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:image')) {
+    return base64Data;
+  }
+  try {
+    const matches = base64Data.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+    if (!matches) return base64Data;
+    const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+    const dataBuffer = Buffer.from(matches[2], 'base64');
+    const filename = `card_${eventId || 'ev'}_${Date.now()}.${ext}`;
+    const filePath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filePath, dataBuffer);
+    console.log(`Saved card image to static uploads: /uploads/${filename}`);
+    return `/uploads/${filename}`;
+  } catch (err) {
+    console.error('Error saving base64 image:', err);
+    return base64Data;
+  }
+}
+
+// Automatically migrate any existing base64 card images in database to static files
+async function migrateBase64Images() {
+  try {
+    const events = await db.getAllEvents();
+    for (const ev of events) {
+      if (ev.cardImage && typeof ev.cardImage === 'string' && ev.cardImage.startsWith('data:image')) {
+        const fileUrl = saveBase64Image(ev.cardImage, ev.id);
+        await db.updateEvent(ev.id, { cardImage: fileUrl });
+      }
+    }
+  } catch (e) {
+    console.warn('Error during base64 image migration:', e);
+  }
+}
+migrateBase64Images();
 
 // MULTI-EVENT API ROUTES
 app.get('/api/events', async (req, res) => {
@@ -25,7 +70,11 @@ app.get('/api/events', async (req, res) => {
 
 app.post('/api/events', async (req, res) => {
   try {
-    const created = await db.createEvent(req.body);
+    const eventBody = { ...req.body };
+    if (eventBody.cardImage && eventBody.cardImage.startsWith('data:image')) {
+      eventBody.cardImage = saveBase64Image(eventBody.cardImage, eventBody.id);
+    }
+    const created = await db.createEvent(eventBody);
     res.json(created);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -65,7 +114,11 @@ app.get('/api/event', async (req, res) => {
 app.post('/api/event', async (req, res) => {
   try {
     const eventId = req.query.eventId || req.body.id;
-    const updated = await db.updateEvent(eventId, req.body);
+    const eventBody = { ...req.body };
+    if (eventBody.cardImage && eventBody.cardImage.startsWith('data:image')) {
+      eventBody.cardImage = saveBase64Image(eventBody.cardImage, eventId);
+    }
+    const updated = await db.updateEvent(eventId, eventBody);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });

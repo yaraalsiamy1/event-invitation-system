@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
 import { Smartphone, Calendar, Clock, MapPin, CheckCircle2, XCircle, Download, ShieldCheck, HeartHandshake, Check, X, Mail } from 'lucide-react';
 
-export default function GuestPortal({ eventData, guests, setGuests, activeGuestId, setActiveGuestId, refreshData }) {
+export default function GuestPortal({ eventData, guests, setGuests, activeGuestId, setActiveGuestId, refreshData, isGuestMode }) {
   const [guestRecord, setGuestRecord] = useState(null);
   const [guestEvent, setGuestEvent] = useState(null);
 
@@ -71,25 +71,27 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
 
   return (
     <div className="apple-guest-portal">
-      {/* Top Banner selector */}
-      <div className="apple-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem' }}>
-          <Smartphone className="pink-dark" size={18} style={{ color: 'var(--pink-primary)' }} />
-          <span>معاينة واجهة iPhone الفاتحة الخاصة بالضيف:</span>
+      {/* Top Banner selector (Only rendered for Admin preview mode, hidden for actual guests) */}
+      {!isGuestMode && (
+        <div className="apple-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem' }}>
+            <Smartphone className="pink-dark" size={18} style={{ color: 'var(--pink-primary)' }} />
+            <span>معاينة واجهة iPhone الفاتحة الخاصة بالضيف:</span>
+          </div>
+          <select
+            className="apple-input"
+            style={{ width: 'auto', padding: '6px 14px', fontSize: '0.85rem' }}
+            value={activeGuest.id}
+            onChange={(e) => setActiveGuestId(e.target.value)}
+          >
+            {(guests || []).map(g => (
+              <option key={g.id} value={g.id}>
+                {g.name} ({g.phone}) - [{g.status === 'accepted' ? 'مقبول' : g.status === 'declined' ? 'معتذر' : 'بانتظار'}]
+              </option>
+            ))}
+          </select>
         </div>
-        <select
-          className="apple-input"
-          style={{ width: 'auto', padding: '6px 14px', fontSize: '0.85rem' }}
-          value={activeGuest.id}
-          onChange={(e) => setActiveGuestId(e.target.value)}
-        >
-          {(guests || []).map(g => (
-            <option key={g.id} value={g.id}>
-              {g.name} ({g.phone}) - [{g.status === 'accepted' ? 'مقبول' : g.status === 'declined' ? 'معتذر' : 'بانتظار'}]
-            </option>
-          ))}
-        </select>
-      </div>
+      )}
 
       {/* iPhone Simulator Frame */}
       <div className="iphone-frame">

@@ -407,14 +407,24 @@ export default function AdminDashboard({
     let sentSuccess = 0;
     const userMsgText = customMessage.trim() || 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
 
+    let cardImgUrl = '';
+    if (eventData?.cardImage) {
+      if (eventData.cardImage.startsWith('http://') || eventData.cardImage.startsWith('https://')) {
+        cardImgUrl = eventData.cardImage;
+      } else if (eventData.cardImage.startsWith('/')) {
+        cardImgUrl = `${window.location.origin}${eventData.cardImage}`;
+      }
+    }
+    const cardImgNotice = cardImgUrl ? `\n\n📷 صورة كرت الدعوة المرفقة:\n${cardImgUrl}` : '';
+
     for (let i = 0; i < selectedGuestsList.length; i++) {
       const g = selectedGuestsList[i];
       setAutoProgress({ sent: i + 1, total: selectedGuestsList.length, currentName: g.name });
 
       const guestLink = `${window.location.origin}/?guest=${g.id}`;
-      const waMsg = encodeURIComponent(
-        `مرحباً ${g.name}\nيسرنا ويسعدنا دعوتكم لحضور ${eventData?.title}.\nيرجى تأكيد حضورك واستلام تذكرتك عبر الرابط التالي:\n` + guestLink
-      );
+      const fullText = `مرحباً ${g.name} 👋\n\n${userMsgText}\n\nالمناسبة: ${eventData?.title || ''}\nالتاريخ: ${eventData?.date || ''}\nالمكان: ${eventData?.location || ''}${cardImgNotice}\n\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
+      
+      const waMsg = encodeURIComponent(fullText);
       const waUrl = `https://api.whatsapp.com/send?phone=${g.phone}&text=${waMsg}`;
 
       window.open(waUrl, '_blank');
