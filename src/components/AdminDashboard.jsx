@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
-import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2 } from 'lucide-react';
+import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2 } from 'lucide-react';
 import ExcelValidationModal from './ExcelValidationModal';
 
 export default function AdminDashboard({ eventData, setEventData, guests, setGuests, setActiveGuestId, setActiveTab, refreshData }) {
@@ -170,13 +170,17 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
     alert(`تم فحص وتأكيد واعتماد ${validGuests.length} مدعو بنجاح بالأسماء والأرقام في قاعدة البيانات!`);
   };
 
-  // Process Batch Text Entry
+  // Process Batch Text Entry (with Duplicate Check)
   const handleBatchSubmit = async (e) => {
     e.preventDefault();
     if (!batchText.trim()) return;
 
     const lines = batchText.trim().split('\n');
     const newGuests = [];
+    const existingPhones = new Set((guests || []).map(g => (g.phone || '').trim()));
+    const existingNames = new Set((guests || []).map(g => (g.name || '').trim().toLowerCase()));
+
+    let skippedDups = 0;
 
     lines.forEach(line => {
       const parts = line.split(',');
@@ -191,11 +195,23 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
         name = "ضيف عزيز";
       }
 
-      if (phoneRaw) {
+      const formattedPhone = formatPhone(phoneRaw);
+      const cleanName = name || "ضيف عزيز";
+      const lowerName = cleanName.toLowerCase();
+
+      if (formattedPhone) {
+        if (existingPhones.has(formattedPhone) || existingNames.has(lowerName)) {
+          skippedDups++;
+          return;
+        }
+
+        existingPhones.add(formattedPhone);
+        existingNames.add(lowerName);
+
         newGuests.push({
-          id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-          name: name || "ضيف عزيز",
-          phone: formatPhone(phoneRaw),
+          id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
+          name: cleanName,
+          phone: formattedPhone,
           status: "pending",
           ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
           checkedIn: false,
@@ -204,9 +220,13 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
       }
     });
 
-    await saveBatchToApi(newGuests);
-    setBatchText('');
-    alert(`تم إضافة ${newGuests.length} مدعو بنجاح!`);
+    if (newGuests.length > 0) {
+      await saveBatchToApi(newGuests);
+      setBatchText('');
+      alert(`تم إضافة ${newGuests.length} مدعو جديد بنجاح! ${skippedDups > 0 ? `(تم تجاهل ${skippedDups} مكرر)` : ''}`);
+    } else if (skippedDups > 0) {
+      alert(`جميع البيانات المدخلة مكررة وموجودة مسبقاً في القائمة (${skippedDups} مكرر).`);
+    }
   };
 
   // Trigger Automatic Batch Dispatcher
@@ -251,15 +271,33 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
     }
   };
 
-  // Clear Guests
+  // Clear All Guests (Guaranteed State + DB Sync)
   const handleClearAll = async () => {
-    if (confirm('هل أنت تأكد من مسح كافة المدعوين من قاعدة البيانات؟')) {
+    if (window.confirm('هل أنت تأكد من مسح جميع المدعوين من القائمة وقاعدة البيانات؟')) {
       try {
         await fetch('/api/guests', { method: 'DELETE' });
-        if (refreshData) refreshData();
       } catch (e) {
-        setGuests([]);
+        console.error('Failed to clear server guests', e);
       }
+      setGuests([]);
+      localStorage.removeItem('apple_qr_guests');
+      if (refreshData) refreshData();
+      alert('تم مسح جميع المدعوين بنجاح!');
+    }
+  };
+
+  // Delete Single Guest
+  const handleDeleteGuest = async (id) => {
+    if (window.confirm('هل أنت تأكد من حذف هذا المدعو؟')) {
+      try {
+        await fetch(`/api/guests/${id}`, { method: 'DELETE' });
+      } catch (e) {
+        console.error('Failed to delete guest', e);
+      }
+      const updated = guests.filter(g => g.id !== id);
+      setGuests(updated);
+      localStorage.setItem('apple_qr_guests', JSON.stringify(updated));
+      if (refreshData) refreshData();
     }
   };
 
@@ -278,6 +316,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
       {pendingExcelRows && (
         <ExcelValidationModal
           rawRows={pendingExcelRows}
+          existingGuests={guests}
           onConfirmSave={handleConfirmValidationSave}
           onClose={() => setPendingExcelRows(null)}
         />
@@ -553,12 +592,13 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
                 <th>كود التذكرة</th>
                 <th>إرسال يدوي فردي</th>
                 <th>معاينة التذكرة</th>
+                <th>حذف</th>
               </tr>
             </thead>
             <tbody>
               {guests.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
                     لا يوجد مدعوين محفوظين حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
                   </td>
                 </tr>
@@ -596,6 +636,16 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
                           }}
                         >
                           <Eye size={14} /> معاينة كرت الضيف
+                        </button>
+                      </td>
+                      <td>
+                        <button
+                          class="apple-btn apple-btn-danger"
+                          style={{ padding: '6px 10px' }}
+                          title="حذف هذا المدعو"
+                          onClick={() => handleDeleteGuest(guest.id)}
+                        >
+                          <Trash2 size={14} />
                         </button>
                       </td>
                     </tr>

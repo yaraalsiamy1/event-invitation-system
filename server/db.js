@@ -76,7 +76,29 @@ class LightweightJSONDatabase {
 
   async addGuests(newGuests) {
     const data = this.read();
-    data.guests = [...(data.guests || []), ...newGuests];
+    const existing = data.guests || [];
+    const uniqueNew = [];
+
+    (newGuests || []).forEach(g => {
+      const gName = (g.name || '').trim().toLowerCase();
+      const gPhone = (g.phone || '').trim();
+
+      const isDup = existing.some(e => {
+        const eName = (e.name || '').trim().toLowerCase();
+        const ePhone = (e.phone || '').trim();
+        return (gPhone && ePhone === gPhone) || (gName && eName === gName);
+      }) || uniqueNew.some(u => {
+        const uName = (u.name || '').trim().toLowerCase();
+        const uPhone = (u.phone || '').trim();
+        return (gPhone && uPhone === gPhone) || (gName && uName === gName);
+      });
+
+      if (!isDup) {
+        uniqueNew.push(g);
+      }
+    });
+
+    data.guests = [...existing, ...uniqueNew];
     this.write(data);
     return data.guests;
   }

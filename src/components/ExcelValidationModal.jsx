@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { CheckCircle2, AlertTriangle, Trash2, Check, X, FileCheck, Info } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Trash2, Check, X, FileCheck, Sparkles } from 'lucide-react';
 
-export default function ExcelValidationModal({ rawRows, onConfirmSave, onClose }) {
+export default function ExcelValidationModal({ rawRows, existingGuests = [], onConfirmSave, onClose }) {
   // Format Saudi Phone
   const formatPhone = (phoneRaw) => {
     let clean = (phoneRaw || '').toString().replace(/\D/g, '');
@@ -13,42 +13,79 @@ export default function ExcelValidationModal({ rawRows, onConfirmSave, onClose }
     return clean;
   };
 
-  // Validate single row item
-  const validateItem = (item) => {
-    const formattedPhone = formatPhone(item.phone);
-    const isValidPhone = formattedPhone.length >= 11 && formattedPhone.length <= 13 && formattedPhone.startsWith('9665');
-    const isValidName = item.name && item.name.trim().length > 1;
+  // Validate items list including duplicate detection against existing DB and self-duplicates
+  const runValidation = (rawList) => {
+    const seenPhones = new Set();
+    const seenNames = new Set();
 
-    let errorMsg = null;
-    if (!isValidPhone) errorMsg = 'صيغة الرقم غير اكتمالة (يجب أن يبدأ بـ 05 ويتكون من 10 أرقام)';
-    if (!isValidName) errorMsg = 'اسم الضيف غير مدخل أو قصير جداً';
+    // Collect existing DB phones & names
+    (existingGuests || []).forEach(g => {
+      if (g.phone) seenPhones.add(g.phone.trim());
+      if (g.name) seenNames.add(g.name.trim().toLowerCase());
+    });
 
-    return {
-      ...item,
-      phone: formattedPhone || item.phone,
-      isValid: isValidPhone && isValidName,
-      errorMsg
-    };
+    return rawList.map((item) => {
+      const formattedPhone = formatPhone(item.phone);
+      const cleanName = (item.name || '').trim();
+      const lowerName = cleanName.toLowerCase();
+
+      const isValidPhone = formattedPhone.length >= 11 && formattedPhone.length <= 13 && formattedPhone.startsWith('9665');
+      const isValidName = cleanName.length > 1;
+
+      // Duplicate Check
+      const isDupPhone = isValidPhone && seenPhones.has(formattedPhone);
+      const isDupName = isValidName && seenNames.has(lowerName);
+      const isDuplicate = isDupPhone || isDupName;
+
+      // Mark seen for self-duplication inside the same file
+      if (isValidPhone) seenPhones.add(formattedPhone);
+      if (isValidName) seenNames.add(lowerName);
+
+      let errorMsg = null;
+      if (!isValidName) errorMsg = 'اسم الضيف غير مدخل أو قصير جداً';
+      else if (!isValidPhone) errorMsg = 'رقم غير مكتمل (يجب أن يبدأ بـ 05 ويتكون من 10 أرقام)';
+      else if (isDuplicate) {
+        if (isDupPhone && isDupName) errorMsg = 'مكرر: الاسم ورقم الجوال موجودان مسبقاً';
+        else if (isDupPhone) errorMsg = 'مكرر: رقم الجوال موجود مسبقاً في البيانات';
+        else errorMsg = 'مكرر: اسم الضيف موجود مسبقاً في البيانات';
+      }
+
+      return {
+        ...item,
+        name: cleanName,
+        phone: formattedPhone || item.phone,
+        isValid: isValidPhone && isValidName && !isDuplicate,
+        isDuplicate,
+        errorMsg
+      };
+    });
   };
 
-  const [items, setItems] = useState(() => rawRows.map(validateItem));
+  const [items, setItems] = useState(() => runValidation(rawRows));
 
-  // Edit item inside modal
+  // Re-run validation on change
   const handleItemChange = (index, field, value) => {
-    const updated = [...items];
-    updated[index][field] = value;
-    updated[index] = validateItem(updated[index]);
-    setItems(updated);
+    const rawCopy = items.map(i => ({ ...i }));
+    rawCopy[index][field] = value;
+    setItems(runValidation(rawCopy));
   };
 
   // Delete item row
   const handleDeleteRow = (index) => {
-    setItems(items.filter((_, i) => i !== index));
+    const filtered = items.filter((_, i) => i !== index);
+    setItems(runValidation(filtered));
+  };
+
+  // Auto remove duplicates & invalid rows
+  const handleRemoveDuplicates = () => {
+    const cleanList = items.filter(i => i.isValid);
+    setItems(runValidation(cleanList));
   };
 
   // Stats
   const totalCount = items.length;
   const validCount = items.filter(i => i.isValid).length;
+  const duplicateCount = items.filter(i => i.isDuplicate).length;
   const invalidCount = totalCount - validCount;
 
   // Confirm save valid ones
@@ -64,7 +101,7 @@ export default function ExcelValidationModal({ rawRows, onConfirmSave, onClose }
     }));
 
     if (validItems.length === 0) {
-      alert('لا يوجد أرقام سليمة للحفظ. يرجى تصحيح البيانات في الجدول.');
+      alert('لا يوجد أرقام غير مكررة وسليمة للحفظ. يرجى تصحيح البيانات في الجدول.');
       return;
     }
 
@@ -85,20 +122,20 @@ export default function ExcelValidationModal({ rawRows, onConfirmSave, onClose }
     }}>
       <div style={{
         background: '#ffffff',
-        border: '2px solid var(--rose-primary)',
+        border: '2px solid var(--pink-primary)',
         borderRadius: '24px',
         width: '100%',
-        maxWidth: '900px',
+        maxWidth: '960px',
         maxHeight: '90vh',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 25px 60px rgba(200, 138, 155, 0.25)',
+        boxShadow: '0 25px 60px rgba(244, 165, 186, 0.25)',
         overflow: 'hidden'
       }}>
 
         {/* Modal Header */}
         <div style={{
-          background: 'var(--rose-gradient)',
+          background: 'var(--pink-gradient)',
           color: '#ffffff',
           padding: '20px 24px',
           display: 'flex',
@@ -108,8 +145,8 @@ export default function ExcelValidationModal({ rawRows, onConfirmSave, onClose }
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <FileCheck size={26} />
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>مراجعة والتحقق من صحة بيانات ملف الإكسل</h2>
-              <p style={{ fontSize: '0.82rem', opacity: 0.9 }}>قم بفحص الأسماء والأرقام وتعديل الأخطاء قبل الاعتماد في قاعدة البيانات</p>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>مراجعة والتحقق من صحة وعدم تكرار بيانات الإكسل</h2>
+              <p style={{ fontSize: '0.82rem', opacity: 0.9 }}>فحص الأسماء والأرقام والتحقق من عدم تكرارها قبل الاعتماد النهائي</p>
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>
@@ -119,18 +156,31 @@ export default function ExcelValidationModal({ rawRows, onConfirmSave, onClose }
 
         {/* Summary Bar */}
         <div style={{
-          background: 'rgba(245, 232, 236, 0.5)',
+          background: 'rgba(253, 242, 245, 0.8)',
           padding: '14px 24px',
-          borderBottom: '1px solid rgba(200, 138, 155, 0.15)',
+          borderBottom: '1px solid rgba(244, 165, 186, 0.2)',
           display: 'flex',
-          gap: '20px',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '15px',
           fontSize: '0.88rem',
           flexWrap: 'wrap'
         }}>
-          <div><strong>إجمالي البيانات المستخرجة:</strong> <span class="ios-badge ios-badge-gold">{totalCount}</span></div>
-          <div><strong>أرقام سليمة ومكتملة:</strong> <span class="ios-badge ios-badge-green"><CheckCircle2 size={14} /> {validCount}</span></div>
-          {invalidCount > 0 && (
-            <div><strong>تحتاج تصحيح:</strong> <span class="ios-badge ios-badge-red"><AlertTriangle size={14} /> {invalidCount}</span></div>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div><strong>إجمالي السجلات:</strong> <span class="ios-badge ios-badge-gold">{totalCount}</span></div>
+            <div><strong>سليمة وغير مكررة:</strong> <span class="ios-badge ios-badge-green"><CheckCircle2 size={14} /> {validCount}</span></div>
+            {duplicateCount > 0 && (
+              <div><strong>بيانات مكررة:</strong> <span class="ios-badge ios-badge-gold"><AlertTriangle size={14} /> {duplicateCount}</span></div>
+            )}
+            {invalidCount > duplicateCount && (
+              <div><strong>صيغة خطأ:</strong> <span class="ios-badge ios-badge-red"><AlertTriangle size={14} /> {invalidCount - duplicateCount}</span></div>
+            )}
+          </div>
+
+          {(duplicateCount > 0 || invalidCount > 0) && (
+            <button class="apple-btn apple-btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }} onClick={handleRemoveDuplicates}>
+              <Sparkles size={14} /> حذف المكرر والأخطاء تلقائياً
+            </button>
           )}
         </div>
 
@@ -142,7 +192,7 @@ export default function ExcelValidationModal({ rawRows, onConfirmSave, onClose }
                 <th>#</th>
                 <th>اسم الضيف (من الملف)</th>
                 <th>رقم الجوال المفحوص</th>
-                <th>حالة الصحة</th>
+                <th>نتيجة التحقق وتوافق البيانات</th>
                 <th>إجراءات</th>
               </tr>
             </thead>
@@ -170,7 +220,9 @@ export default function ExcelValidationModal({ rawRows, onConfirmSave, onClose }
                   </td>
                   <td>
                     {item.isValid ? (
-                      <span class="ios-badge ios-badge-green"><Check size={14} /> صيغة سليمة</span>
+                      <span class="ios-badge ios-badge-green"><Check size={14} /> سليم وغير مكرر</span>
+                    ) : item.isDuplicate ? (
+                      <span class="ios-badge ios-badge-gold" title={item.errorMsg}><AlertTriangle size={14} /> {item.errorMsg}</span>
                     ) : (
                       <span class="ios-badge ios-badge-red" title={item.errorMsg}><AlertTriangle size={14} /> {item.errorMsg || 'خطأ في الصيغة'}</span>
                     )}
@@ -190,7 +242,7 @@ export default function ExcelValidationModal({ rawRows, onConfirmSave, onClose }
         <div style={{
           padding: '18px 24px',
           background: '#faf7f8',
-          borderTop: '1px solid rgba(200, 138, 155, 0.15)',
+          borderTop: '1px solid rgba(244, 165, 186, 0.2)',
           display: 'flex',
           justifyContent: 'space-between',
           gap: '12px'
