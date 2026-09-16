@@ -238,6 +238,8 @@ class MultiEventJSONDatabase {
       }
     }
     return null;
+  }
+
   async markGuestsSent(eventId, guestIds) {
     const data = this.read();
     const targetId = eventId || data.activeEventId;

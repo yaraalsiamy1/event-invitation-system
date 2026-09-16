@@ -35,6 +35,7 @@ export default function AdminDashboard({
   const [instanceId, setInstanceId] = useState(localStorage.getItem('wa_instance_id') || '');
   const [apiToken, setApiToken] = useState(localStorage.getItem('wa_api_token') || '');
   const [isSendingAuto, setIsSendingAuto] = useState(false);
+  const [autoProgress, setAutoProgress] = useState(null);
   // Checkbox selection state for batch sending
   const [selectedGuestIds, setSelectedGuestIds] = useState([]);
 
