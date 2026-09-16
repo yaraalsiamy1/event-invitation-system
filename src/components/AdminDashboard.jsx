@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles } from 'lucide-react';
+import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles, HelpCircle } from 'lucide-react';
 import ExcelValidationModal from './ExcelValidationModal';
 import EventsSidebar from './EventsSidebar';
 import NewEventModal from './NewEventModal';
@@ -368,7 +368,7 @@ export default function AdminDashboard({
       )}
 
       {/* TOP MAIN GRID: EVENTS SIDEBAR (RIGHT) + DASHBOARD ACTIONS (LEFT) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 320px) 1fr', gap: '22px', alignItems: 'start', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 320px) 1fr', gap: '24px', alignItems: 'start', marginBottom: '28px' }}>
         
         {/* Right Sidebar: Events List & Management */}
         <EventsSidebar
@@ -380,23 +380,25 @@ export default function AdminDashboard({
         />
 
         {/* Left Main Content */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
           {/* Active Event Indicator Banner */}
-          <div class="apple-card" style={{ padding: '16px 22px', background: 'var(--pink-light)', border: '1.5px solid var(--pink-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Layers size={24} style={{ color: 'var(--pink-primary)' }} />
+          <div class="apple-card" style={{ padding: '18px 24px', background: 'var(--pink-light)', border: '1.5px solid var(--pink-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <Layers size={26} style={{ color: 'var(--pink-primary)' }} />
               <div>
-                <span style={{ fontSize: '0.78rem', color: 'var(--pink-dark)', fontWeight: 700 }}>المناسبة النشطة حالياً لإدارة المدعوين:</span>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>{eventData?.title || 'مناسبة بدون عنوان'}</h2>
+                <span style={{ fontSize: '0.8rem', color: 'var(--pink-dark)', fontWeight: 700 }}>المناسبة النشطة حالياً لإدارة المدعوين:</span>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{eventData?.title || 'مناسبة بدون عنوان'}</h2>
               </div>
             </div>
-            <button class="apple-btn apple-btn-pink" style={{ fontSize: '0.84rem', padding: '8px 16px' }} onClick={() => setIsNewEventModalOpen(true)}>
-              <Plus size={16} /> إضافة مناسبة جديدة
+            <button class="apple-btn apple-btn-pink" style={{ fontSize: '0.86rem', padding: '10px 18px' }} onClick={() => setIsNewEventModalOpen(true)}>
+              <Plus size={16} /> إنشاء مناسبة جديدة
             </button>
           </div>
-          <div class="apple-card" style={{ background: '#ffffff', border: '1.5px solid rgba(244, 165, 186, 0.35)' }}>
-            <div class="card-title-row" style={{ marginBottom: '14px' }}>
+
+          {/* LIVE STATISTICAL METRICS WIDGETS */}
+          <div class="apple-card" style={{ background: '#ffffff', border: '1.5px solid rgba(244, 165, 186, 0.35)', marginBottom: 0 }}>
+            <div class="card-title-row" style={{ marginBottom: '16px' }}>
               <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <BarChart3 size={20} style={{ color: 'var(--pink-primary)' }} /> المؤشرات الإحصائية الحية لمناسبة ({eventData?.title || 'المناسبة الحالية'})
               </h2>
@@ -434,83 +436,13 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          {/* AUTOMATED WHATSAPP DISPATCHER BOX */}
-          <div class="apple-card" style={{ background: '#ffffff', border: '2px solid var(--pink-primary)', padding: '22px' }}>
-            <div class="card-title-row" style={{ marginBottom: '14px' }}>
-              <h2 style={{ color: 'var(--pink-dark)', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Rocket size={24} style={{ color: 'var(--pink-primary)' }} /> الإرسال التلقائي الكلي للواتساب (Auto WhatsApp Dispatcher)
-              </h2>
-              <span class="ios-badge ios-badge-pink">إرسال آلي لمناسبة: {eventData?.title}</span>
-            </div>
-
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              بمجرد رفعك لملف الإكسل، يمكنك البدء بالإرسال الآلي التلقائي لجميع المدعوين دفعة واحدة بدون الحاجة لفتح الواتساب لكل ضيف.
-            </p>
-
-            {/* Credentials Inputs (Optional) */}
-            <div class="grid-2col" style={{ gap: '12px', marginBottom: '16px' }}>
-              <div class="form-group" style={{ marginBottom: 0 }}>
-                <label style={{ fontSize: '0.82rem' }}>معرف بوابة الإرسال (Instance ID) - اختياري:</label>
-                <input
-                  type="text"
-                  class="apple-input"
-                  placeholder="مثال: 7103123456 (أو اتركه فارغاً للإرسال المباشر)"
-                  value={instanceId}
-                  onChange={(e) => setInstanceId(e.target.value)}
-                />
-              </div>
-              <div class="form-group" style={{ marginBottom: 0 }}>
-                <label style={{ fontSize: '0.82rem' }}>رمز الأمان (API Token) - اختياري:</label>
-                <input
-                  type="password"
-                  class="apple-input"
-                  placeholder="مثال: e289c878a... (أو اتركه فارغاً للإرسال المباشر)"
-                  value={apiToken}
-                  onChange={(e) => setApiToken(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Live Auto Sending Progress Bar */}
-            {isSendingAuto && autoProgress && (
-              <div style={{ background: 'rgba(253, 242, 245, 0.8)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(244, 165, 186, 0.4)', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px', color: 'var(--pink-dark)' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Loader2 size={16} class="animate-spin" style={{ color: 'var(--pink-primary)' }} />
-                    جاري الإرسال الآلي لـ: {autoProgress.currentName}...
-                  </span>
-                  <span>{autoProgress.sent} / {autoProgress.total} رسالة</span>
-                </div>
-                <div style={{ width: '100%', height: '10px', background: 'rgba(244, 165, 186, 0.2)', borderRadius: '10px', overflow: 'hidden' }}>
-                  <div style={{ width: `${(autoProgress.sent / autoProgress.total) * 100}%`, height: '100%', background: 'var(--pink-gradient)', transition: 'width 0.4s ease' }}></div>
-                </div>
-              </div>
-            )}
-
-            <button
-              type="button"
-              class="apple-btn apple-btn-pink btn-block"
-              style={{ fontSize: '1.05rem', padding: '15px' }}
-              onClick={handleStartAutoDispatch}
-              disabled={isSendingAuto}
-            >
-              {isSendingAuto ? (
-                <>
-                  <Loader2 size={20} class="animate-spin" /> جاري الإرسال الآلي لجميع مدعوي المناسبة...
-                </>
-              ) : (
-                <>
-                  <Rocket size={20} /> البدء بالإرسال التلقائي الفوري لمناسبة ({eventData?.title})
-                </>
-              )}
-            </button>
-          </div>
-
-          <div class="grid-2col">
-            {/* Left: Event Setup Form & Live Image Preview */}
-            <div class="apple-card">
+          {/* STEP 1 & 2: SETUP EVENT & EXCEL UPLOAD GRID */}
+          <div class="grid-2col" style={{ gap: '20px' }}>
+            
+            {/* Form 1: Event Details & Card Upload */}
+            <div class="apple-card" style={{ marginBottom: 0 }}>
               <div class="card-title-row">
-                <h2><Calendar class="system-gold" size={22} /> تعديل بيانات المناسبة وكرت الدعوة</h2>
+                <h2><Calendar class="system-gold" size={22} /> 1. تعديل بيانات المناسبة وكرت الدعوة</h2>
                 <span class="ios-badge ios-badge-pink">وردية وأصلية</span>
               </div>
 
@@ -607,12 +539,11 @@ export default function AdminDashboard({
               </form>
             </div>
 
-            {/* Right: Excel Import */}
+            {/* Form 2: Excel Import & Manual Entry */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Excel Import & User Template */}
-              <div class="apple-card">
+              <div class="apple-card" style={{ marginBottom: 0 }}>
                 <div class="card-title-row">
-                  <h2><FileSpreadsheet class="system-gold" size={20} /> استيراد ومراجعة الإكسل (تمبلت الدعوات.xlsx)</h2>
+                  <h2><FileSpreadsheet class="system-gold" size={20} /> 2. استيراد ومراجعة الإكسل (تمبلت الدعوات.xlsx)</h2>
                 </div>
                 
                 <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
@@ -636,8 +567,8 @@ export default function AdminDashboard({
                     <label>أو كتابة الأرقام يدوياً (الاسم، رقم الجوال):</label>
                     <textarea
                       class="apple-input"
-                      rows="2"
-                      placeholder="مثال:&#10;عبدالله المحمد, 0501234567"
+                      rows="3"
+                      placeholder="مثال:&#10;عبدالله المحمد, 0501234567&#10;سارة الخالد, 0551234567"
                       value={batchText}
                       onChange={(e) => setBatchText(e.target.value)}
                     ></textarea>
@@ -652,11 +583,11 @@ export default function AdminDashboard({
         </div>
       </div>
 
-      {/* Recipient Table */}
-      <div class="apple-card" style={{ marginTop: '10px' }}>
+      {/* STEP 3: RECIPIENT GUESTS TABLE */}
+      <div class="apple-card" style={{ marginBottom: '28px' }}>
         <div class="card-title-row">
           <div>
-            <h2>قائمة المدعوين المفحوصة والمحفوظة لمناسبة ({eventData?.title})</h2>
+            <h2>3. قائمة المدعوين المفحوصة والمحفوظة لمناسبة ({eventData?.title})</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>قائمة المدعوين المعتمدة وجاهزة للإرسال الآلي</p>
           </div>
           {guests.length > 0 && (
@@ -740,6 +671,99 @@ export default function AdminDashboard({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* STEP 4: FINAL STEP - AUTOMATED WHATSAPP DISPATCHER BOX AT THE VERY BOTTOM */}
+      <div class="apple-card" style={{ background: '#ffffff', border: '2px solid var(--pink-primary)', padding: '26px', marginBottom: '32px' }}>
+        <div class="card-title-row" style={{ marginBottom: '16px' }}>
+          <h2 style={{ color: 'var(--pink-dark)', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Rocket size={24} style={{ color: 'var(--pink-primary)' }} /> 4. الإرسال التلقائي الكلي للواتساب (Auto WhatsApp Dispatcher)
+          </h2>
+          <span class="ios-badge ios-badge-pink">الخطوة الأخيرة الإرسال الآلي الجماعي لمناسبة: {eventData?.title}</span>
+        </div>
+
+        {/* Easy Step-by-Step WhatsApp Binding Guide */}
+        <div style={{ background: 'rgba(253, 240, 244, 0.8)', borderRadius: '18px', padding: '18px 22px', border: '1px solid rgba(244, 165, 186, 0.35)', marginBottom: '22px' }}>
+          <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--pink-dark)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <HelpCircle size={20} style={{ color: 'var(--pink-primary)' }} /> كيف تقوم بربط رقمك الشخصي ليتم إرسال الدعوات تلقائياً للناس؟
+          </h3>
+          <ol style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', paddingRight: '22px', lineHeight: '1.9' }}>
+            <li>
+              افتح موقع بوابة الإرسال المعتمدة برمجياً (مثل <strong>Green-API.com</strong> أو <strong>UltraMsg.com</strong>) وقم بالتسجيل مجاناً.
+            </li>
+            <li>
+              من شاشة البوابة الرئيسية، اضغط على <strong>"Scan QR Code" (مسح رمز الـ QR)</strong>.
+            </li>
+            <li>
+              افتح تطبيق الواتساب بجوالك الشخصي ➔ افتح <strong>(الأجهزة المرتبطة)</strong> ➔ اضغط <strong>(ربط جهاز)</strong> ووجّه كاميرا جوالك للرمز.
+            </li>
+            <li>
+              انسخ <strong>Instance ID</strong> و <strong>API Token</strong> من حسابك بالبوابة وضعها في الخانتين أدناه ليتم الإرسال التلقائي فوراً برقمك!
+            </li>
+          </ol>
+        </div>
+
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+          أدخل رموز الربط أدناه ثم اضغط زر الإرسال التلقائي لتبدأ الرسائل بالانطلاق لجميع المدعوين في القائمة أعلاه دفعة واحدة.
+        </p>
+
+        {/* Credentials Inputs */}
+        <div class="grid-2col" style={{ gap: '16px', marginBottom: '20px' }}>
+          <div class="form-group" style={{ marginBottom: 0 }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>معرف بوابة الإرسال (Instance ID) - اختياري:</label>
+            <input
+              type="text"
+              class="apple-input"
+              placeholder="مثال: 7103123456 (أو اتركه فارغاً للإرسال المباشر)"
+              value={instanceId}
+              onChange={(e) => setInstanceId(e.target.value)}
+            />
+          </div>
+          <div class="form-group" style={{ marginBottom: 0 }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>رمز الأمان (API Token) - اختياري:</label>
+            <input
+              type="password"
+              class="apple-input"
+              placeholder="مثال: e289c878a... (أو اتركه فارغاً للإرسال المباشر)"
+              value={apiToken}
+              onChange={(e) => setApiToken(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Live Auto Sending Progress Bar */}
+        {isSendingAuto && autoProgress && (
+          <div style={{ background: 'rgba(253, 242, 245, 0.9)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(244, 165, 186, 0.4)', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 700, marginBottom: '8px', color: 'var(--pink-dark)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Loader2 size={18} class="animate-spin" style={{ color: 'var(--pink-primary)' }} />
+                جاري الإرسال الآلي لـ: {autoProgress.currentName}...
+              </span>
+              <span>{autoProgress.sent} / {autoProgress.total} رسالة</span>
+            </div>
+            <div style={{ width: '100%', height: '12px', background: 'rgba(244, 165, 186, 0.2)', borderRadius: '10px', overflow: 'hidden' }}>
+              <div style={{ width: `${(autoProgress.sent / autoProgress.total) * 100}%`, height: '100%', background: 'var(--pink-gradient)', transition: 'width 0.4s ease' }}></div>
+            </div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          class="apple-btn apple-btn-pink btn-block"
+          style={{ fontSize: '1.1rem', padding: '16px', cursor: 'pointer' }}
+          onClick={handleStartAutoDispatch}
+          disabled={isSendingAuto}
+        >
+          {isSendingAuto ? (
+            <>
+              <Loader2 size={22} class="animate-spin" /> جاري الإرسال الآلي لجميع مدعوي المناسبة...
+            </>
+          ) : (
+            <>
+              <Rocket size={22} /> البدء بالإرسال التلقائي الفوري لمناسبة ({eventData?.title})
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
