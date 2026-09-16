@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
-import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Trash2, Plus, MessageCircle, Eye, FileSpreadsheet, Send } from 'lucide-react';
+import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Info } from 'lucide-react';
 
 export default function AdminDashboard({ eventData, setEventData, guests, setGuests, setActiveGuestId, setActiveTab, refreshData }) {
   const [batchText, setBatchText] = useState('');
+  const [previewCardImg, setPreviewCardImg] = useState(eventData.cardImage || null);
 
   // Save Event Details
   const handleEventSubmit = async (e) => {
     e.preventDefault();
-    setEventData(eventData);
-    alert('تم حفظ تفاصيل المناسبة بنجاح!');
+    const updatedEv = { ...eventData, cardImage: previewCardImg };
+    setEventData(updatedEv);
+    alert('تم حفظ تفاصيل المناسبة وكرت الدعوة بنجاح!');
   };
 
-  // Upload Card Image
+  // Image Upload with Instant Live Preview
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setEventData({ ...eventData, cardImage: event.target.result });
+        setPreviewCardImg(event.target.result);
       };
       reader.readAsDataURL(file);
     }
@@ -94,7 +96,6 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
             name: name || "ضيف عزيز",
             phone: formatPhone(phoneRaw),
             status: "pending",
-            companions: 1,
             ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
             checkedIn: false,
             checkInTime: null
@@ -138,7 +139,6 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
           name: name || "ضيف عزيز",
           phone: formatPhone(phoneRaw),
           status: "pending",
-          companions: 1,
           ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
           checkedIn: false,
           checkInTime: null
@@ -169,30 +169,33 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
   const declined = guests.filter(g => g.status === 'declined').length;
   const pending = guests.filter(g => g.status === 'pending').length;
 
+  // Base URL (Adapts dynamically to localhost or Railway live domain!)
+  const baseUrl = window.location.origin;
+
   return (
     <div class="apple-dashboard">
 
       {/* WhatsApp Official Banner */}
-      <div class="apple-card" style={{ background: 'rgba(37, 211, 102, 0.08)', border: '1px solid rgba(37, 211, 102, 0.3)', padding: '16px 20px', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <MessageCircle size={28} style={{ color: '#25D366' }} />
+      <div class="apple-card" style={{ background: 'rgba(37, 211, 102, 0.08)', border: '1px solid rgba(37, 211, 102, 0.3)', padding: '18px 22px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <MessageCircle size={32} style={{ color: '#25D366' }} />
           <div>
-            <h3 style={{ fontSize: '1rem', color: '#14793b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              آلية إرسال الواتساب المباشر <span class="ios-badge ios-badge-green">مربوط ومفعّل مجاناً 100%</span>
+            <h3 style={{ fontSize: '1.05rem', color: '#14793b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              آلية إرسال الدعوات المباشرة بالواتساب <span class="ios-badge ios-badge-green">مربوطة ومفعلة تلقائياً 100%</span>
             </h3>
-            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-              يتم إنشاء رابط الواتساب الرسمي المباشر لكل ضيف تلقائياً. عند الضغط على زر "إرسال الواتساب" سيفتح تطبيق WhatsApp Web أو تطبيق الجوال مباشرة بالنص والكرت المخصص للضيف بنقرة واحدة.
+            <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              تفتح الروابط مباشرة عبر تطبيق الواتساب أو <strong>WhatsApp Web</strong> بنقرة واحدة لكل ضيف. يتضمّن النص الترحيبي ورابط بطاقة الضيف الشخصية الإلكترونية.
             </p>
           </div>
         </div>
       </div>
 
       <div class="grid-2col">
-        {/* Left: Event Form */}
+        {/* Left: Event Setup Form & Live Image Preview */}
         <div class="apple-card">
           <div class="card-title-row">
             <h2><Calendar class="system-gold" size={22} /> تفاصيل المناسبة وكرت الدعوة</h2>
-            <span class="ios-badge ios-badge-gold">Railway API</span>
+            <span class="ios-badge ios-badge-pink">وردي وأبيض هادئ</span>
           </div>
 
           <form onSubmit={handleEventSubmit}>
@@ -241,23 +244,41 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
               />
             </div>
 
+            {/* Card Image Upload & Instant Preview Box */}
             <div class="form-group">
-              <label>صورة كرت الدعوة</label>
+              <label>صورة كرت الدعوة ومعاينتها الحية</label>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <label class="apple-btn apple-btn-secondary" style={{ cursor: 'pointer' }}>
-                  <Upload size={16} /> رفع تصميم الكرت
+                  <Upload size={16} /> اختيار تصميم كرت الدعوة
                   <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
                 </label>
-                {eventData.cardImage && (
-                  <button type="button" class="apple-btn apple-btn-danger" onClick={() => setEventData({ ...eventData, cardImage: null })}>
-                    إزالة الصورة
+                {previewCardImg && (
+                  <button type="button" class="apple-btn apple-btn-danger" onClick={() => setPreviewCardImg(null)}>
+                    حذف الكرت
                   </button>
+                )}
+              </div>
+
+              {/* Instant Live Image Preview */}
+              <div class="card-preview-container">
+                {previewCardImg ? (
+                  <div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--pink-dark)', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
+                      ✨ معاينة حية للتصميم قبل الحفظ:
+                    </span>
+                    <img src={previewCardImg} alt="معاينة الكرت" class="card-preview-img" />
+                  </div>
+                ) : (
+                  <div style={{ padding: '20px', color: 'var(--text-tertiary)' }}>
+                    <ImageIcon size={36} style={{ color: 'var(--pink-light)', marginBottom: '6px' }} />
+                    <p style={{ fontSize: '0.85rem' }}>لم يتم رفع كرت دعوة بعد. اختر صورة لمعاينتها فوراً هنا.</p>
+                  </div>
                 )}
               </div>
             </div>
 
-            <button type="submit" class="apple-btn apple-btn-gold btn-block" style={{ marginTop: '10px' }}>
-              حفظ تفاصيل المناسبة
+            <button type="submit" class="apple-btn apple-btn-pink btn-block" style={{ marginTop: '10px' }}>
+              حفظ تفاصيل المناسبة والكرت
             </button>
           </form>
         </div>
@@ -271,7 +292,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
             </div>
             <div class="widgets-grid">
               <div class="apple-widget">
-                <div class="widget-icon blue"><Users size={24} /></div>
+                <div class="widget-icon pink"><Users size={24} /></div>
                 <div>
                   <div class="widget-val">{total}</div>
                   <div class="widget-lbl">إجمالي المدعوين</div>
@@ -308,22 +329,22 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
             </div>
             
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-              يمكنك رفع ملف Excel أو CSV يحتوي على قائمة الأسماء والأرقام لتسهيل الإدخال ومزامنته مع قاعدة البيانات.
+              يمكنك رفع ملف Excel أو CSV يحتوي على قائمة الأسماء والأرقام لتعبئتها وتخزينها تلقائياً.
             </p>
 
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
               <button class="apple-btn apple-btn-secondary" style={{ flex: 1 }} onClick={downloadExcelTemplate}>
-                <Download size={16} /> تحميل نموذج الإكسل (.CSV)
+                <Download size={16} /> تحميل قالب الإكسل (.CSV)
               </button>
 
-              <label class="apple-btn apple-btn-primary" style={{ flex: 1, cursor: 'pointer' }}>
-                <FileSpreadsheet size={16} /> رفع ملف الإكسل والمزامنة
+              <label class="apple-btn apple-btn-pink" style={{ flex: 1, cursor: 'pointer' }}>
+                <FileSpreadsheet size={16} /> رفع ملف الإكسل ومزامنة
                 <input type="file" accept=".csv, .xlsx, .xls" onChange={handleFileUpload} style={{ display: 'none' }} />
               </label>
             </div>
 
             {/* Manual Entry */}
-            <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: '14px' }}>
+            <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(244, 114, 182, 0.15)', paddingTop: '14px' }}>
               <div class="form-group">
                 <label>أو كتابة الأرقام يدوياً (الاسم، رقم الجوال):</label>
                 <textarea
@@ -334,8 +355,8 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
                   onChange={(e) => setBatchText(e.target.value)}
                 ></textarea>
               </div>
-              <button type="submit" class="apple-btn apple-btn-gold btn-block">
-                <Plus size={16} /> إضافة وحفظ في قاعدة البيانات
+              <button type="submit" class="apple-btn apple-btn-secondary btn-block">
+                <Plus size={16} /> إضافة وحفظ في القائمة
               </button>
             </form>
           </div>
@@ -378,8 +399,9 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
                 </tr>
               ) : (
                 guests.map((guest, idx) => {
+                  const guestLink = `${baseUrl}/?guest=${guest.id}`;
                   const waMsg = encodeURIComponent(
-                    `مرحباً ${guest.name} ✨\nيسرنا دعوتكم لحضور ${eventData.title}.\nيرجى استلام تذكرة الـ QR وتأكيد حضورك عبر الرابط:\n` + window.location.href
+                    `مرحباً ${guest.name} ✨\nيسرنا ويسعدنا دعوتكم لحضور ${eventData.title}.\nيرجى تأكيد حضورك واستلام تذكرتك عبر الرابط التالي:\n` + guestLink
                   );
                   const waUrl = `https://api.whatsapp.com/send?phone=${guest.phone}&text=${waMsg}`;
 
@@ -389,13 +411,13 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
                       <td><strong>{guest.name}</strong></td>
                       <td dir="ltr">{guest.phone}</td>
                       <td>
-                        {guest.status === 'accepted' && <span class="ios-badge ios-badge-green">مقبول ({guest.companions})</span>}
-                        {guest.status === 'declined' && <span class="ios-badge ios-badge-red">معتذر</span>}
-                        {guest.status === 'pending' && <span class="ios-badge ios-badge-gold">بانتظار الرد</span>}
+                        {guest.status === 'accepted' && <span class="ios-badge ios-badge-green">مقبول ✅</span>}
+                        {guest.status === 'declined' && <span class="ios-badge ios-badge-red">معتذر ❌</span>}
+                        {guest.status === 'pending' && <span class="ios-badge ios-badge-gold">بانتظار الرد ⏳</span>}
                       </td>
                       <td><code>{guest.ticketCode}</code></td>
                       <td>
-                        <a href={waUrl} target="_blank" rel="noreferrer" class="apple-btn apple-btn-whatsapp" style={{ padding: '6px 14px', fontSize: '0.82rem' }}>
+                        <a href={waUrl} target="_blank" rel="noreferrer" class="apple-btn apple-btn-whatsapp" style={{ padding: '7px 14px', fontSize: '0.84rem' }}>
                           <Send size={14} /> إرسال الواتساب
                         </a>
                       </td>
