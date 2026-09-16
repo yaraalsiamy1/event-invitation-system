@@ -10,7 +10,7 @@ export default function Header({ activeTab, setActiveTab }) {
             <Mail size={22} />
           </div>
           <div class="brand-text">
-            <h1 class="brand-title">دعواتنا <span>| Apple Event Pass</span></h1>
+            <h1 class="brand-title">دعواتنا <span>| Invitation</span></h1>
           </div>
         </div>
 

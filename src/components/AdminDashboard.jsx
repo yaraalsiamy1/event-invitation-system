@@ -71,7 +71,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
     }
   };
 
-  // Parse Uploaded Excel (.xlsx / .xls / .csv) File & Trigger Validation Modal
+  // Parse Uploaded Excel (.xlsx / .xls / .csv) File with 100% precision for "اسم الضيف" and "رقم الجوال"
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -83,46 +83,77 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
-        const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        const jsonObjects = XLSX.utils.sheet_to_json(worksheet);
+        const rawArrays = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
         const extractedRows = [];
-        jsonRows.forEach((row) => {
-          if (!row || row.length === 0) return;
-          
-          let name = "";
-          let phoneRaw = "";
 
-          row.forEach(cell => {
-            if (!cell) return;
-            const str = cell.toString().trim();
-            const cleanDigits = str.replace(/\D/g, '');
+        // Method 1: Keyed Objects (matches 'اسم الضيف' and 'رقم الجوال')
+        if (jsonObjects && jsonObjects.length > 0) {
+          jsonObjects.forEach((obj) => {
+            let name = "";
+            let phoneRaw = "";
 
-            if (cleanDigits.length >= 8) {
-              phoneRaw = str;
-            } else if (
-              str !== 'م' &&
-              str !== 'اسم الضيف' &&
-              str !== 'رقم الجوال' &&
-              !str.toLowerCase().includes('name') &&
-              !str.toLowerCase().includes('phone') &&
-              isNaN(str)
-            ) {
-              if (!name) name = str;
+            Object.keys(obj).forEach(key => {
+              const val = (obj[key] || '').toString().trim();
+              const keyClean = key.toString().trim();
+
+              if (keyClean.includes('اسم') || keyClean.toLowerCase().includes('name')) {
+                name = val;
+              } else if (keyClean.includes('جوال') || keyClean.includes('رقم') || keyClean.toLowerCase().includes('phone')) {
+                phoneRaw = val;
+              } else {
+                const cleanDigits = val.replace(/\D/g, '');
+                if (cleanDigits.length >= 8) {
+                  phoneRaw = val;
+                } else if (val && val !== 'م' && isNaN(val) && !name) {
+                  name = val;
+                }
+              }
+            });
+
+            if (phoneRaw && name !== 'اسم الضيف' && name !== 'الاسم') {
+              extractedRows.push({
+                name: name || "ضيف عزيز",
+                phone: phoneRaw
+              });
             }
           });
+        }
 
-          if (phoneRaw && name !== 'اسم الضيف' && name !== 'الاسم') {
-            extractedRows.push({
-              name: name || "ضيف عزيز",
-              phone: phoneRaw
+        // Method 2: Fallback 2D Array matching columns (Column B: Name, Column C: Phone)
+        if (extractedRows.length === 0 && rawArrays && rawArrays.length > 1) {
+          rawArrays.slice(1).forEach(row => {
+            if (!row || row.length === 0) return;
+            let name = "";
+            let phoneRaw = "";
+
+            row.forEach(cell => {
+              if (!cell) return;
+              const str = cell.toString().trim();
+              const cleanDigits = str.replace(/\D/g, '');
+
+              if (cleanDigits.length >= 8) {
+                phoneRaw = str;
+              } else if (str !== 'م' && str !== 'اسم الضيف' && str !== 'رقم الجوال' && isNaN(str)) {
+                if (!name) name = str;
+              }
             });
-          }
-        });
+
+            if (phoneRaw) {
+              extractedRows.push({
+                name: name || "ضيف عزيز",
+                phone: phoneRaw
+              });
+            }
+          });
+        }
 
         if (extractedRows.length > 0) {
           setPendingExcelRows(extractedRows);
         } else {
-          alert('لم يتم العثور على بيانات مدعوين صالحة في ملف الإكسل. يرجى التأكد من تعبئة تمبلت الدعوات.xlsx.');
+          alert('لم يتم العثور على أرقام وأسماء مدعوين صالحة في ملف الإكسل. يرجى التأكد من تعبئة عمودي "اسم الضيف" و "رقم الجوال" في تمبلت الدعوات.xlsx.');
         }
       } catch (err) {
         alert('حدث خطأ أثناء قراءة ملف الإكسل. يرجى التأكد من رفع ملف XLSX صالحة.');
@@ -136,7 +167,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
   const handleConfirmValidationSave = async (validGuests) => {
     setPendingExcelRows(null);
     await saveBatchToApi(validGuests);
-    alert(`تم فتح وتدقيق واعتماد ${validGuests.length} مدعو بنجاح في قاعدة البيانات!`);
+    alert(`تم فحص وتأكيد واعتماد ${validGuests.length} مدعو بنجاح بالأسماء والأرقام في قاعدة البيانات!`);
   };
 
   // Process Batch Text Entry
@@ -463,7 +494,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
             </div>
             
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-              عند اختيار الملف تظهر لك شاشة تحقق لمراجعة صحة الأرقام وتعديل الأخطاء قبل الحفظ النهائي.
+              عند اختيار الملف تظهر لك شاشة تحقق لمراجعة صحة الأسماء والأرقام وتعديل الأخطاء قبل الحفظ النهائي.
             </p>
 
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -528,7 +559,7 @@ export default function AdminDashboard({ eventData, setEventData, guests, setGue
               {guests.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
-                    لا يوجد مدعوين محفطوين حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
+                    لا يوجد مدعوين محفوظين حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
                   </td>
                 </tr>
               ) : (
