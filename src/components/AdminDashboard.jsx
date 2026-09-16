@@ -732,9 +732,7 @@ export default function AdminDashboard({
                 <th>#</th>
                 <th>اسم الضيف</th>
                 <th>رقم الجوال</th>
-                <th>حالة الإرسال</th>
-                <th>حالة الدعوة</th>
-                <th>إرسال الواتساب</th>
+                <th>الحالة</th>
                 <th>معاينة الكرت</th>
                 <th>حذف</th>
               </tr>
@@ -742,18 +740,13 @@ export default function AdminDashboard({
             <tbody>
               {guests.length === 0 ? (
                 <tr>
-                  <td colSpan="9" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
                     لا يوجد مدعوين محفوظين لهذه المناسبة حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
                   </td>
                 </tr>
               ) : (
                 guests.map((guest, idx) => {
                   const isChecked = selectedGuestIds.includes(guest.id);
-                  const guestLink = `${baseUrl}/?guest=${guest.id}`;
-                  const waMsg = encodeURIComponent(
-                    `مرحباً ${guest.name}\nيسرنا ويسعدنا دعوتكم لحضور ${eventData?.title}.\nيرجى تأكيد حضورك واستلام تذكرتك عبر الرابط التالي:\n` + guestLink
-                  );
-                  const waUrl = `https://api.whatsapp.com/send?phone=${guest.phone}&text=${waMsg}`;
 
                   return (
                     <tr key={guest.id} style={{ background: isChecked ? 'rgba(253, 242, 245, 0.4)' : 'transparent' }}>
@@ -769,25 +762,21 @@ export default function AdminDashboard({
                       <td><strong>{guest.name}</strong></td>
                       <td dir="ltr">{guest.phone}</td>
                       <td>
-                        {guest.sent ? (
-                          <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Check size={13} /> تم الإرسال
-                          </span>
-                        ) : (
-                          <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Clock size={13} /> لم يُرسل بعد
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        {guest.status === 'accepted' && <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={13} /> مقبول</span>}
-                        {guest.status === 'declined' && <span className="ios-badge ios-badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><X size={13} /> معتذر</span>}
-                        {guest.status === 'pending' && <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Clock size={13} /> بانتظار الرد</span>}
-                      </td>
-                      <td>
-                        <a href={waUrl} target="_blank" rel="noreferrer" className="apple-btn apple-btn-whatsapp" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-                          <Send size={13} /> إرسال الواتساب
-                        </a>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          {guest.sent ? (
+                            <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}>
+                              <Check size={12} /> تم الإرسال
+                            </span>
+                          ) : (
+                            <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}>
+                              <Clock size={12} /> لم يُرسل بعد
+                            </span>
+                          )}
+
+                          {guest.status === 'accepted' && <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}><Check size={12} /> مقبول</span>}
+                          {guest.status === 'declined' && <span className="ios-badge ios-badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}><X size={12} /> معتذر</span>}
+                          {guest.status === 'pending' && <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}><Clock size={12} /> بانتظار الرد</span>}
+                        </div>
                       </td>
                       <td>
                         <button
