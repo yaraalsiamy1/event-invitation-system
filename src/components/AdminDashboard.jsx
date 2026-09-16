@@ -556,19 +556,33 @@ export default function AdminDashboard({
               </div>
 
               <form onSubmit={handleEventSubmit}>
-                <div className="form-group">
-                  <label>عنوان المناسبة / الحفل</label>
-                  <input
-                    type="text"
-                    className="apple-input"
-                    value={eventData?.title || ''}
-                    onChange={(e) => setEventData({ ...eventData, title: e.target.value })}
-                    required
-                  />
+                {/* Row 1: Title & Location side-by-side */}
+                <div className="grid-2col" style={{ gap: '14px', marginBottom: '14px' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>عنوان المناسبة / الحفل</label>
+                    <input
+                      type="text"
+                      className="apple-input"
+                      value={eventData?.title || ''}
+                      onChange={(e) => setEventData({ ...eventData, title: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>مكان المناسبة (اسم القاعة / الفندق / المدينة)</label>
+                    <input
+                      type="text"
+                      className="apple-input"
+                      value={eventData?.location || ''}
+                      onChange={(e) => setEventData({ ...eventData, location: e.target.value })}
+                    />
+                  </div>
                 </div>
 
-                <div className="grid-2col" style={{ gap: '12px' }}>
-                  <div className="form-group">
+                {/* Row 2: Date, Time & Google Maps Link side-by-side */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '14px' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label>تاريخ المناسبة</label>
                     <input
                       type="date"
@@ -578,7 +592,7 @@ export default function AdminDashboard({
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label>وقت المناسبة</label>
                     <input
                       type="time"
@@ -587,64 +601,51 @@ export default function AdminDashboard({
                       onChange={(e) => setEventData({ ...eventData, time: e.target.value })}
                     />
                   </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>رابط اللوكيشن في خرائط جوجل (Google Maps)</label>
+                    <input
+                      type="text"
+                      className="apple-input"
+                      style={{ direction: 'ltr', textAlign: 'right' }}
+                      value={eventData?.mapLink || ''}
+                      onChange={(e) => setEventData({ ...(eventData || {}), mapLink: e.target.value })}
+                    />
+                  </div>
                 </div>
 
-                <div className="form-group">
-                  <label>مكان المناسبة (اسم القاعة / الفندق / المدينة)</label>
-                  <input
-                    type="text"
-                    className="apple-input"
-                    value={eventData?.location || ''}
-                    onChange={(e) => setEventData({ ...eventData, location: e.target.value })}
-                  />
-                </div>
+                {/* Row 3: Card Image Upload & Save Action Bar */}
+                <div className="form-group" style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px', marginBottom: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <label className="apple-btn apple-btn-secondary" style={{ cursor: 'pointer', fontSize: '0.85rem' }}>
+                        <Upload size={16} /> تغيير صورة كرت الدعوة
+                        <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                      </label>
+                      {previewCardImg ? (
+                        <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Check size={14} /> تم رفع الكرت
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>لم يتم رفع كرت دعوة بعد</span>
+                      )}
+                    </div>
 
-                <div className="form-group">
-                  <label>رابط اللوكيشن في خرائط جوجل (Google Maps)</label>
-                  <input
-                    type="text"
-                    className="apple-input"
-                    style={{ direction: 'ltr', textAlign: 'right' }}
-                    value={eventData?.mapLink || ''}
-                    onChange={(e) => setEventData({ ...(eventData || {}), mapLink: e.target.value })}
-                  />
-                </div>
-
-                {/* Live Card Design Image Uploader */}
-                <div className="form-group" style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px' }}>
-                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>صورة كرت الدعوة الخاص بهذه المناسبة:</span>
-                    {previewCardImg && <span className="ios-badge ios-badge-green" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={14} /> تم رفع الكرت</span>}
-                  </label>
-
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '6px' }}>
-                    <label className="apple-btn apple-btn-secondary" style={{ flex: 1, cursor: 'pointer' }}>
-                      <Upload size={16} /> تغيير صورة كرت الدعوة
-                      <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-                    </label>
+                    <button type="button" onClick={handleEventSubmit} className="apple-btn apple-btn-pink" style={{ padding: '8px 24px', fontSize: '0.88rem', cursor: 'pointer' }}>
+                      حفظ تفاصيل المناسبة والكرت
+                    </button>
                   </div>
 
                   {/* Card Image Preview Box */}
-                  <div className="card-preview-box" style={{ marginTop: '12px' }}>
-                    {previewCardImg ? (
-                      <div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--pink-dark)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
-                          <Sparkles size={14} /> معاينة حية لكرت هذه المناسبة:
-                        </span>
-                        <img src={previewCardImg} alt="معاينة الكرت" className="card-preview-img" />
-                      </div>
-                    ) : (
-                      <div style={{ padding: '20px', color: 'var(--text-tertiary)' }}>
-                        <ImageIcon size={36} style={{ color: 'var(--pink-primary)', marginBottom: '6px' }} />
-                        <p style={{ fontSize: '0.85rem' }}>لم يتم رفع كرت دعوة لهذه المناسبة بعد.</p>
-                      </div>
-                    )}
-                  </div>
+                  {previewCardImg && (
+                    <div className="card-preview-box" style={{ marginTop: '12px' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--pink-dark)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
+                        <Sparkles size={14} /> معاينة حية لكرت هذه المناسبة:
+                      </span>
+                      <img src={previewCardImg} alt="معاينة الكرت" className="card-preview-img" style={{ maxHeight: '140px' }} />
+                    </div>
+                  )}
                 </div>
-
-                <button type="button" onClick={handleEventSubmit} className="apple-btn apple-btn-pink btn-block" style={{ marginTop: '10px', cursor: 'pointer' }}>
-                  حفظ تفاصيل المناسبة والكرت
-                </button>
               </form>
             </div>
 
