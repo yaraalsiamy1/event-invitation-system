@@ -523,13 +523,121 @@ body.apple-theme {
     background: rgba(253, 240, 244, 0.3);
 }
 
+/* Prevent unwanted iOS Safari page zoom when tapping input fields */
+input, select, textarea {
+    font-size: 16px !important;
+}
+
 .grid-2col {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 24px;
+    gap: 20px;
 }
 
-@media (max-width: 900px) {
-    .grid-2col { grid-template-columns: 1fr; }
-    .widgets-grid { grid-template-columns: 1fr; }
+/* Mobile & Tablet Responsive Media Queries */
+@media (max-width: 768px) {
+    .apple-container {
+        padding: 12px 14px !important;
+    }
+
+    .nav-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .apple-brand {
+        justify-content: center;
+    }
+
+    .brand-title {
+        font-size: 1.15rem;
+    }
+
+    .ios-segmented-control {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .segment-btn {
+        flex: 1;
+        padding: 8px 10px;
+        font-size: 0.82rem;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .apple-card {
+        padding: 16px;
+        margin-bottom: 16px;
+        border-radius: var(--radius-ios-md);
+    }
+
+    .card-title-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .card-title-row h2 {
+        font-size: 1.05rem;
+    }
+
+    .grid-2col {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    .widgets-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    .apple-widget {
+        padding: 12px 10px;
+        gap: 10px;
+    }
+
+    .widget-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 1rem;
+    }
+
+    .widget-val {
+        font-size: 1.2rem;
+    }
+
+    .widget-lbl {
+        font-size: 0.75rem;
+    }
+
+    .iphone-frame {
+        max-width: 100% !important;
+        border-width: 4px !important;
+        border-radius: 28px !important;
+        padding: 10px 6px !important;
+        box-shadow: none !important;
+    }
+
+    .apple-table th, .apple-table td {
+        padding: 10px 8px;
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+
+    .apple-btn {
+        padding: 10px 16px;
+        font-size: 0.88rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .widgets-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .segment-btn span {
+        font-size: 0.78rem;
+    }
 }

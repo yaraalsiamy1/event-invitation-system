@@ -21,7 +21,7 @@ export default function Header({ activeTab, setActiveTab }) {
             onClick={() => setActiveTab('admin')}
           >
             <LayoutDashboard size={16} />
-            <span>لوحة التحكم واستيراد الإكسل</span>
+            <span>لوحة التحكم</span>
           </button>
           
           <button
@@ -29,7 +29,7 @@ export default function Header({ activeTab, setActiveTab }) {
             onClick={() => setActiveTab('guest')}
           >
             <Ticket size={16} />
-            <span>معاينة واجهة الضيف وتذكرة الـ QR</span>
+            <span>معاينة واجهة الضيف</span>
           </button>
         </nav>
       </div>
