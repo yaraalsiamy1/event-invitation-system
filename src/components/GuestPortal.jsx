@@ -26,7 +26,7 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
 
   if (!activeGuest) {
     return (
-      <div class="apple-card" style={{ textAlign: 'center', padding: '40px' }}>
+      <div className="apple-card" style={{ textAlign: 'center', padding: '40px' }}>
         <p style={{ color: 'var(--text-secondary)' }}>لا يوجد ضيف محدد للمعاينة. قم بإضافة مدعوين من لوحة التحكم.</p>
       </div>
     );
@@ -70,15 +70,15 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
   });
 
   return (
-    <div class="apple-guest-portal">
+    <div className="apple-guest-portal">
       {/* Top Banner selector */}
-      <div class="apple-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+      <div className="apple-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem' }}>
-          <Smartphone class="pink-dark" size={18} style={{ color: 'var(--pink-primary)' }} />
+          <Smartphone className="pink-dark" size={18} style={{ color: 'var(--pink-primary)' }} />
           <span>معاينة واجهة iPhone الفاتحة الخاصة بالضيف:</span>
         </div>
         <select
-          class="apple-input"
+          className="apple-input"
           style={{ width: 'auto', padding: '6px 14px', fontSize: '0.85rem' }}
           value={activeGuest.id}
           onChange={(e) => setActiveGuestId(e.target.value)}
@@ -92,12 +92,12 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
       </div>
 
       {/* iPhone Simulator Frame */}
-      <div class="iphone-frame">
+      <div className="iphone-frame">
         <div style={{ background: '#fff5f7', borderRadius: '36px', padding: '24px 16px', minHeight: '620px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Header Tag */}
           <div style={{ textAlign: 'center' }}>
-            <span class="ios-badge ios-badge-pink" style={{ padding: '6px 18px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <span className="ios-badge ios-badge-pink" style={{ padding: '6px 18px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <Mail size={16} /> دعوة خاصة رسمية
             </span>
           </div>
@@ -148,7 +148,7 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
 
           {/* Pending State -> Prominent & Accessible Large RSVP Buttons */}
           {activeGuest.status === 'pending' && (
-            <div class="apple-card" style={{ padding: '22px 18px', textAlign: 'center' }}>
+            <div className="apple-card" style={{ padding: '22px 18px', textAlign: 'center' }}>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '6px', fontWeight: 800 }}>هل ستتشرفنا بالحضور؟</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
                 يرجى تحديد اختيارك لتوليد تذكرة وباركود الحضور الخاص بك
@@ -156,10 +156,10 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
 
               {/* Ultra Clear Large Buttons for All Ages */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <button class="apple-btn apple-btn-success-large btn-block" onClick={() => handleRSVP('accepted')}>
+                <button className="apple-btn apple-btn-success-large btn-block" onClick={() => handleRSVP('accepted')}>
                   <Check size={26} /> تأكيد الحضور
                 </button>
-                <button class="apple-btn apple-btn-decline-large btn-block" onClick={() => handleRSVP('declined')}>
+                <button className="apple-btn apple-btn-decline-large btn-block" onClick={() => handleRSVP('declined')}>
                   <X size={26} /> الاعتذار عن الحضور
                 </button>
               </div>
@@ -168,11 +168,11 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
 
           {/* Declined State */}
           {activeGuest.status === 'declined' && (
-            <div class="apple-card" style={{ padding: '24px', textAlign: 'center', borderColor: 'var(--system-red)' }}>
+            <div className="apple-card" style={{ padding: '24px', textAlign: 'center', borderColor: 'var(--system-red)' }}>
               <HeartHandshake size={52} style={{ color: 'var(--system-red)', margin: '0 auto 12px' }} />
               <h3 style={{ color: 'var(--system-red)', marginBottom: '6px', fontSize: '1.25rem', fontWeight: 800 }}>تم تسجيل اعتذارك بنجاح</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>نشكرك على إبلاغنا ونتمنى لك كل التوفيق.</p>
-              <button class="apple-btn apple-btn-secondary" style={{ fontSize: '0.85rem', padding: '8px 16px' }} onClick={() => handleRSVP('pending')}>
+              <button className="apple-btn apple-btn-secondary" style={{ fontSize: '0.85rem', padding: '8px 16px' }} onClick={() => handleRSVP('pending')}>
                 تغيير الرغبة
               </button>
             </div>
@@ -180,34 +180,34 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
 
           {/* Accepted State -> Apple Wallet Ticket */}
           {activeGuest.status === 'accepted' && (
-            <div class="wallet-pass-container">
-              <div class="wallet-pass">
+            <div className="wallet-pass-container">
+              <div className="wallet-pass">
                 {/* Header */}
-                <div class="pass-header">
+                <div className="pass-header">
                   <div>
-                    <div class="pass-header-title">APPLE WALLET EVENT PASS</div>
-                    <div class="pass-header-name">{activeGuest.name}</div>
+                    <div className="pass-header-title">APPLE WALLET EVENT PASS</div>
+                    <div className="pass-header-name">{activeGuest.name}</div>
                   </div>
                   <ShieldCheck size={28} />
                 </div>
 
                 {/* Tear Notch */}
-                <div class="pass-cutout-line">
-                  <div class="notch-left"></div>
-                  <div class="dashed"></div>
-                  <div class="notch-right"></div>
+                <div className="pass-cutout-line">
+                  <div className="notch-left"></div>
+                  <div className="dashed"></div>
+                  <div className="notch-right"></div>
                 </div>
 
                 {/* Body */}
-                <div class="pass-body">
+                <div className="pass-body">
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>ابرز هذا الرمز لمنظمي المناسبة عند الوصول</p>
                   
-                  <div class="pass-qr-box">
+                  <div className="pass-qr-box">
                     <QRCodeSVG value={qrPayload} size={160} level="H" includeMargin={false} />
                   </div>
 
                   <div>
-                    <div class="pass-code-pill">{activeGuest.ticketCode}</div>
+                    <div className="pass-code-pill">{activeGuest.ticketCode}</div>
                   </div>
 
                   <div style={{ borderTop: '1px solid rgba(244,114,182,0.15)', paddingTop: '12px', fontSize: '0.88rem' }}>
@@ -217,8 +217,8 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
                   </div>
                 </div>
 
-                <div class="pass-footer">
-                  <button class="apple-btn apple-btn-pink btn-block" style={{ fontSize: '0.88rem' }} onClick={() => alert('تم حفظ بطاقة الدخول محلياً على الجوال!')}>
+                <div className="pass-footer">
+                  <button className="apple-btn apple-btn-pink btn-block" style={{ fontSize: '0.88rem' }} onClick={() => alert('تم حفظ بطاقة الدخول محلياً على الجوال!')}>
                     <Download size={16} /> حفظ بطاقة الدخول للجوال
                   </button>
                 </div>

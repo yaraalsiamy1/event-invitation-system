@@ -14,7 +14,7 @@ export default function EventsSidebar({ events = [], activeEventId, onSelectEven
   };
 
   return (
-    <div class="apple-card" style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div className="apple-card" style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Sidebar Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(244, 165, 186, 0.2)', paddingBottom: '14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -24,12 +24,12 @@ export default function EventsSidebar({ events = [], activeEventId, onSelectEven
             <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>إدارة وتبديل الدعوات</span>
           </div>
         </div>
-        <span class="ios-badge ios-badge-pink">{events.length} مناسبة</span>
+        <span className="ios-badge ios-badge-pink">{events.length} مناسبة</span>
       </div>
 
       {/* Add New Event Button */}
       <button
-        class="apple-btn apple-btn-pink"
+        className="apple-btn apple-btn-pink"
         style={{ width: '100%', padding: '12px 16px', fontSize: '0.9rem', justifyContent: 'center' }}
         onClick={onOpenNewEventModal}
       >
@@ -73,7 +73,7 @@ export default function EventsSidebar({ events = [], activeEventId, onSelectEven
                   </div>
 
                   {isActive && (
-                    <span class="ios-badge ios-badge-green" style={{ fontSize: '0.7rem', padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <span className="ios-badge ios-badge-green" style={{ fontSize: '0.7rem', padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '3px' }}>
                       <Check size={12} /> نشط حالياً
                     </span>
                   )}
@@ -82,7 +82,7 @@ export default function EventsSidebar({ events = [], activeEventId, onSelectEven
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={13} /> {ev.date || 'بدون تاريخ'}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span class="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem' }}>
+                    <span className="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem' }}>
                       {ev.totalGuests || 0} مدعوين
                     </span>
                     {events.length > 1 && (

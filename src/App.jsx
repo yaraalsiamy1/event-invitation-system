@@ -214,12 +214,12 @@ export default function App() {
   };
 
   return (
-    <div class="apple-app-root">
+    <div className="apple-app-root">
       {/* Apple Light Navbar */}
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Main Container */}
-      <main class="apple-container" style={{ paddingTop: '28px', paddingBottom: '60px' }}>
+      <main className="apple-container" style={{ paddingTop: '28px', paddingBottom: '60px' }}>
         {activeTab === 'admin' && (
           <AdminDashboard
             events={events}
@@ -250,7 +250,7 @@ export default function App() {
       </main>
 
       <footer style={{ borderTop: '1px solid var(--apple-border)', padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-        <div class="apple-container">
+        <div className="apple-container">
           نظام دعواتنا المتعدد للمناسبات وتأكيد الحضور تلقائياً عبر الواتساب &copy; 2026 — جاهز ومربوط بالنشر على Railway
         </div>
       </footer>

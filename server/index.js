@@ -137,7 +137,11 @@ app.post('/api/guests/:id/rsvp', async (req, res) => {
 app.post('/api/send-whatsapp-batch', async (req, res) => {
   try {
     const { instanceId, apiToken, hostUrl, eventId, guestIds } = req.body;
-    const event = await db.getEvent(eventId);
+    let event = await db.getEvent(eventId);
+    if (!event) {
+      const allEvs = await db.getAllEvents();
+      event = allEvs[0] || { title: "المناسبة" };
+    }
     let allGuests = await db.getGuests(eventId);
 
     let targetGuests = allGuests;

@@ -91,9 +91,9 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
-          <div class="form-group" style={{ marginBottom: '16px' }}>
+          <div className="form-group" style={{ marginBottom: '16px' }}>
             <label>نوع المناسبة:</label>
-            <select class="apple-input" value={type} onChange={(e) => setType(e.target.value)}>
+            <select className="apple-input" value={type} onChange={(e) => setType(e.target.value)}>
               <option value="wedding">حفل زفاف / خطوبة</option>
               <option value="graduation">حفل تخرج</option>
               <option value="birthday">حفل ميلاد / مولود</option>
@@ -103,11 +103,11 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
             </select>
           </div>
 
-          <div class="form-group" style={{ marginBottom: '16px' }}>
+          <div className="form-group" style={{ marginBottom: '16px' }}>
             <label>عنوان المناسبة (يظهر في الدعوة والواتساب):</label>
             <input
               type="text"
-              class="apple-input"
+              className="apple-input"
               placeholder="مثال: حفل تخرج د. نورة الشمري"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -115,42 +115,42 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
-            <div class="form-group">
+            <div className="form-group">
               <label>تاريخ المناسبة:</label>
               <input
                 type="date"
-                class="apple-input"
+                className="apple-input"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
             </div>
-            <div class="form-group">
+            <div className="form-group">
               <label>وقت المناسبة:</label>
               <input
                 type="time"
-                class="apple-input"
+                className="apple-input"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
               />
             </div>
           </div>
 
-          <div class="form-group" style={{ marginBottom: '16px' }}>
+          <div className="form-group" style={{ marginBottom: '16px' }}>
             <label>اسم القاعة / موقع المناسبة:</label>
             <input
               type="text"
-              class="apple-input"
+              className="apple-input"
               placeholder="مثال: قاعة الفخامة والمؤتمرات - الرياض"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
             />
           </div>
 
-          <div class="form-group" style={{ marginBottom: '16px' }}>
+          <div className="form-group" style={{ marginBottom: '16px' }}>
             <label>رابط اللوكيشن في خرائط جوجل:</label>
             <input
               type="text"
-              class="apple-input"
+              className="apple-input"
               style={{ direction: 'ltr', textAlign: 'right' }}
               placeholder="https://maps.google.com/..."
               value={mapLink}
@@ -158,10 +158,10 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
             />
           </div>
 
-          <div class="form-group" style={{ marginBottom: '20px' }}>
+          <div className="form-group" style={{ marginBottom: '20px' }}>
             <label>رفع صورة كرت الدعوة الخاص بهذه المناسبة:</label>
             <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-              <label class="apple-btn apple-btn-secondary" style={{ cursor: 'pointer', flex: 1 }}>
+              <label className="apple-btn apple-btn-secondary" style={{ cursor: 'pointer', flex: 1 }}>
                 <Upload size={16} /> اختر صورة الكرت
                 <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
               </label>
@@ -176,7 +176,7 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
 
           <button
             type="button"
-            class="apple-btn apple-btn-pink btn-block"
+            className="apple-btn apple-btn-pink btn-block"
             style={{ padding: '14px', fontSize: '1rem', cursor: 'pointer' }}
             onClick={handleSubmit}
           >

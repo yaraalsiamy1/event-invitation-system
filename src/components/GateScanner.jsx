@@ -121,18 +121,18 @@ export default function GateScanner({ guests, setGuests, gateLogs, setGateLogs }
   };
 
   return (
-    <div class="apple-gate-scanner">
-      <div class="apple-card" style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <h2><QrCode class="system-gold" size={24} /> جهاز فحص باركود البوابة (iOS Gate Check-in)</h2>
+    <div className="apple-gate-scanner">
+      <div className="apple-card" style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <h2><QrCode className="system-gold" size={24} /> جهاز فحص باركود البوابة (iOS Gate Check-in)</h2>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
           امسح رمز الـ QR من تذكرة الضيف أو أدخل كود التذكرة/رقم الجوال للتحقق والتسجيل المباشر
         </p>
       </div>
 
-      <div class="grid-2col">
+      <div className="grid-2col">
         {/* Left: Camera & Manual Entry */}
         <div>
-          <div class="apple-card" style={{ padding: '20px' }}>
+          <div className="apple-card" style={{ padding: '20px' }}>
             <div
               id="reader"
               style={{
@@ -147,31 +147,31 @@ export default function GateScanner({ guests, setGuests, gateLogs, setGateLogs }
 
             {!isCameraActive && (
               <div style={{ height: '200px', background: 'rgba(0, 0, 0, 0.4)', border: '2px dashed var(--apple-border-gold)', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                <Camera size={48} class="system-gold" style={{ marginBottom: '10px', opacity: 0.7 }} />
+                <Camera size={48} className="system-gold" style={{ marginBottom: '10px', opacity: 0.7 }} />
                 <p style={{ fontSize: '0.88rem' }}>اضغط على تشغيل الكاميرا لمسح رمز الـ QR</p>
               </div>
             )}
 
-            <button class="apple-btn apple-btn-primary btn-block" style={{ marginTop: '14px' }} onClick={toggleCamera}>
+            <button className="apple-btn apple-btn-primary btn-block" style={{ marginTop: '14px' }} onClick={toggleCamera}>
               <Camera size={18} /> {isCameraActive ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا لمسح الـ QR'}
             </button>
           </div>
 
           {/* Manual Entry Input */}
-          <div class="apple-card">
+          <div className="apple-card">
             <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>
               أو أدخل كود التذكرة / رقم الجوال يدويًا:
             </label>
             <div style={{ display: 'flex', gap: '10px' }}>
               <input
                 type="text"
-                class="apple-input"
+                className="apple-input"
                 placeholder="مثال: EV-897412 أو 0501234567"
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleCheckIn(inputVal)}
               />
-              <button class="apple-btn apple-btn-gold" onClick={() => handleCheckIn(inputVal)}>
+              <button className="apple-btn apple-btn-gold" onClick={() => handleCheckIn(inputVal)}>
                 <Search size={16} /> تحقق
               </button>
             </div>
@@ -181,17 +181,17 @@ export default function GateScanner({ guests, setGuests, gateLogs, setGateLogs }
         {/* Right: Scan Results & Log */}
         <div>
           {/* Result Card */}
-          <div class="apple-card" style={{ minHeight: '260px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+          <div className="apple-card" style={{ minHeight: '260px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
             {!scanResult ? (
               <div style={{ color: 'var(--text-secondary)' }}>
-                <QrCode size={54} class="system-gold" style={{ opacity: 0.4, marginBottom: '12px' }} />
+                <QrCode size={54} className="system-gold" style={{ opacity: 0.4, marginBottom: '12px' }} />
                 <h3>في انتظار مسح التذكرة...</h3>
                 <p style={{ fontSize: '0.82rem', marginTop: '6px' }}>ستظهر نتائج التحقق من هويات الضيوف هنا فوراً.</p>
               </div>
             ) : scanResult.type === 'success' ? (
               <div>
                 <CheckCircle2 size={58} style={{ color: 'var(--system-green)', margin: '0 auto 12px' }} />
-                <span class="ios-badge ios-badge-green" style={{ fontSize: '0.9rem', marginBottom: '10px' }}>دخول مسموح - تذكرة معتمدة</span>
+                <span className="ios-badge ios-badge-green" style={{ fontSize: '0.9rem', marginBottom: '10px' }}>دخول مسموح - تذكرة معتمدة</span>
                 <h2 style={{ fontSize: '1.4rem', marginTop: '8px' }}>{scanResult.guest.name}</h2>
                 
                 <div style={{ background: 'rgba(48, 209, 88, 0.08)', border: '1px solid rgba(48, 209, 88, 0.3)', borderRadius: '14px', padding: '14px', marginTop: '14px', textAlign: 'right', fontSize: '0.85rem' }}>
@@ -204,7 +204,7 @@ export default function GateScanner({ guests, setGuests, gateLogs, setGateLogs }
             ) : (
               <div>
                 <AlertTriangle size={58} style={{ color: 'var(--system-red)', margin: '0 auto 12px' }} />
-                <span class="ios-badge ios-badge-red" style={{ fontSize: '0.9rem', marginBottom: '10px' }}>تنبيه: محاولة غير صالحة</span>
+                <span className="ios-badge ios-badge-red" style={{ fontSize: '0.9rem', marginBottom: '10px' }}>تنبيه: محاولة غير صالحة</span>
                 {scanResult.guest && <h2 style={{ fontSize: '1.3rem', marginTop: '8px' }}>{scanResult.guest.name}</h2>}
                 <p style={{ color: 'var(--system-red)', marginTop: '10px', fontSize: '0.9rem' }}>{scanResult.message}</p>
               </div>
@@ -212,9 +212,9 @@ export default function GateScanner({ guests, setGuests, gateLogs, setGateLogs }
           </div>
 
           {/* Activity Log */}
-          <div class="apple-card">
-            <div class="card-title-row">
-              <h3><History class="system-gold" size={18} /> سجل الحضور الفوري عند البوابة</h3>
+          <div className="apple-card">
+            <div className="card-title-row">
+              <h3><History className="system-gold" size={18} /> سجل الحضور الفوري عند البوابة</h3>
               <small style={{ color: 'var(--text-secondary)' }}>{gateLogs.length} سجلات</small>
             </div>
             

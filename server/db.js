@@ -39,14 +39,37 @@ class MultiEventJSONDatabase {
   }
 
   read() {
+    const createDefault = () => {
+      const defaultEv = {
+        id: "ev_default",
+        title: "حفل زفاف د. محمد و أ. نورة",
+        type: "wedding",
+        date: new Date().toISOString().split('T')[0],
+        time: "20:00",
+        location: "قاعة الفخامة الكبرى - الرياض",
+        mapLink: "https://maps.google.com",
+        cardImage: null,
+        guests: []
+      };
+      return { activeEventId: defaultEv.id, events: [defaultEv] };
+    };
+
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf8');
         const parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.events)) return parsed;
+        if (parsed && Array.isArray(parsed.events) && parsed.events.length > 0) {
+          if (!parsed.activeEventId) {
+            parsed.activeEventId = parsed.events[0].id;
+          }
+          return parsed;
+        }
       }
     } catch (e) {}
-    return { activeEventId: null, events: [] };
+
+    const defaultData = createDefault();
+    this.write(defaultData);
+    return defaultData;
   }
 
   write(data) {

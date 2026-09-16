@@ -423,7 +423,7 @@ export default function AdminDashboard({
   const baseUrl = window.location.origin;
 
   return (
-    <div class="apple-dashboard">
+    <div className="apple-dashboard">
 
       {/* EXCEL VALIDATION MODAL OVERLAY */}
       {pendingExcelRows && (
@@ -462,7 +462,7 @@ export default function AdminDashboard({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
           {/* Active Event Indicator Banner */}
-          <div class="apple-card" style={{ padding: '18px 24px', background: 'var(--pink-light)', border: '1.5px solid var(--pink-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: 0 }}>
+          <div className="apple-card" style={{ padding: '18px 24px', background: 'var(--pink-light)', border: '1.5px solid var(--pink-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <Layers size={26} style={{ color: 'var(--pink-primary)' }} />
               <div>
@@ -470,110 +470,110 @@ export default function AdminDashboard({
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{eventData?.title || 'مناسبة بدون عنوان'}</h2>
               </div>
             </div>
-            <button class="apple-btn apple-btn-pink" style={{ fontSize: '0.86rem', padding: '10px 18px' }} onClick={() => setIsNewEventModalOpen(true)}>
+            <button className="apple-btn apple-btn-pink" style={{ fontSize: '0.86rem', padding: '10px 18px' }} onClick={() => setIsNewEventModalOpen(true)}>
               <Plus size={16} /> إنشاء مناسبة جديدة
             </button>
           </div>
 
           {/* LIVE STATISTICAL METRICS WIDGETS */}
-          <div class="apple-card" style={{ background: '#ffffff', border: '1.5px solid rgba(244, 165, 186, 0.35)', marginBottom: 0 }}>
-            <div class="card-title-row" style={{ marginBottom: '16px' }}>
+          <div className="apple-card" style={{ background: '#ffffff', border: '1.5px solid rgba(244, 165, 186, 0.35)', marginBottom: 0 }}>
+            <div className="card-title-row" style={{ marginBottom: '16px' }}>
               <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <BarChart3 size={20} style={{ color: 'var(--pink-primary)' }} /> المؤشرات الإحصائية الحية لمناسبة ({eventData?.title || 'المناسبة الحالية'})
               </h2>
-              <span class="ios-badge ios-badge-pink">تحديث مباشر لحظي</span>
+              <span className="ios-badge ios-badge-pink">تحديث مباشر لحظي</span>
             </div>
-            <div class="widgets-grid">
-              <div class="apple-widget">
-                <div class="widget-icon pink"><Users size={24} /></div>
+            <div className="widgets-grid">
+              <div className="apple-widget">
+                <div className="widget-icon pink"><Users size={24} /></div>
                 <div>
-                  <div class="widget-val">{total}</div>
-                  <div class="widget-lbl">إجمالي المدعوين</div>
+                  <div className="widget-val">{total}</div>
+                  <div className="widget-lbl">إجمالي المدعوين</div>
                 </div>
               </div>
-              <div class="apple-widget">
-                <div class="widget-icon green"><CheckCircle2 size={24} /></div>
+              <div className="apple-widget">
+                <div className="widget-icon green"><CheckCircle2 size={24} /></div>
                 <div>
-                  <div class="widget-val">{accepted}</div>
-                  <div class="widget-lbl">تأكيد القبول</div>
+                  <div className="widget-val">{accepted}</div>
+                  <div className="widget-lbl">تأكيد القبول</div>
                 </div>
               </div>
-              <div class="apple-widget">
-                <div class="widget-icon red"><XCircle size={24} /></div>
+              <div className="apple-widget">
+                <div className="widget-icon red"><XCircle size={24} /></div>
                 <div>
-                  <div class="widget-val">{declined}</div>
-                  <div class="widget-lbl">معتذرون</div>
+                  <div className="widget-val">{declined}</div>
+                  <div className="widget-lbl">معتذرون</div>
                 </div>
               </div>
-              <div class="apple-widget">
-                <div class="widget-icon amber"><Clock size={24} /></div>
+              <div className="apple-widget">
+                <div className="widget-icon amber"><Clock size={24} /></div>
                 <div>
-                  <div class="widget-val">{pending}</div>
-                  <div class="widget-lbl">بانتظار الرد</div>
+                  <div className="widget-val">{pending}</div>
+                  <div className="widget-lbl">بانتظار الرد</div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* STEP 1 & 2: SETUP EVENT & EXCEL UPLOAD GRID */}
-          <div class="grid-2col" style={{ gap: '20px' }}>
+          <div className="grid-2col" style={{ gap: '20px' }}>
             
             {/* Form 1: Event Details & Card Upload */}
-            <div class="apple-card" style={{ marginBottom: 0 }}>
-              <div class="card-title-row">
-                <h2><Calendar class="system-gold" size={22} /> 1. تعديل بيانات المناسبة وكرت الدعوة</h2>
-                <span class="ios-badge ios-badge-pink">وردية وأصلية</span>
+            <div className="apple-card" style={{ marginBottom: 0 }}>
+              <div className="card-title-row">
+                <h2><Calendar className="system-gold" size={22} /> 1. تعديل بيانات المناسبة وكرت الدعوة</h2>
+                <span className="ios-badge ios-badge-pink">وردية وأصلية</span>
               </div>
 
               <form onSubmit={handleEventSubmit}>
-                <div class="form-group">
+                <div className="form-group">
                   <label>عنوان المناسبة / الحفل</label>
                   <input
                     type="text"
-                    class="apple-input"
+                    className="apple-input"
                     value={eventData?.title || ''}
                     onChange={(e) => setEventData({ ...eventData, title: e.target.value })}
                     required
                   />
                 </div>
 
-                <div class="grid-2col" style={{ gap: '12px' }}>
-                  <div class="form-group">
+                <div className="grid-2col" style={{ gap: '12px' }}>
+                  <div className="form-group">
                     <label>تاريخ المناسبة</label>
                     <input
                       type="date"
-                      class="apple-input"
+                      className="apple-input"
                       value={eventData?.date || ''}
                       onChange={(e) => setEventData({ ...eventData, date: e.target.value })}
                     />
                   </div>
 
-                  <div class="form-group">
+                  <div className="form-group">
                     <label>وقت المناسبة</label>
                     <input
                       type="time"
-                      class="apple-input"
+                      className="apple-input"
                       value={eventData?.time || '20:00'}
                       onChange={(e) => setEventData({ ...eventData, time: e.target.value })}
                     />
                   </div>
                 </div>
 
-                <div class="form-group">
+                <div className="form-group">
                   <label>مكان المناسبة (اسم القاعة / الفندق / المدينة)</label>
                   <input
                     type="text"
-                    class="apple-input"
+                    className="apple-input"
                     value={eventData?.location || ''}
                     onChange={(e) => setEventData({ ...eventData, location: e.target.value })}
                   />
                 </div>
 
-                <div class="form-group">
+                <div className="form-group">
                   <label>رابط اللوكيشن في خرائط جوجل (Google Maps)</label>
                   <input
                     type="text"
-                    class="apple-input"
+                    className="apple-input"
                     style={{ direction: 'ltr', textAlign: 'right' }}
                     value={eventData?.mapLink || ''}
                     onChange={(e) => setEventData({ ...(eventData || {}), mapLink: e.target.value })}
@@ -581,27 +581,27 @@ export default function AdminDashboard({
                 </div>
 
                 {/* Live Card Design Image Uploader */}
-                <div class="form-group" style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px' }}>
+                <div className="form-group" style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px' }}>
                   <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>صورة كرت الدعوة الخاص بهذه المناسبة:</span>
-                    {previewCardImg && <span class="ios-badge ios-badge-green" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={14} /> تم رفع الكرت</span>}
+                    {previewCardImg && <span className="ios-badge ios-badge-green" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={14} /> تم رفع الكرت</span>}
                   </label>
 
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '6px' }}>
-                    <label class="apple-btn apple-btn-secondary" style={{ flex: 1, cursor: 'pointer' }}>
+                    <label className="apple-btn apple-btn-secondary" style={{ flex: 1, cursor: 'pointer' }}>
                       <Upload size={16} /> تغيير صورة كرت الدعوة
                       <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
                     </label>
                   </div>
 
                   {/* Card Image Preview Box */}
-                  <div class="card-preview-box" style={{ marginTop: '12px' }}>
+                  <div className="card-preview-box" style={{ marginTop: '12px' }}>
                     {previewCardImg ? (
                       <div>
                         <span style={{ fontSize: '0.8rem', color: 'var(--pink-dark)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
                           <Sparkles size={14} /> معاينة حية لكرت هذه المناسبة:
                         </span>
-                        <img src={previewCardImg} alt="معاينة الكرت" class="card-preview-img" />
+                        <img src={previewCardImg} alt="معاينة الكرت" className="card-preview-img" />
                       </div>
                     ) : (
                       <div style={{ padding: '20px', color: 'var(--text-tertiary)' }}>
@@ -612,7 +612,7 @@ export default function AdminDashboard({
                   </div>
                 </div>
 
-                <button type="button" onClick={handleEventSubmit} class="apple-btn apple-btn-pink btn-block" style={{ marginTop: '10px', cursor: 'pointer' }}>
+                <button type="button" onClick={handleEventSubmit} className="apple-btn apple-btn-pink btn-block" style={{ marginTop: '10px', cursor: 'pointer' }}>
                   حفظ تفاصيل المناسبة والكرت
                 </button>
               </form>
@@ -620,9 +620,9 @@ export default function AdminDashboard({
 
             {/* Form 2: Excel Import & Manual Entry */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div class="apple-card" style={{ marginBottom: 0 }}>
-                <div class="card-title-row">
-                  <h2><FileSpreadsheet class="system-gold" size={20} /> 2. استيراد ومراجعة الإكسل (تمبلت الدعوات.xlsx)</h2>
+              <div className="apple-card" style={{ marginBottom: 0 }}>
+                <div className="card-title-row">
+                  <h2><FileSpreadsheet className="system-gold" size={20} /> 2. استيراد ومراجعة الإكسل (تمبلت الدعوات.xlsx)</h2>
                 </div>
                 
                 <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
@@ -630,11 +630,11 @@ export default function AdminDashboard({
                 </p>
 
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                  <button class="apple-btn apple-btn-secondary" style={{ flex: 1 }} onClick={downloadExcelTemplate}>
+                  <button className="apple-btn apple-btn-secondary" style={{ flex: 1 }} onClick={downloadExcelTemplate}>
                     <Download size={16} /> تحميل تمبلت الدعوات.xlsx الأصلي
                   </button>
 
-                  <label class="apple-btn apple-btn-pink" style={{ flex: 1, cursor: 'pointer' }}>
+                  <label className="apple-btn apple-btn-pink" style={{ flex: 1, cursor: 'pointer' }}>
                     <FileSpreadsheet size={16} /> رفع ومراجعة الإكسل
                     <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ display: 'none' }} />
                   </label>
@@ -642,17 +642,17 @@ export default function AdminDashboard({
 
                 {/* Manual Entry */}
                 <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px' }}>
-                  <div class="form-group">
+                  <div className="form-group">
                     <label>أو كتابة الأرقام يدوياً (الاسم، رقم الجوال):</label>
                     <textarea
-                      class="apple-input"
+                      className="apple-input"
                       rows="3"
                       placeholder="مثال:&#10;عبدالله المحمد, 0501234567&#10;سارة الخالد, 0551234567"
                       value={batchText}
                       onChange={(e) => setBatchText(e.target.value)}
                     ></textarea>
                   </div>
-                  <button type="submit" class="apple-btn apple-btn-secondary btn-block">
+                  <button type="submit" className="apple-btn apple-btn-secondary btn-block">
                     <Plus size={16} /> إضافة وحفظ في القائمة
                   </button>
                 </form>
@@ -661,24 +661,24 @@ export default function AdminDashboard({
           </div>
         </div>
       </div>
-      <div class="apple-card" style={{ marginBottom: '28px' }}>
-        <div class="card-title-row" style={{ flexWrap: 'wrap', gap: '12px' }}>
+      <div className="apple-card" style={{ marginBottom: '28px' }}>
+        <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h2>3. قائمة المدعوين المفحوصة والمحفوظة لمناسبة ({eventData?.title})</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>حدد المدعوين الذين ترغب في إرسال الدعوة لهم تلقائياً</p>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span class="ios-badge ios-badge-pink" style={{ fontSize: '0.84rem', padding: '6px 14px', fontWeight: 800 }}>
+            <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.84rem', padding: '6px 14px', fontWeight: 800 }}>
               تم تحديد ({selectedGuestIds.length}) من أصل ({guests.length})
             </span>
-            <button class="apple-btn apple-btn-secondary" onClick={handleToggleSelectAll} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
+            <button className="apple-btn apple-btn-secondary" onClick={handleToggleSelectAll} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
               {isAllSelected ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
             </button>
-            <button class="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
+            <button className="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
               تحديد غير المركسل لهم فقط
             </button>
             {guests.length > 0 && (
-              <button class="apple-btn apple-btn-danger" onClick={handleClearAll} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
+              <button className="apple-btn apple-btn-danger" onClick={handleClearAll} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
                 مسح القائمة
               </button>
             )}
@@ -686,7 +686,7 @@ export default function AdminDashboard({
         </div>
 
         <div style={{ overflowX: 'auto' }}>
-          <table class="apple-table">
+          <table className="apple-table">
             <thead>
               <tr>
                 <th style={{ width: '40px', textAlign: 'center' }}>
@@ -740,29 +740,29 @@ export default function AdminDashboard({
                       <td dir="ltr">{guest.phone}</td>
                       <td>
                         {guest.sent ? (
-                          <span class="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             <Check size={13} /> تم الإرسال 📩
                           </span>
                         ) : (
-                          <span class="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             <Clock size={13} /> لم يُرسل بعد ⏳
                           </span>
                         )}
                       </td>
                       <td>
-                        {guest.status === 'accepted' && <span class="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={13} /> مقبول</span>}
-                        {guest.status === 'declined' && <span class="ios-badge ios-badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><X size={13} /> معتذر</span>}
-                        {guest.status === 'pending' && <span class="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Clock size={13} /> بانتظار الرد</span>}
+                        {guest.status === 'accepted' && <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={13} /> مقبول</span>}
+                        {guest.status === 'declined' && <span className="ios-badge ios-badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><X size={13} /> معتذر</span>}
+                        {guest.status === 'pending' && <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Clock size={13} /> بانتظار الرد</span>}
                       </td>
                       <td><code>{guest.ticketCode}</code></td>
                       <td>
-                        <a href={waUrl} target="_blank" rel="noreferrer" class="apple-btn apple-btn-whatsapp" style={{ padding: '7px 14px', fontSize: '0.84rem' }}>
+                        <a href={waUrl} target="_blank" rel="noreferrer" className="apple-btn apple-btn-whatsapp" style={{ padding: '7px 14px', fontSize: '0.84rem' }}>
                           <Send size={14} /> إرسال الواتساب
                         </a>
                       </td>
                       <td>
                         <button
-                          class="apple-btn apple-btn-secondary"
+                          className="apple-btn apple-btn-secondary"
                           style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                           onClick={() => {
                             setActiveGuestId(guest.id);
@@ -774,7 +774,7 @@ export default function AdminDashboard({
                       </td>
                       <td>
                         <button
-                          class="apple-btn apple-btn-danger"
+                          className="apple-btn apple-btn-danger"
                           style={{ padding: '6px 10px' }}
                           title="حذف هذا المدعو"
                           onClick={() => handleDeleteGuest(guest.id)}
@@ -792,12 +792,12 @@ export default function AdminDashboard({
       </div>
 
       {/* STEP 4: FINAL STEP - AUTOMATED WHATSAPP DISPATCHER BOX AT THE VERY BOTTOM */}
-      <div class="apple-card" style={{ background: '#ffffff', border: '2px solid var(--pink-primary)', padding: '26px', marginBottom: '32px' }}>
-        <div class="card-title-row" style={{ marginBottom: '16px' }}>
+      <div className="apple-card" style={{ background: '#ffffff', border: '2px solid var(--pink-primary)', padding: '26px', marginBottom: '32px' }}>
+        <div className="card-title-row" style={{ marginBottom: '16px' }}>
           <h2 style={{ color: 'var(--pink-dark)', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Rocket size={24} style={{ color: 'var(--pink-primary)' }} /> 4. الإرسال التلقائي المباشر للواتساب (Auto WhatsApp Dispatcher)
           </h2>
-          <span class="ios-badge ios-badge-pink">سيتم الإرسال لـ ({selectedGuestIds.length}) مدعو محدد</span>
+          <span className="ios-badge ios-badge-pink">سيتم الإرسال لـ ({selectedGuestIds.length}) مدعو محدد</span>
         </div>
 
         {/* Easy Step-by-Step WhatsApp Binding Guide */}
@@ -822,22 +822,22 @@ export default function AdminDashboard({
         </div>
 
         {/* Credentials Inputs */}
-        <div class="grid-2col" style={{ gap: '16px', marginBottom: '20px' }}>
-          <div class="form-group" style={{ marginBottom: 0 }}>
+        <div className="grid-2col" style={{ gap: '16px', marginBottom: '20px' }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
             <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>معرف بوابة الإرسال (Instance ID) - اختياري:</label>
             <input
               type="text"
-              class="apple-input"
+              className="apple-input"
               placeholder="مثال: 7103123456 (أو اتركه فارغاً للإرسال المباشر)"
               value={instanceId}
               onChange={(e) => setInstanceId(e.target.value)}
             />
           </div>
-          <div class="form-group" style={{ marginBottom: 0 }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
             <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>رمز الأمان (API Token) - اختياري:</label>
             <input
               type="password"
-              class="apple-input"
+              className="apple-input"
               placeholder="مثال: e289c878a... (أو اتركه فارغاً للإرسال المباشر)"
               value={apiToken}
               onChange={(e) => setApiToken(e.target.value)}
@@ -850,7 +850,7 @@ export default function AdminDashboard({
           <div style={{ background: 'rgba(253, 242, 245, 0.9)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(244, 165, 186, 0.4)', marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 700, marginBottom: '8px', color: 'var(--pink-dark)' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Loader2 size={18} class="animate-spin" style={{ color: 'var(--pink-primary)' }} />
+                <Loader2 size={18} className="animate-spin" style={{ color: 'var(--pink-primary)' }} />
                 جاري الإرسال الآلي لـ: {autoProgress.currentName}...
               </span>
               <span>{autoProgress.sent} / {autoProgress.total} رسالة</span>
@@ -863,14 +863,14 @@ export default function AdminDashboard({
 
         <button
           type="button"
-          class="apple-btn apple-btn-pink btn-block"
+          className="apple-btn apple-btn-pink btn-block"
           style={{ fontSize: '1.1rem', padding: '16px', cursor: 'pointer' }}
           onClick={handleStartAutoDispatch}
           disabled={isSendingAuto || selectedGuestIds.length === 0}
         >
           {isSendingAuto ? (
             <>
-              <Loader2 size={22} class="animate-spin" /> جاري الإرسال الآلي للمدعويين المحددين...
+              <Loader2 size={22} className="animate-spin" /> جاري الإرسال الآلي للمدعويين المحددين...
             </>
           ) : (
             <>

@@ -167,18 +167,18 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
           flexWrap: 'wrap'
         }}>
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div><strong>إجمالي السجلات:</strong> <span class="ios-badge ios-badge-gold">{totalCount}</span></div>
-            <div><strong>سليمة وغير مكررة:</strong> <span class="ios-badge ios-badge-green"><CheckCircle2 size={14} /> {validCount}</span></div>
+            <div><strong>إجمالي السجلات:</strong> <span className="ios-badge ios-badge-gold">{totalCount}</span></div>
+            <div><strong>سليمة وغير مكررة:</strong> <span className="ios-badge ios-badge-green"><CheckCircle2 size={14} /> {validCount}</span></div>
             {duplicateCount > 0 && (
-              <div><strong>بيانات مكررة:</strong> <span class="ios-badge ios-badge-gold"><AlertTriangle size={14} /> {duplicateCount}</span></div>
+              <div><strong>بيانات مكررة:</strong> <span className="ios-badge ios-badge-gold"><AlertTriangle size={14} /> {duplicateCount}</span></div>
             )}
             {invalidCount > duplicateCount && (
-              <div><strong>صيغة خطأ:</strong> <span class="ios-badge ios-badge-red"><AlertTriangle size={14} /> {invalidCount - duplicateCount}</span></div>
+              <div><strong>صيغة خطأ:</strong> <span className="ios-badge ios-badge-red"><AlertTriangle size={14} /> {invalidCount - duplicateCount}</span></div>
             )}
           </div>
 
           {(duplicateCount > 0 || invalidCount > 0) && (
-            <button class="apple-btn apple-btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }} onClick={handleRemoveDuplicates}>
+            <button className="apple-btn apple-btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }} onClick={handleRemoveDuplicates}>
               <Sparkles size={14} /> حذف المكرر والأخطاء تلقائياً
             </button>
           )}
@@ -186,7 +186,7 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
 
         {/* Table Content */}
         <div style={{ overflowY: 'auto', padding: '20px', flex: 1 }}>
-          <table class="apple-table">
+          <table className="apple-table">
             <thead>
               <tr>
                 <th>#</th>
@@ -203,7 +203,7 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
                   <td>
                     <input
                       type="text"
-                      class="apple-input"
+                      className="apple-input"
                       style={{ padding: '6px 10px', fontSize: '0.88rem' }}
                       value={item.name}
                       onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
@@ -212,7 +212,7 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
                   <td>
                     <input
                       type="text"
-                      class="apple-input"
+                      className="apple-input"
                       style={{ padding: '6px 10px', fontSize: '0.88rem', direction: 'ltr', textAlign: 'right' }}
                       value={item.phone}
                       onChange={(e) => handleItemChange(idx, 'phone', e.target.value)}
@@ -220,15 +220,15 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
                   </td>
                   <td>
                     {item.isValid ? (
-                      <span class="ios-badge ios-badge-green"><Check size={14} /> سليم وغير مكرر</span>
+                      <span className="ios-badge ios-badge-green"><Check size={14} /> سليم وغير مكرر</span>
                     ) : item.isDuplicate ? (
-                      <span class="ios-badge ios-badge-gold" title={item.errorMsg}><AlertTriangle size={14} /> {item.errorMsg}</span>
+                      <span className="ios-badge ios-badge-gold" title={item.errorMsg}><AlertTriangle size={14} /> {item.errorMsg}</span>
                     ) : (
-                      <span class="ios-badge ios-badge-red" title={item.errorMsg}><AlertTriangle size={14} /> {item.errorMsg || 'خطأ في الصيغة'}</span>
+                      <span className="ios-badge ios-badge-red" title={item.errorMsg}><AlertTriangle size={14} /> {item.errorMsg || 'خطأ في الصيغة'}</span>
                     )}
                   </td>
                   <td>
-                    <button class="apple-btn apple-btn-danger" style={{ padding: '4px 10px' }} onClick={() => handleDeleteRow(idx)}>
+                    <button className="apple-btn apple-btn-danger" style={{ padding: '4px 10px' }} onClick={() => handleDeleteRow(idx)}>
                       <Trash2 size={14} />
                     </button>
                   </td>
@@ -247,10 +247,10 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
           justifyContent: 'space-between',
           gap: '12px'
         }}>
-          <button class="apple-btn apple-btn-secondary" onClick={onClose}>
+          <button className="apple-btn apple-btn-secondary" onClick={onClose}>
             إلغاء
           </button>
-          <button class="apple-btn apple-btn-pink" onClick={handleConfirm} style={{ padding: '12px 28px' }}>
+          <button className="apple-btn apple-btn-pink" onClick={handleConfirm} style={{ padding: '12px 28px' }}>
             <Check size={18} /> اعتماد وحفظ الأرقام السليمة ({validCount}) في قاعدة البيانات
           </button>
         </div>
