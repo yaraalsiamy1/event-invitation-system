@@ -1,0 +1,509 @@
+/* ==========================================================================
+   Apple iOS & macOS HIG Design System - Ultra Premium Arabic UI
+   ========================================================================== */
+
+:root {
+    --apple-bg: #000000;
+    --apple-card-bg: rgba(28, 28, 30, 0.72);
+    --apple-card-secondary: rgba(44, 44, 46, 0.65);
+    --apple-border: rgba(255, 255, 255, 0.12);
+    --apple-border-gold: rgba(212, 175, 55, 0.35);
+
+    --system-blue: #0a84ff;
+    --system-green: #30d158;
+    --system-red: #ff453a;
+    --system-orange: #ff9f0a;
+    --system-purple: #bf5af2;
+    --system-gold: #ffd60a;
+
+    --gold-gradient: linear-gradient(135deg, #ffe57f 0%, #d4af37 50%, #997a15 100%);
+    --apple-glass-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+
+    --text-primary: #ffffff;
+    --text-secondary: rgba(235, 235, 245, 0.6);
+    --text-tertiary: rgba(235, 235, 245, 0.38);
+
+    --radius-ios-xl: 32px;
+    --radius-ios-lg: 24px;
+    --radius-ios-md: 16px;
+    --radius-ios-sm: 10px;
+
+    --font-apple: 'Cairo', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body.apple-theme {
+    background-color: var(--apple-bg);
+    background-image: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(10, 132, 255, 0.15), transparent 100%),
+        radial-gradient(ellipse 60% 40% at 85% 90%, rgba(212, 175, 55, 0.1), transparent 100%);
+    color: var(--text-primary);
+    font-family: var(--font-apple);
+    min-height: 100vh;
+    direction: rtl;
+    line-height: 1.5;
+    overflow-x: hidden;
+}
+
+/* Container */
+.apple-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* ==================== APPLE FROSTED NAVBAR ==================== */
+.apple-navbar {
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(30px) saturate(190%);
+    -webkit-backdrop-filter: blur(30px) saturate(190%);
+    border-bottom: 0.5px solid var(--apple-border);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 16px 0;
+}
+
+.nav-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.apple-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon-box {
+    width: 44px;
+    height: 44px;
+    background: var(--gold-gradient);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.35);
+}
+
+.brand-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: var(--text-primary);
+}
+
+.brand-title span {
+    color: var(--system-gold);
+    font-weight: 500;
+    font-size: 0.95rem;
+    margin-right: 6px;
+}
+
+/* iOS Segmented Control Tab Navigation */
+.ios-segmented-control {
+    display: flex;
+    background: rgba(118, 118, 128, 0.24);
+    padding: 3px;
+    border-radius: 14px;
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+.segment-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 8px 18px;
+    border-radius: 11px;
+    font-family: var(--font-apple);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.segment-btn:hover {
+    color: var(--text-primary);
+}
+
+.segment-btn.active {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+/* ==================== GLASS CARDS & UI COMPONENTS ==================== */
+.apple-card {
+    background: var(--apple-card-bg);
+    background-image: var(--apple-glass-gradient);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid var(--apple-border);
+    border-radius: var(--radius-ios-lg);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    padding: 24px;
+    margin-bottom: 24px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
+
+.apple-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.card-title-row h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-primary);
+}
+
+/* Badges */
+.ios-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ios-badge-gold { background: rgba(255, 214, 10, 0.15); color: var(--system-gold); border: 0.5px solid rgba(255, 214, 10, 0.4); }
+.ios-badge-green { background: rgba(48, 209, 88, 0.15); color: var(--system-green); border: 0.5px solid rgba(48, 209, 88, 0.4); }
+.ios-badge-red { background: rgba(255, 69, 58, 0.15); color: var(--system-red); border: 0.5px solid rgba(255, 69, 58, 0.4); }
+.ios-badge-blue { background: rgba(10, 132, 255, 0.15); color: var(--system-blue); border: 0.5px solid rgba(10, 132, 255, 0.4); }
+
+/* Forms */
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.apple-input {
+    width: 100%;
+    background: rgba(118, 118, 128, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-ios-md);
+    padding: 14px 18px;
+    color: #fff;
+    font-family: var(--font-apple);
+    font-size: 0.95rem;
+    transition: all 0.25s ease;
+}
+
+.apple-input:focus {
+    outline: none;
+    border-color: var(--system-blue);
+    background: rgba(118, 118, 128, 0.28);
+    box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.25);
+}
+
+/* Buttons */
+.apple-btn {
+    padding: 12px 24px;
+    border-radius: var(--radius-ios-md);
+    font-family: var(--font-apple);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+}
+
+.apple-btn-primary {
+    background: var(--system-blue);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(10, 132, 255, 0.35);
+}
+
+.apple-btn-primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 22px rgba(10, 132, 255, 0.5);
+}
+
+.apple-btn-gold {
+    background: var(--gold-gradient);
+    color: #000000;
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.35);
+}
+
+.apple-btn-gold:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
+}
+
+.apple-btn-success {
+    background: var(--system-green);
+    color: #000000;
+    font-weight: 800;
+    box-shadow: 0 4px 16px rgba(48, 209, 88, 0.35);
+}
+
+.apple-btn-secondary {
+    background: rgba(118, 118, 128, 0.24);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.apple-btn-secondary:hover {
+    background: rgba(118, 118, 128, 0.35);
+}
+
+.apple-btn-danger {
+    background: rgba(255, 69, 58, 0.2);
+    border: 1px solid var(--system-red);
+    color: var(--system-red);
+}
+
+.apple-btn-danger:hover {
+    background: var(--system-red);
+    color: #fff;
+}
+
+.apple-btn-whatsapp {
+    background: #25D366;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.apple-btn-whatsapp:hover {
+    background: #1DA851;
+    transform: scale(1.03);
+}
+
+.btn-block { width: 100%; }
+
+/* ==================== APPLE STATS WIDGETS ==================== */
+.widgets-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.apple-widget {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-ios-md);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform 0.2s ease;
+}
+
+.apple-widget:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.widget-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+
+.widget-icon.blue { background: rgba(10, 132, 255, 0.18); color: var(--system-blue); }
+.widget-icon.green { background: rgba(48, 209, 88, 0.18); color: var(--system-green); }
+.widget-icon.red { background: rgba(255, 69, 58, 0.18); color: var(--system-red); }
+.widget-icon.amber { background: rgba(255, 159, 10, 0.18); color: var(--system-orange); }
+
+.widget-val {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.5px;
+}
+
+.widget-lbl {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* ==================== APPLE WALLET PASS CARD ==================== */
+.wallet-pass-container {
+    perspective: 1000px;
+}
+
+.wallet-pass {
+    background: linear-gradient(145deg, #1f2026 0%, #111216 100%);
+    border: 1.5px solid var(--system-gold);
+    border-radius: var(--radius-ios-xl);
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 175, 55, 0.2);
+    position: relative;
+    max-width: 360px;
+    margin: 0 auto;
+}
+
+.pass-header {
+    background: var(--gold-gradient);
+    color: #000;
+    padding: 18px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pass-header-title {
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pass-header-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.pass-cutout-line {
+    height: 18px;
+    background: #000;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notch-left, .notch-right {
+    width: 20px;
+    height: 20px;
+    background: #000;
+    border: 1.5px solid var(--system-gold);
+    border-radius: 50%;
+    position: absolute;
+    top: -2px;
+}
+.notch-left { left: -11px; }
+.notch-right { right: -11px; }
+
+.pass-cutout-line .dashed {
+    width: 80%;
+    border-bottom: 1.5px dashed rgba(212, 175, 55, 0.4);
+}
+
+.pass-body {
+    padding: 24px 20px;
+    text-align: center;
+}
+
+.pass-qr-box {
+    background: #ffffff;
+    padding: 16px;
+    border-radius: 20px;
+    display: inline-block;
+    box-shadow: 0 10px 25px rgba(255, 255, 255, 0.25);
+    margin-bottom: 16px;
+}
+
+.pass-code-pill {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 8px 16px;
+    border-radius: 12px;
+    display: inline-block;
+    font-family: monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--system-gold);
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+
+.pass-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+    padding-top: 14px;
+    text-align: right;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.pass-footer {
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* iPhone Simulator */
+.iphone-frame {
+    background: #000000;
+    border: 10px solid #2c2c2e;
+    border-radius: 46px;
+    padding: 18px 12px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9);
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+/* Table */
+.apple-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    text-align: right;
+}
+
+.apple-table th, .apple-table td {
+    padding: 14px 18px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+.apple-table th {
+    color: var(--text-secondary);
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Layout Grids */
+.grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 900px) {
+    .grid-2col { grid-template-columns: 1fr; }
+    .widgets-grid { grid-template-columns: 1fr; }
+}
