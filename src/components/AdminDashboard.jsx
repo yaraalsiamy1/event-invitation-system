@@ -40,9 +40,13 @@ export default function AdminDashboard({
   // Save Event Details
   const handleEventSubmit = async (e) => {
     e.preventDefault();
-    const updatedEv = { ...eventData, cardImage: previewCardImg };
-    setEventData(updatedEv);
-    alert(`تم حفظ تفاصيل المناسبة "${eventData.title}" وكرت الدعوة بنجاح!`);
+    const updatedEv = { ...(eventData || {}), cardImage: previewCardImg };
+    if (!activeEventId || (events || []).length === 0) {
+      await onCreateEvent(updatedEv);
+    } else {
+      await setEventData(updatedEv);
+      alert(`تم حفظ تفاصيل المناسبة "${updatedEv.title || 'جديدة'}" وكرت الدعوة بنجاح!`);
+    }
   };
 
   // Image Upload
@@ -328,49 +332,6 @@ export default function AdminDashboard({
   const pending = (guests || []).filter(g => g.status === 'pending').length;
 
   const baseUrl = window.location.origin;
-
-  // Empty state when 0 events exist
-  if (!events || events.length === 0) {
-    return (
-      <div class="apple-dashboard">
-        {/* NEW EVENT CREATION MODAL OVERLAY */}
-        {isNewEventModalOpen && (
-          <NewEventModal
-            onCreateEvent={(newEvent) => {
-              setIsNewEventModalOpen(false);
-              onCreateEvent(newEvent);
-            }}
-            onClose={() => setIsNewEventModalOpen(false)}
-          />
-        )}
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 320px) 1fr', gap: '22px', alignItems: 'start' }}>
-          <EventsSidebar
-            events={[]}
-            activeEventId={null}
-            onSelectEvent={onSelectEvent}
-            onOpenNewEventModal={() => setIsNewEventModalOpen(true)}
-            onDeleteEvent={onDeleteEvent}
-          />
-
-          <div class="apple-card" style={{ textAlign: 'center', padding: '60px 30px' }}>
-            <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: 'var(--pink-light)', color: 'var(--pink-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <Plus size={36} />
-            </div>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
-              أهلاً بك يا أدمن في نظام إدارة المناسبات 👋
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', maxWidth: '520px', margin: '0 auto 24px', fontSize: '0.9rem' }}>
-              تم تنظيف كافة البيانات الوهمية بنجاح. ابدأ الآن بإنشاء أول مناسبة لك (حفل زفاف، تخرج، اجتماع...) لإضافة كرت الدعوة واستيراد ملف الإكسل للمدعوين.
-            </p>
-            <button class="apple-btn apple-btn-pink" style={{ padding: '14px 32px', fontSize: '1rem', margin: '0 auto' }} onClick={() => setIsNewEventModalOpen(true)}>
-              <Plus size={20} /> إنشاء أول مناسبة وحفظها في القائمة الجانبية
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div class="apple-dashboard">
