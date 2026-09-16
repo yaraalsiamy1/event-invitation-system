@@ -312,44 +312,78 @@ export default function AdminDashboard({
       return;
     }
 
-    localStorage.setItem('wa_instance_id', instanceId);
-    localStorage.setItem('wa_api_token', apiToken);
+    const cleanInstance = instanceId.trim();
+    const cleanToken = apiToken.trim();
+
+    localStorage.setItem('wa_instance_id', cleanInstance);
+    localStorage.setItem('wa_api_token', cleanToken);
+
+    const selectedGuestsList = guests.filter(g => selectedGuestIds.includes(g.id));
+
+    // Mode A: Server-Side API Gateway Dispatch (If credentials exist)
+    if (cleanInstance && cleanToken) {
+      setIsSendingAuto(true);
+      setAutoProgress({ sent: 0, total: selectedGuestsList.length, currentName: selectedGuestsList[0]?.name || '' });
+
+      try {
+        const res = await fetch('/api/send-whatsapp-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            instanceId: cleanInstance,
+            apiToken: cleanToken,
+            hostUrl: window.location.origin,
+            eventId: activeEventId,
+            guestIds: selectedGuestIds
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setAutoProgress({ sent: data.sentCount, total: data.total, currentName: 'مكتمل' });
+          alert(`تم الانتهاء من الإرسال الآلي بنجاح لـ ${data.sentCount} من أصل ${data.total} مدعو في مناسبة "${eventData.title}" عبر البوابة!`);
+          if (refreshData) refreshData();
+        } else {
+          alert(data.error || 'حدث خطأ في استجابة بوابة الواتساب. تأكد من صحة Instance ID و API Token وشحن الرصيد.');
+        }
+      } catch (e) {
+        alert('تعذر الاتصال ببوابة الواتساب: ' + e.message);
+      } finally {
+        setIsSendingAuto(false);
+      }
+      return;
+    }
+
+    // Mode B: Direct Browser Sequential Dispatch (If no paid API credentials)
+    const proceedDirect = window.confirm(
+      `لم تقم بإدخال Instance ID و API Token لبوابة الواتساب الآلية.\n\nهل ترغب في البدء بالإرسال المباشر لـ (${selectedGuestsList.length}) مدعو عبر فتح الواتساب بالتتابع وتسجيل حالة الإرسال؟`
+    );
+
+    if (!proceedDirect) return;
 
     setIsSendingAuto(true);
-    const selectedGuestsList = guests.filter(g => selectedGuestIds.includes(g.id));
-    setAutoProgress({ sent: 0, total: selectedGuestsList.length, currentName: selectedGuestsList[0]?.name || '' });
+    let sentSuccess = 0;
 
-    try {
-      const res = await fetch('/api/send-whatsapp-batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          instanceId: instanceId.trim(),
-          apiToken: apiToken.trim(),
-          hostUrl: window.location.origin,
-          eventId: activeEventId,
-          guestIds: selectedGuestIds
-        })
-      });
+    for (let i = 0; i < selectedGuestsList.length; i++) {
+      const g = selectedGuestsList[i];
+      setAutoProgress({ sent: i + 1, total: selectedGuestsList.length, currentName: g.name });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setAutoProgress({ sent: data.sentCount, total: data.total, currentName: 'مكتمل' });
-        alert(`تم الانتهاء من الإرسال التلقائي بنجاح لـ ${data.sentCount} من أصل ${data.total} مدعو محدد في مناسبة "${eventData.title}"!`);
-        if (refreshData) refreshData();
-      } else {
-        alert(data.error || 'حدث أخطاء أثناء الإرسال الآلي');
-      }
-    } catch (e) {
-      for (let i = 0; i < selectedGuestsList.length; i++) {
-        setAutoProgress({ sent: i + 1, total: selectedGuestsList.length, currentName: selectedGuestsList[i].name });
-        await new Promise(r => setTimeout(r, 600));
-      }
-      alert('تم الانتهاء من الإرسال الآلي التلقائي للمحددين بنجاح!');
-      if (refreshData) refreshData();
-    } finally {
-      setIsSendingAuto(false);
+      const guestLink = `${window.location.origin}/?guest=${g.id}`;
+      const waMsg = encodeURIComponent(
+        `مرحباً ${g.name}\nيسرنا ويسعدنا دعوتكم لحضور ${eventData?.title}.\nيرجى تأكيد حضورك واستلام تذكرتك عبر الرابط التالي:\n` + guestLink
+      );
+      const waUrl = `https://api.whatsapp.com/send?phone=${g.phone}&text=${waMsg}`;
+
+      window.open(waUrl, '_blank');
+      g.sent = true;
+      sentSuccess++;
+
+      await new Promise(r => setTimeout(r, 1000));
     }
+
+    setIsSendingAuto(false);
+    alert(`تم فتح الواتساب وتحديث حالة ${sentSuccess} مدعو محدد بنجاح!`);
+    if (refreshData) refreshData();
   };
 
   // Clear All Guests (Guaranteed State + DB Sync)

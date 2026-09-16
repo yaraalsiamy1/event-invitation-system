@@ -150,6 +150,14 @@ app.post('/api/send-whatsapp-batch', async (req, res) => {
       return res.status(400).json({ error: 'لا يوجد مدعوين محددين للإرسال' });
     }
 
+    if (!instanceId || !apiToken) {
+      return res.status(400).json({
+        success: false,
+        requiresGateway: true,
+        error: 'يرجى إدخال Instance ID و API Token للربط ببوابة الإرسال الآلي للواتساب (Green-API / UltraMsg)'
+      });
+    }
+
     const baseUrl = hostUrl || 'http://localhost:3000';
     let sentCount = 0;
     const results = [];
@@ -162,25 +170,33 @@ app.post('/api/send-whatsapp-batch', async (req, res) => {
       let success = true;
       let errorMsg = null;
 
-      if (instanceId && apiToken) {
-        try {
-          const gatewayUrl = `https://api.green-api.com/waInstance${instanceId}/sendMessage/${apiToken}`;
-          const apiRes = await fetch(gatewayUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chatId: `${guest.phone}@c.us`,
-              message: messageText
-            })
-          });
-          if (!apiRes.ok) {
+      try {
+        const gatewayUrl = `https://api.green-api.com/waInstance${instanceId}/sendMessage/${apiToken}`;
+        const apiRes = await fetch(gatewayUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: `${guest.phone}@c.us`,
+            message: messageText
+          })
+        });
+
+        if (apiRes.ok) {
+          const resData = await apiRes.json();
+          if (resData && (resData.idMessage || resData.id)) {
+            success = true;
+          } else {
             success = false;
-            errorMsg = 'Gateway response error';
+            errorMsg = 'لم يتم تأكيد استلام الرسالة من البوابة';
           }
-        } catch (e) {
+        } else {
+          const errText = await apiRes.text();
           success = false;
-          errorMsg = e.message;
+          errorMsg = `خطأ في بوابة الإرسال (${apiRes.status}): ${errText || 'بيانات الاعتماد غير صحيحة'}`;
         }
+      } catch (e) {
+        success = false;
+        errorMsg = e.message;
       }
 
       if (success) {
@@ -189,7 +205,7 @@ app.post('/api/send-whatsapp-batch', async (req, res) => {
       }
       results.push({ guestId: guest.id, name: guest.name, phone: guest.phone, success, errorMsg });
       
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise(r => setTimeout(r, 800));
     }
 
     // Mark sent status in DB
