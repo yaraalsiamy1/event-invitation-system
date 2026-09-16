@@ -18,7 +18,7 @@ class MultiEventJSONDatabase {
         events: []
       };
       fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf8');
-      console.log('⚡ Multi-Event Database initialized (Clean State) at:', DB_FILE);
+      console.log('Multi-Event Database initialized (Clean State) at:', DB_FILE);
     } else {
       const data = this.read();
       if (!data.events) {

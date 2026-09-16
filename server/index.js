@@ -150,7 +150,7 @@ app.post('/api/send-whatsapp-batch', async (req, res) => {
 
     for (const guest of guests) {
       const guestLink = `${baseUrl}/?guest=${guest.id}`;
-      const messageText = `مرحباً ${guest.name} ✨\nيسرنا ويسعدنا دعوتكم لحضور ${event.title}.\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
+      const messageText = `مرحباً ${guest.name}\nيسرنا ويسعدنا دعوتكم لحضور ${event.title}.\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
       
       let success = true;
       let errorMsg = null;
@@ -202,5 +202,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Multi-Event Invitation Server & WhatsApp API running on port ${PORT}`);
+  console.log(`Multi-Event Invitation Server & WhatsApp API running on port ${PORT}`);
 });

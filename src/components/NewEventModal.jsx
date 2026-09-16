@@ -94,12 +94,12 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
           <div class="form-group" style={{ marginBottom: '16px' }}>
             <label>نوع المناسبة:</label>
             <select class="apple-input" value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="wedding">💍 حفل زفاف / خطوبة</option>
-              <option value="graduation">🎓 حفل تخرج</option>
-              <option value="birthday">🎂 عيد ميلاد / مولود</option>
-              <option value="honor">🏆 حفل تكريم / تفوق</option>
-              <option value="conference">📜 مؤتمر / ورشة عمل</option>
-              <option value="other">🌟 مناسبة عامة أخرى</option>
+              <option value="wedding">حفل زفاف / خطوبة</option>
+              <option value="graduation">حفل تخرج</option>
+              <option value="birthday">حفل ميلاد / مولود</option>
+              <option value="honor">حفل تكريم / تفوق</option>
+              <option value="conference">مؤتمر / ورشة عمل</option>
+              <option value="other">مناسبة عامة أخرى</option>
             </select>
           </div>
 

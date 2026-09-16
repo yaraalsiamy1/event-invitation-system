@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Plus, Trash2, CheckCircle, Award, GraduationCap, Heart, Gift, FileText, Sparkles, ChevronRight } from 'lucide-react';
+import { Calendar, Plus, Trash2, CheckCircle, Award, GraduationCap, Heart, Gift, FileText, Sparkles, ChevronRight, Check } from 'lucide-react';
 
 export default function EventsSidebar({ events = [], activeEventId, onSelectEvent, onOpenNewEventModal, onDeleteEvent }) {
   const getEventIcon = (type) => {
@@ -73,14 +73,14 @@ export default function EventsSidebar({ events = [], activeEventId, onSelectEven
                   </div>
 
                   {isActive && (
-                    <span class="ios-badge ios-badge-green" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
-                      نشط حالياً ✓
+                    <span class="ios-badge ios-badge-green" style={{ fontSize: '0.7rem', padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <Check size={12} /> نشط حالياً
                     </span>
                   )}
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                  <span>📅 {ev.date || 'بدون تاريخ'}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={13} /> {ev.date || 'بدون تاريخ'}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span class="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem' }}>
                       {ev.totalGuests || 0} مدعوين

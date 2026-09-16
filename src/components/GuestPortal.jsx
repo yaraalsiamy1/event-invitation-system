@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
-import { Smartphone, Calendar, Clock, MapPin, CheckCircle2, XCircle, Download, ShieldCheck, HeartHandshake, Check, X } from 'lucide-react';
+import { Smartphone, Calendar, Clock, MapPin, CheckCircle2, XCircle, Download, ShieldCheck, HeartHandshake, Check, X, Mail } from 'lucide-react';
 
 export default function GuestPortal({ eventData, guests, setGuests, activeGuestId, setActiveGuestId, refreshData }) {
   const [guestRecord, setGuestRecord] = useState(null);
@@ -97,15 +97,15 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
           
           {/* Header Tag */}
           <div style={{ textAlign: 'center' }}>
-            <span class="ios-badge ios-badge-pink" style={{ padding: '6px 18px', fontSize: '0.85rem' }}>
-              ✉️ دعوة خاصة رسمية
+            <span class="ios-badge ios-badge-pink" style={{ padding: '6px 18px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <Mail size={16} /> دعوة خاصة رسمية
             </span>
           </div>
 
           {/* Invitation Card */}
           <div style={{ background: '#ffffff', border: '1.5px solid var(--apple-border-gold)', borderRadius: '22px', padding: '24px 18px', textAlign: 'center', boxShadow: '0 8px 25px rgba(236,72,153,0.06)' }}>
             <h2 style={{ fontSize: '1.55rem', color: '#997a15', marginBottom: '8px', fontWeight: 800 }}>{activeEv?.title}</h2>
-            <div style={{ color: '#d4af37', letterSpacing: '4px', margin: '8px 0', fontSize: '0.8rem' }}>❖ ❖ ❖</div>
+            <div style={{ height: '1px', background: 'linear-gradient(to right, transparent, #d4af37, transparent)', margin: '12px auto', width: '60%' }}></div>
             
             {/* Display Event Card Image if available */}
             {activeEv?.cardImage && (
@@ -157,10 +157,10 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
               {/* Ultra Clear Large Buttons for All Ages */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <button class="apple-btn apple-btn-success-large btn-block" onClick={() => handleRSVP('accepted')}>
-                  <Check size={26} /> تأكيد الحضور ✅
+                  <Check size={26} /> تأكيد الحضور
                 </button>
                 <button class="apple-btn apple-btn-decline-large btn-block" onClick={() => handleRSVP('declined')}>
-                  <X size={26} /> الاعتذار عن الحضور ❌
+                  <X size={26} /> الاعتذار عن الحضور
                 </button>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2, Layers } from 'lucide-react';
+import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles } from 'lucide-react';
 import ExcelValidationModal from './ExcelValidationModal';
 import EventsSidebar from './EventsSidebar';
 import NewEventModal from './NewEventModal';
@@ -385,12 +385,10 @@ export default function AdminDashboard({
               <Plus size={16} /> إضافة مناسبة جديدة
             </button>
           </div>
-
-          {/* LIVE STATISTICAL METRICS WIDGETS (TOP POSITION) */}
           <div class="apple-card" style={{ background: '#ffffff', border: '1.5px solid rgba(244, 165, 186, 0.35)' }}>
             <div class="card-title-row" style={{ marginBottom: '14px' }}>
-              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                📊 المؤشرات الإحصائية الحية لمناسبة ({eventData?.title || 'المناسبة الحالية'})
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <BarChart3 size={20} style={{ color: 'var(--pink-primary)' }} /> المؤشرات الإحصائية الحية لمناسبة ({eventData?.title || 'المناسبة الحالية'})
               </h2>
               <span class="ios-badge ios-badge-pink">تحديث مباشر لحظي</span>
             </div>
@@ -429,7 +427,7 @@ export default function AdminDashboard({
           {/* AUTOMATED WHATSAPP DISPATCHER BOX */}
           <div class="apple-card" style={{ background: '#ffffff', border: '2px solid var(--pink-primary)', padding: '22px' }}>
             <div class="card-title-row" style={{ marginBottom: '14px' }}>
-              <h2 style={{ color: 'var(--pink-dark)', fontSize: '1.2rem', fontWeight: 800 }}>
+              <h2 style={{ color: 'var(--pink-dark)', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Rocket size={24} style={{ color: 'var(--pink-primary)' }} /> الإرسال التلقائي الكلي للواتساب (Auto WhatsApp Dispatcher)
               </h2>
               <span class="ios-badge ios-badge-pink">إرسال آلي لمناسبة: {eventData?.title}</span>
@@ -492,7 +490,7 @@ export default function AdminDashboard({
                 </>
               ) : (
                 <>
-                  <Rocket size={20} /> 🚀 البدء بالإرسال التلقائي الفوري لمناسبة ({eventData?.title})
+                  <Rocket size={20} /> البدء بالإرسال التلقائي الفوري لمناسبة ({eventData?.title})
                 </>
               )}
             </button>
@@ -565,7 +563,7 @@ export default function AdminDashboard({
                 <div class="form-group" style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px' }}>
                   <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>صورة كرت الدعوة الخاص بهذه المناسبة:</span>
-                    {previewCardImg && <span class="ios-badge ios-badge-green">تم رفع الكرت ✓</span>}
+                    {previewCardImg && <span class="ios-badge ios-badge-green" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={14} /> تم رفع الكرت</span>}
                   </label>
 
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '6px' }}>
@@ -579,8 +577,8 @@ export default function AdminDashboard({
                   <div class="card-preview-box" style={{ marginTop: '12px' }}>
                     {previewCardImg ? (
                       <div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--pink-dark)', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
-                          ✨ معاينة حية لكرت هذه المناسبة:
+                        <span style={{ fontSize: '0.8rem', color: 'var(--pink-dark)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
+                          <Sparkles size={14} /> معاينة حية لكرت هذه المناسبة:
                         </span>
                         <img src={previewCardImg} alt="معاينة الكرت" class="card-preview-img" />
                       </div>
@@ -683,7 +681,7 @@ export default function AdminDashboard({
                 guests.map((guest, idx) => {
                   const guestLink = `${baseUrl}/?guest=${guest.id}`;
                   const waMsg = encodeURIComponent(
-                    `مرحباً ${guest.name} ✨\nيسرنا ويسعدنا دعوتكم لحضور ${eventData?.title}.\nيرجى تأكيد حضورك واستلام تذكرتك عبر الرابط التالي:\n` + guestLink
+                    `مرحباً ${guest.name}\nيسرنا ويسعدنا دعوتكم لحضور ${eventData?.title}.\nيرجى تأكيد حضورك واستلام تذكرتك عبر الرابط التالي:\n` + guestLink
                   );
                   const waUrl = `https://api.whatsapp.com/send?phone=${guest.phone}&text=${waMsg}`;
 
@@ -693,9 +691,9 @@ export default function AdminDashboard({
                       <td><strong>{guest.name}</strong></td>
                       <td dir="ltr">{guest.phone}</td>
                       <td>
-                        {guest.status === 'accepted' && <span class="ios-badge ios-badge-green">مقبول ✅</span>}
-                        {guest.status === 'declined' && <span class="ios-badge ios-badge-red">معتذر ❌</span>}
-                        {guest.status === 'pending' && <span class="ios-badge ios-badge-gold">بانتظار الرد ⏳</span>}
+                        {guest.status === 'accepted' && <span class="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={13} /> مقبول</span>}
+                        {guest.status === 'declined' && <span class="ios-badge ios-badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><X size={13} /> معتذر</span>}
+                        {guest.status === 'pending' && <span class="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Clock size={13} /> بانتظار الرد</span>}
                       </td>
                       <td><code>{guest.ticketCode}</code></td>
                       <td>

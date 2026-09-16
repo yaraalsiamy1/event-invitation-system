@@ -339,7 +339,7 @@ class EventApp {
             
             // WhatsApp Message Text
             const waMsg = encodeURIComponent(
-                `مرحباً ${guest.name} ✨\nيسرنا دعوتكم لحضور ${this.eventData.title}.\nيرجى تأكيد حضورك واستلام تذكرة الـ QR عبر الرابط التالي:\n` + window.location.href
+                `مرحباً ${guest.name}\nيسرنا دعوتكم لحضور ${this.eventData.title}.\nيرجى تأكيد حضورك واستلام تذكرة الـ QR عبر الرابط التالي:\n` + window.location.href
             );
             const waUrl = `https://wa.me/${guest.phone}?text=${waMsg}`;
 
