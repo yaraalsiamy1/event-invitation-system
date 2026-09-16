@@ -31,7 +31,6 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
     }));
 
     if (status === 'accepted') {
-      // Trigger Celebration Fireworks
       confetti({
         particleCount: 90,
         spread: 70,
@@ -50,11 +49,11 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
 
   return (
     <div class="apple-guest-portal">
-      {/* Top Banner to switch active guest simulator */}
+      {/* Top Banner selector */}
       <div class="apple-card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem' }}>
           <Smartphone class="system-gold" size={18} />
-          <span>معاينة حية لشاشة iPhone الخاصة بالضيف:</span>
+          <span>معاينة واجهة iPhone الفاتحة الخاصة بالضيف:</span>
         </div>
         <select
           class="apple-input"
@@ -70,11 +69,11 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
         </select>
       </div>
 
-      {/* iPhone Simulator */}
+      {/* iPhone Simulator Frame */}
       <div class="iphone-frame">
-        <div style={{ background: '#0a0e17', borderRadius: '36px', padding: '24px 16px', minHeight: '620px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ background: '#f9f9fb', borderRadius: '36px', padding: '24px 16px', minHeight: '620px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* Header Graphic Tag */}
+          {/* Header Tag */}
           <div style={{ textAlign: 'center' }}>
             <span class="ios-badge ios-badge-gold" style={{ padding: '6px 16px', fontSize: '0.82rem' }}>
               ✉️ دعوة خاصة رسمية
@@ -82,33 +81,33 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
           </div>
 
           {/* Invitation Card */}
-          <div style={{ background: 'linear-gradient(145deg, #181920 0%, #111217 100%)', border: '1px solid var(--apple-border-gold)', borderRadius: '20px', padding: '24px 18px', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '1.5rem', color: 'var(--system-gold)', marginBottom: '8px' }}>{eventData.title}</h2>
-            <div style={{ color: 'var(--system-gold)', letterSpacing: '4px', margin: '8px 0', fontSize: '0.8rem' }}>❖ ❖ ❖</div>
+          <div style={{ background: '#ffffff', border: '1px solid var(--apple-border-gold)', borderRadius: '20px', padding: '24px 18px', textAlign: 'center', boxShadow: '0 8px 25px rgba(0,0,0,0.04)' }}>
+            <h2 style={{ fontSize: '1.5rem', color: '#997a15', marginBottom: '8px' }}>{eventData.title}</h2>
+            <div style={{ color: '#d4af37', letterSpacing: '4px', margin: '8px 0', fontSize: '0.8rem' }}>❖ ❖ ❖</div>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '18px' }}>يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم</p>
 
-            <div style={{ background: 'rgba(255, 214, 10, 0.08)', borderRadius: '14px', padding: '12px', marginBottom: '18px' }}>
+            <div style={{ background: 'rgba(212, 175, 55, 0.08)', borderRadius: '14px', padding: '12px', marginBottom: '18px' }}>
               <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block' }}>المكرم / المكرمة:</span>
-              <h3 style={{ fontSize: '1.25rem', color: 'var(--system-gold)', fontWeight: 800 }}>{activeGuest.name}</h3>
+              <h3 style={{ fontSize: '1.25rem', color: '#997a15', fontWeight: 800 }}>{activeGuest.name}</h3>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', textAlign: 'right', fontSize: '0.82rem' }}>
-              <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '10px', borderRadius: '10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <Calendar size={16} class="system-gold" />
+              <div style={{ background: 'rgba(0, 0, 0, 0.03)', padding: '10px', borderRadius: '10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <Calendar size={16} style={{ color: '#d4af37' }} />
                 <div>
                   <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>التاريخ</strong>
                   <span>{eventData.date}</span>
                 </div>
               </div>
-              <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '10px', borderRadius: '10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <Clock size={16} class="system-gold" />
+              <div style={{ background: 'rgba(0, 0, 0, 0.03)', padding: '10px', borderRadius: '10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <Clock size={16} style={{ color: '#d4af37' }} />
                 <div>
                   <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>الوقت</strong>
                   <span>{eventData.time}</span>
                 </div>
               </div>
-              <div style={{ gridColumn: 'span 2', background: 'rgba(255, 255, 255, 0.04)', padding: '10px', borderRadius: '10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <MapPin size={16} class="system-gold" />
+              <div style={{ gridColumn: 'span 2', background: 'rgba(0, 0, 0, 0.03)', padding: '10px', borderRadius: '10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <MapPin size={16} style={{ color: '#d4af37' }} />
                 <div>
                   <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>المكان</strong>
                   <span>{eventData.location}</span>
@@ -117,11 +116,11 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
             </div>
           </div>
 
-          {/* Action Box: Pending State */}
+          {/* Pending State */}
           {activeGuest.status === 'pending' && (
             <div class="apple-card" style={{ padding: '18px', textAlign: 'center' }}>
               <h3 style={{ fontSize: '1.05rem', marginBottom: '4px' }}>هل ستتشرفنا بالحضور؟</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>يرجى تأكيد القبول لتوليد بطاقة الـ Apple Wallet الخاص بك</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>يرجى تأكيد القبول لتوليد باركود تذكرة الـ QR الخاصة بك</p>
 
               <div class="form-group" style={{ textAlign: 'right', marginBottom: '14px' }}>
                 <label style={{ fontSize: '0.8rem' }}>عدد المرافقين معك:</label>
@@ -149,7 +148,7 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
             </div>
           )}
 
-          {/* Action Box: Declined State */}
+          {/* Declined State */}
           {activeGuest.status === 'declined' && (
             <div class="apple-card" style={{ padding: '24px', textAlign: 'center', borderColor: 'var(--system-red)' }}>
               <HeartHandshake size={48} style={{ color: 'var(--system-red)', margin: '0 auto 10px' }} />
@@ -161,11 +160,11 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
             </div>
           )}
 
-          {/* Action Box: Accepted -> APPLE WALLET PASS TICKET */}
+          {/* Accepted -> Light Apple Wallet Ticket */}
           {activeGuest.status === 'accepted' && (
             <div class="wallet-pass-container">
               <div class="wallet-pass">
-                {/* Metallic Pass Header */}
+                {/* Header */}
                 <div class="pass-header">
                   <div>
                     <div class="pass-header-title">APPLE WALLET EVENT PASS</div>
@@ -174,7 +173,7 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
                   <ShieldCheck size={26} />
                 </div>
 
-                {/* Perforated Cutout Line */}
+                {/* Tear Cutout */}
                 <div class="pass-cutout-line">
                   <div class="notch-left"></div>
                   <div class="dashed"></div>
@@ -204,8 +203,8 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
                 </div>
 
                 <div class="pass-footer">
-                  <button class="apple-btn apple-btn-gold btn-block" style={{ fontSize: '0.85rem' }} onClick={() => alert('تمت إضافة وتنزيل البطاقة محلياً للجوال!')}>
-                    <Download size={16} /> حفظ في Apple Wallet / الجوال
+                  <button class="apple-btn apple-btn-gold btn-block" style={{ fontSize: '0.85rem' }} onClick={() => alert('تم حفظ التذكرة محلياً بالجوال!')}>
+                    <Download size={16} /> حفظ بطاقة الدخول للجوال
                   </button>
                 </div>
               </div>
