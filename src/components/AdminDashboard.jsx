@@ -52,13 +52,16 @@ export default function AdminDashboard({
   const [statusFilter, setStatusFilter] = useState('all');
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
 
-  // Pagination State (50 records per page)
+  // Pagination State (customizable records per page: 10, 20, 50, 100)
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 50;
+  const [pageSize, setPageSize] = useState(() => {
+    const saved = localStorage.getItem('guest_page_size');
+    return saved ? parseInt(saved) : 10;
+  });
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeEventId, statusFilter]);
+  }, [activeEventId, statusFilter, pageSize]);
 
   // Render single unified status badge per guest
   const renderSingleStatus = (guest) => {
@@ -1351,36 +1354,107 @@ export default function AdminDashboard({
                 </table>
               </div>
 
-              {/* Pagination Controls (50 per page) */}
-              {filteredGuests.length > pageSize && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(64, 123, 161, 0.2)', flexWrap: 'wrap', gap: '10px' }}>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    عرض {startIndex + 1} - {Math.min(startIndex + pageSize, filteredGuests.length)} من أصل {filteredGuests.length} مدعو
-                  </span>
-
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <button
-                      className="apple-btn apple-btn-secondary"
-                      style={{ padding: '6px 14px', fontSize: '0.8rem' }}
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={safePage === 1}
-                    >
-                      السابقة
-                    </button>
-
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, padding: '0 10px', color: 'var(--pink-dark)' }}>
-                      صفحة {safePage} من {totalPages}
+              {/* Pagination & Display Controls */}
+              {filteredGuests.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(64, 123, 161, 0.2)', flexWrap: 'wrap', gap: '12px' }}>
+                  {/* Right side: Page size selector & record counts */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      عرض {startIndex + 1} - {Math.min(startIndex + pageSize, filteredGuests.length)} من أصل {filteredGuests.length} مدعو
                     </span>
 
-                    <button
-                      className="apple-btn apple-btn-secondary"
-                      style={{ padding: '6px 14px', fontSize: '0.8rem' }}
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={safePage === totalPages}
-                    >
-                      التالية
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                      <span style={{ fontWeight: 600 }}>عدد السجلات بالصفحة:</span>
+                      <select
+                        className="apple-input"
+                        style={{ padding: '4px 10px', fontSize: '0.82rem', borderRadius: '10px', width: 'auto', cursor: 'pointer', background: '#ffffff' }}
+                        value={pageSize}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 10;
+                          setPageSize(val);
+                          localStorage.setItem('guest_page_size', val);
+                          setCurrentPage(1);
+                        }}
+                      >
+                        <option value={10}>10 سجلات</option>
+                        <option value={20}>20 سجل</option>
+                        <option value={50}>50 سجل</option>
+                        <option value={100}>100 سجل</option>
+                      </select>
+                    </div>
                   </div>
+
+                  {/* Left side: Page navigation buttons */}
+                  {totalPages > 1 && (
+                    <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        className="apple-btn apple-btn-secondary"
+                        style={{ padding: '5px 10px', fontSize: '0.78rem' }}
+                        onClick={() => setCurrentPage(1)}
+                        disabled={safePage === 1}
+                        title="الصفحة الأولى"
+                      >
+                        الأولى
+                      </button>
+
+                      <button
+                        className="apple-btn apple-btn-secondary"
+                        style={{ padding: '5px 12px', fontSize: '0.78rem' }}
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={safePage === 1}
+                      >
+                        السابقة
+                      </button>
+
+                      {/* Page Number Pills */}
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter(page => page === 1 || page === totalPages || Math.abs(page - safePage) <= 1)
+                          .reduce((acc, page, idx, arr) => {
+                            if (idx > 0 && page - arr[idx - 1] > 1) {
+                              acc.push(-1 * page); // Ellipsis marker
+                            }
+                            acc.push(page);
+                            return acc;
+                          }, [])
+                          .map((p, idx) => {
+                            if (p < 0) {
+                              return <span key={`ellipsis-${idx}`} style={{ padding: '0 4px', color: 'var(--text-tertiary)' }}>...</span>;
+                            }
+                            return (
+                              <button
+                                key={p}
+                                className={`apple-btn ${p === safePage ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
+                                style={{ minWidth: '32px', height: '32px', padding: 0, fontSize: '0.8rem', justifyContent: 'center' }}
+                                onClick={() => setCurrentPage(p)}
+                              >
+                                {p}
+                              </button>
+                            );
+                          })
+                        }
+                      </div>
+
+                      <button
+                        className="apple-btn apple-btn-secondary"
+                        style={{ padding: '5px 12px', fontSize: '0.78rem' }}
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={safePage === totalPages}
+                      >
+                        التالية
+                      </button>
+
+                      <button
+                        className="apple-btn apple-btn-secondary"
+                        style={{ padding: '5px 10px', fontSize: '0.78rem' }}
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={safePage === totalPages}
+                        title="الصفحة الأخيرة"
+                      >
+                        الأخيرة
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </>
