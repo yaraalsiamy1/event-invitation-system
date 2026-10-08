@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
 import { Smartphone, Calendar, Clock, MapPin, CheckCircle2, XCircle, Download, ShieldCheck, HeartHandshake, Check, X, Mail } from 'lucide-react';
 
-export default function GuestPortal({ eventData, guests, setGuests, activeGuestId, setActiveGuestId, refreshData, isGuestMode }) {
+export default function GuestPortal({ eventData, guests, setGuests, activeGuestId, setActiveGuestId, refreshData, isGuestMode, showConfirmation }) {
   const [guestRecord, setGuestRecord] = useState(null);
   const [guestEvent, setGuestEvent] = useState(null);
 
@@ -63,6 +63,13 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
         spread: 80,
         origin: { y: 0.6 }
       });
+      if (showConfirmation) {
+        showConfirmation('تم تأكيد الحضور بنجاح!', 'يسرنا ويسعدنا تواجدك وتأكيد حضورك معنا، تم إصدار بطاقة وتذكرة الدخول الخاصة بك!');
+      }
+    } else if (status === 'declined') {
+      if (showConfirmation) {
+        showConfirmation('تم تسجيل اعتذارك بنجاح', 'نشكرك على إبلاغنا ونتمنى لك كل التوفيق والخير.', 'info');
+      }
     }
 
     if (refreshData) refreshData();
@@ -229,7 +236,7 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
               </div>
 
               <div className="pass-footer">
-                <button className="apple-btn apple-btn-pink btn-block" style={{ fontSize: '0.88rem' }} onClick={() => alert('تم حفظ بطاقة الدخول محلياً على الجوال!')}>
+                <button className="apple-btn apple-btn-pink btn-block" style={{ fontSize: '0.88rem' }} onClick={() => showConfirmation ? showConfirmation('تم الحفظ!', 'تم حفظ وتنزيل بطاقة الدخول للجوال بنجاح.') : alert('تم حفظ بطاقة الدخول محلياً على الجوال!')}>
                   <Download size={16} /> حفظ بطاقة الدخول للجوال
                 </button>
               </div>

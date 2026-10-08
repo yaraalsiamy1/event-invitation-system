@@ -157,6 +157,16 @@ export default function App() {
     }
   };
 
+  const [modalConfig, setModalConfig] = useState({ isOpen: false, title: '', message: '', type: 'success' });
+
+  const showConfirmation = (title, message, type = 'success') => {
+    setModalConfig({ isOpen: true, title, message, type });
+  };
+
+  const closeModal = () => {
+    setModalConfig(prev => ({ ...prev, isOpen: false }));
+  };
+
   // Create New Event (100% persistent to backend DB & state)
   const handleCreateEvent = async (newEventData) => {
     const createdId = newEventData.id || ("ev_" + Date.now() + "_" + Math.floor(Math.random() * 1000));
@@ -198,7 +208,7 @@ export default function App() {
       console.warn('API sync fallback for create event:', e);
     }
 
-    alert(`تم إنشاء المناسبة "${newEv.title}" بنجاح وحفظها في القائمة الجانبية!`);
+    showConfirmation('تم إنشاء المناسبة بنجاح!', `تمت إضافة مناسبة "${newEv.title}" وحفظها في القائمة الجانبية.`);
   };
 
   // Delete Event
@@ -224,10 +234,10 @@ export default function App() {
           setGuests([]);
           await refreshData();
         }
-        alert('تم حذف المناسبة بنجاح!');
+        showConfirmation('تم حذف المناسبة!', 'تم حذف المناسبة بنجاح من النظام.', 'info');
       }
     } catch (e) {
-      alert('تم حذف المناسبة من القائمة المحلية.');
+      showConfirmation('تم حذف المناسبة محلياً', 'تم حذف المناسبة من القائمة المحلية.', 'info');
     }
   };
 
@@ -277,6 +287,7 @@ export default function App() {
             onSelectEvent={handleSelectEvent}
             onCreateEvent={handleCreateEvent}
             onDeleteEvent={handleDeleteEvent}
+            showConfirmation={showConfirmation}
           />
         )}
 
@@ -289,9 +300,114 @@ export default function App() {
             setActiveGuestId={setActiveGuestId}
             refreshData={() => refreshData(activeEventId)}
             isGuestMode={isGuestMode}
+            showConfirmation={showConfirmation}
           />
         )}
       </main>
+
+      {/* Global Process Confirmation Modal */}
+      {modalConfig.isOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(28, 50, 66, 0.45)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div className="apple-card" style={{
+            maxWidth: '420px',
+            width: '100%',
+            backgroundColor: '#ffffff',
+            borderRadius: '28px',
+            padding: '32px 24px',
+            textAlign: 'center',
+            boxShadow: '0 20px 60px rgba(64, 123, 161, 0.25)',
+            border: '1.5px solid rgba(64, 123, 161, 0.25)',
+            position: 'relative'
+          }}>
+            <button 
+              onClick={closeModal}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                left: '16px',
+                background: 'rgba(0, 0, 0, 0.05)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              ✕
+            </button>
+
+            <div style={{
+              width: '72px',
+              height: '72px',
+              borderRadius: '50%',
+              background: modalConfig.type === 'success' 
+                ? 'linear-gradient(135deg, rgba(46, 204, 113, 0.15) 0%, rgba(39, 174, 96, 0.25) 100%)' 
+                : modalConfig.type === 'danger'
+                ? 'rgba(231, 76, 60, 0.15)'
+                : 'rgba(64, 123, 161, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+              color: modalConfig.type === 'success' ? '#27ae60' : modalConfig.type === 'danger' ? '#e74c3c' : '#407BA1',
+              boxShadow: modalConfig.type === 'success' ? '0 10px 25px rgba(46, 204, 113, 0.2)' : '0 10px 25px rgba(64, 123, 161, 0.15)'
+            }}>
+              {modalConfig.type === 'success' ? (
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              ) : (
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              )}
+            </div>
+
+            <h3 style={{
+              fontSize: '1.4rem',
+              fontWeight: 800,
+              color: 'var(--text-primary)',
+              marginBottom: '10px'
+            }}>
+              {modalConfig.title}
+            </h3>
+
+            <p style={{
+              fontSize: '0.95rem',
+              color: 'var(--text-secondary)',
+              marginBottom: '26px',
+              lineHeight: '1.6'
+            }}>
+              {modalConfig.message}
+            </p>
+
+            <button
+              className="apple-btn apple-btn-pink btn-block"
+              onClick={closeModal}
+              style={{
+                fontSize: '1rem',
+                padding: '14px'
+              }}
+            >
+              حسناً، تم
+            </button>
+          </div>
+        </div>
+      )}
 
       <footer style={{ borderTop: '1px solid var(--apple-border)', padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.88rem', fontWeight: 600 }}>
         <div className="apple-container">

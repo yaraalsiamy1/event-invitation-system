@@ -17,7 +17,8 @@ export default function AdminDashboard({
   refreshData,
   onSelectEvent,
   onCreateEvent,
-  onDeleteEvent
+  onDeleteEvent,
+  showConfirmation
 }) {
   const [batchText, setBatchText] = useState('');
   const [previewCardImg, setPreviewCardImg] = useState(eventData?.cardImage || null);
@@ -124,7 +125,11 @@ export default function AdminDashboard({
       await onCreateEvent(updatedEv);
     } else {
       await setEventData(updatedEv);
-      alert(`تم حفظ تفاصيل المناسبة "${updatedEv.title || 'جديدة'}" وكرت الدعوة بنجاح!`);
+      if (showConfirmation) {
+        showConfirmation('تم حفظ التعديلات بنجاح!', `تم حفظ تفاصيل المناسبة "${updatedEv.title || 'جديدة'}" وكرت الدعوة بنجاح.`);
+      } else {
+        alert(`تم حفظ تفاصيل المناسبة "${updatedEv.title || 'جديدة'}" وكرت الدعوة بنجاح!`);
+      }
     }
   };
 
@@ -281,7 +286,11 @@ export default function AdminDashboard({
   const handleConfirmValidationSave = async (validGuests) => {
     setPendingExcelRows(null);
     await saveBatchToApi(validGuests);
-    alert(`تم فحص وتأكيد واعتماد ${validGuests.length} مدعو بنجاح للمناسبة "${eventData.title}"!`);
+    if (showConfirmation) {
+      showConfirmation('تم استيراد قائمة الضيوف بنجاح!', `تم فحص وتأكيد واعتماد ${validGuests.length} مدعو بنجاح للمناسبة "${eventData?.title || ''}".`);
+    } else {
+      alert(`تم فحص وتأكيد واعتماد ${validGuests.length} مدعو بنجاح للمناسبة "${eventData?.title || ''}"!`);
+    }
   };
 
   // Process Batch Text Entry (with Duplicate Check)
@@ -334,9 +343,17 @@ export default function AdminDashboard({
     if (newGuests.length > 0) {
       await saveBatchToApi(newGuests);
       setBatchText('');
-      alert(`تم إضافة ${newGuests.length} مدعو جديد بنجاح! ${skippedDups > 0 ? `(تم تجاهل ${skippedDups} مكرر)` : ''}`);
+      if (showConfirmation) {
+        showConfirmation('تم إضافة الضيوف بنجاح!', `تم إضافة ${newGuests.length} مدعو جديد بنجاح إلى قائمة المناسبة.`);
+      } else {
+        alert(`تم إضافة ${newGuests.length} مدعو جديد بنجاح!`);
+      }
     } else if (skippedDups > 0) {
-      alert(`جميع البيانات المدخلة مكررة وموجودة مسبقاً في القائمة (${skippedDups} مكرر).`);
+      if (showConfirmation) {
+        showConfirmation('بيانات مكررة', `جميع البيانات المدخلة مكررة وموجودة مسبقاً في القائمة (${skippedDups} مكرر).`, 'info');
+      } else {
+        alert(`جميع البيانات المدخلة مكررة وموجودة مسبقاً في القائمة (${skippedDups} مكرر).`);
+      }
     }
   };
 

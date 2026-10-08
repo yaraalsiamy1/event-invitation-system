@@ -7,10 +7,21 @@
       "type": "wedding",
       "date": "2027-01-08",
       "time": "21:30",
-      "location": "قاعة ميلا2 | الحسينية",
+      "location": "قاعة ميلا 2 | الحسينية",
       "mapLink": "https://maps.app.goo.gl/eGuQzLPJbqEkNk1W6",
       "cardImage": "/uploads/card_ev_1789587103668_307_1791460392359.png",
-      "guests": []
+      "guests": [
+        {
+          "id": "g_1791461576619_78603",
+          "name": "ضيف عزيز",
+          "phone": "966534303484",
+          "status": "pending",
+          "ticketCode": "EV-471176",
+          "checkedIn": false,
+          "checkInTime": null,
+          "eventId": "ev_1789587103668_307"
+        }
+      ]
     }
   ]
 }
