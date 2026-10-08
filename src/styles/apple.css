@@ -176,15 +176,15 @@ body.apple-theme {
 
 /* Navbar */
 .apple-navbar {
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(25px) saturate(180%);
-    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid var(--apple-border);
     position: sticky;
     top: 0;
     z-index: 1000;
-    padding: 14px 0;
-    box-shadow: 0 4px 25px rgba(64, 123, 161, 0.07);
+    padding: 6px 0;
+    box-shadow: 0 2px 15px rgba(64, 123, 161, 0.05);
 }
 
 .nav-wrapper {
@@ -192,25 +192,27 @@ body.apple-theme {
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 12px;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
 }
 
 .apple-brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .brand-icon-box {
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    height: 32px;
     background: var(--pink-gradient);
     border-radius: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #ffffff;
-    box-shadow: 0 6px 18px rgba(64, 123, 161, 0.35);
+    box-shadow: 0 4px 12px rgba(64, 123, 161, 0.28);
     transition: transform 0.3s ease;
 }
 
@@ -219,16 +221,17 @@ body.apple-theme {
 }
 
 .brand-title {
-    font-size: 1.35rem;
+    font-size: 1.12rem;
     font-weight: 800;
     letter-spacing: -0.3px;
     color: var(--text-primary);
+    line-height: 1;
 }
 
 .brand-title span {
     color: var(--pink-primary);
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     margin-right: 6px;
 }
 
@@ -236,25 +239,25 @@ body.apple-theme {
 .ios-segmented-control {
     display: flex;
     background: rgba(240, 245, 249, 0.9);
-    padding: 5px;
+    padding: 3px;
     border-radius: 50px;
-    border: 1px solid rgba(64, 123, 161, 0.22);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(64, 123, 161, 0.2);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .segment-btn {
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    padding: 9px 24px;
+    padding: 6px 16px;
     border-radius: 50px;
     font-family: var(--font-apple);
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -266,7 +269,7 @@ body.apple-theme {
 .segment-btn.active {
     background: #ffffff;
     color: var(--pink-dark);
-    box-shadow: 0 4px 15px rgba(64, 123, 161, 0.2), 0 1px 2px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 3px 10px rgba(64, 123, 161, 0.16), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 /* Light Soft Cards with Calm Depth */
