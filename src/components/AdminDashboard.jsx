@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles, HelpCircle } from 'lucide-react';
+import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles, HelpCircle, Filter } from 'lucide-react';
 import ExcelValidationModal from './ExcelValidationModal';
 import EventsSidebar from './EventsSidebar';
 import NewEventModal from './NewEventModal';
@@ -48,13 +48,16 @@ export default function AdminDashboard({
   // Checkbox selection state for batch sending
   const [selectedGuestIds, setSelectedGuestIds] = useState([]);
 
+  // Status Filter State ('all' | 'accepted' | 'declined' | 'pending' | 'sent' | 'unsent')
+  const [statusFilter, setStatusFilter] = useState('all');
+
   // Pagination State (50 records per page)
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeEventId]);
+  }, [activeEventId, statusFilter]);
 
   // Render single unified status badge per guest
   const renderSingleStatus = (guest) => {
@@ -647,6 +650,19 @@ export default function AdminDashboard({
   const declined = (guests || []).filter(g => g.status === 'declined').length;
   const pending = (guests || []).filter(g => g.status === 'pending').length;
   const pendingSeats = (guests || []).filter(g => g.status === 'pending').reduce((acc, g) => acc + (parseInt(g.count) || parseInt(g.companions) || 1), 0);
+  const sentCount = (guests || []).filter(g => g.sent).length;
+  const unsentCount = (guests || []).filter(g => !g.sent).length;
+
+  // Filtered guests by active status filter
+  const filteredGuests = (guests || []).filter(g => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'accepted') return g.status === 'accepted';
+    if (statusFilter === 'declined') return g.status === 'declined';
+    if (statusFilter === 'pending') return g.status === 'pending';
+    if (statusFilter === 'sent') return Boolean(g.sent);
+    if (statusFilter === 'unsent') return !g.sent;
+    return true;
+  });
 
   const baseUrl = window.location.origin;
 
@@ -993,15 +1009,15 @@ export default function AdminDashboard({
       <div className="apple-card" style={{ marginBottom: '28px' }}>
         <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
           <div>
-            <h2>3. قائمة المدعوين المفحوصة والمحفوظة لمناسبة ({eventData?.title})</h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>حدد المدعوين الذين ترغب في إرسال الدعوة لهم تلقائياً</p>
+            <h2>4. قائمة المدعوين المفحوصة والمحفوظة لمناسبة ({eventData?.title})</h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>تصفية المدعوين حسب الحالة والتحكم في إرسال الدعوات وحفظ التغييرات</p>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', width: '100%', justifyContent: 'space-between', marginTop: '4px' }}>
-            {/* Right side controls */}
+            {/* Right side selection badges & quick selection */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.84rem', padding: '6px 14px', fontWeight: 800 }}>
-                تم تحديد ({selectedGuestIds.length}) من أصل ({guests.length})
+                تم تحديد ({selectedGuestIds.length}) من أصل ({filteredGuests.length})
               </span>
               <button className="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
                 تحديد غير المرسل لهم فقط
@@ -1013,7 +1029,7 @@ export default function AdminDashboard({
               )}
             </div>
 
-            {/* Left side standing alone: Rocket Auto Dispatch Button */}
+            {/* Left side: Rocket Auto Dispatch Button */}
             <div>
               <button
                 type="button"
@@ -1036,6 +1052,79 @@ export default function AdminDashboard({
           </div>
         </div>
 
+        {/* Live Filter Bar by Status (فلترة حسب الحالة) */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          flexWrap: 'wrap',
+          background: 'rgba(240, 245, 249, 0.85)',
+          padding: '10px 16px',
+          borderRadius: '16px',
+          border: '1px solid rgba(64, 123, 161, 0.18)',
+          marginTop: '12px',
+          marginBottom: '14px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-primary)', marginLeft: '8px' }}>
+            <Filter size={16} style={{ color: 'var(--pink-primary)' }} />
+            <span>فلترة حسب الحالة:</span>
+          </div>
+
+          <button
+            type="button"
+            className={`apple-btn ${statusFilter === 'all' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
+            style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '50px' }}
+            onClick={() => setStatusFilter('all')}
+          >
+            الكل ({guests.length})
+          </button>
+
+          <button
+            type="button"
+            className={`apple-btn ${statusFilter === 'accepted' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
+            style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '50px' }}
+            onClick={() => setStatusFilter('accepted')}
+          >
+            حضور مؤكد ({accepted})
+          </button>
+
+          <button
+            type="button"
+            className={`apple-btn ${statusFilter === 'declined' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
+            style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '50px' }}
+            onClick={() => setStatusFilter('declined')}
+          >
+            معتذرون ({declined})
+          </button>
+
+          <button
+            type="button"
+            className={`apple-btn ${statusFilter === 'pending' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
+            style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '50px' }}
+            onClick={() => setStatusFilter('pending')}
+          >
+            بانتظار الرد ({pending})
+          </button>
+
+          <button
+            type="button"
+            className={`apple-btn ${statusFilter === 'sent' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
+            style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '50px' }}
+            onClick={() => setStatusFilter('sent')}
+          >
+            تم الإرسال ({sentCount})
+          </button>
+
+          <button
+            type="button"
+            className={`apple-btn ${statusFilter === 'unsent' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
+            style={{ padding: '6px 14px', fontSize: '0.82rem', borderRadius: '50px' }}
+            onClick={() => setStatusFilter('unsent')}
+          >
+            لم يُرسل بعد ({unsentCount})
+          </button>
+        </div>
+
         {/* Live Auto Sending Progress Bar */}
         {isSendingAuto && autoProgress && (
           <div style={{ background: 'rgba(240, 245, 249, 0.9)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(64, 123, 161, 0.3)', marginTop: '14px', marginBottom: '14px' }}>
@@ -1054,10 +1143,10 @@ export default function AdminDashboard({
 
         {/* Paginated Calculations */}
         {(() => {
-          const totalPages = Math.max(1, Math.ceil((guests || []).length / pageSize));
+          const totalPages = Math.max(1, Math.ceil(filteredGuests.length / pageSize));
           const safePage = Math.min(currentPage, totalPages);
           const startIndex = (safePage - 1) * pageSize;
-          const paginatedGuests = (guests || []).slice(startIndex, startIndex + pageSize);
+          const paginatedGuests = filteredGuests.slice(startIndex, startIndex + pageSize);
 
           return (
             <>
@@ -1084,10 +1173,24 @@ export default function AdminDashboard({
                     </tr>
                   </thead>
                   <tbody>
-                    {guests.length === 0 ? (
+                    {filteredGuests.length === 0 ? (
                       <tr>
-                        <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
-                          لا يوجد مدعوين محفوظين لهذه المناسبة حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
+                        <td colSpan="8" style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--text-secondary)' }}>
+                          {guests.length === 0 ? (
+                            'لا يوجد مدعوين محفوظين لهذه المناسبة حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.'
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                              <span>لا توجد سجلات تطابق حالة التصفية المحددة.</span>
+                              <button
+                                type="button"
+                                className="apple-btn apple-btn-secondary"
+                                style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+                                onClick={() => setStatusFilter('all')}
+                              >
+                                عرض الكل ({guests.length})
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ) : (
@@ -1162,10 +1265,10 @@ export default function AdminDashboard({
               </div>
 
               {/* Pagination Controls (50 per page) */}
-              {guests.length > pageSize && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(244, 165, 186, 0.2)', flexWrap: 'wrap', gap: '10px' }}>
+              {filteredGuests.length > pageSize && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(64, 123, 161, 0.2)', flexWrap: 'wrap', gap: '10px' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    عرض {startIndex + 1} - {Math.min(startIndex + pageSize, guests.length)} من أصل {guests.length} مدعو
+                    عرض {startIndex + 1} - {Math.min(startIndex + pageSize, filteredGuests.length)} من أصل {filteredGuests.length} مدعو
                   </span>
 
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
