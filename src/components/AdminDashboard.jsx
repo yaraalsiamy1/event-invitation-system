@@ -920,23 +920,6 @@ export default function AdminDashboard({
                   </button>
                 </div>
               </form>
-
-              {/* Batch Manual Entry */}
-              <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(64, 123, 161, 0.15)', paddingTop: '14px' }}>
-                <div className="form-group">
-                  <label>أو كتابة قائمة مدعوين دفعة واحدة (يدعم: مسافة، فاصلة، شرطة، أو سطر جديد لكل ضيف):</label>
-                  <textarea
-                    className="apple-input"
-                    rows="3"
-                    placeholder="مثال:&#10;عبدالله المحمد 0501234567&#10;سارة الخالد، 0551234567&#10;تركي الحربي - 0541234567"
-                    value={batchText}
-                    onChange={(e) => setBatchText(e.target.value)}
-                  ></textarea>
-                </div>
-                <button type="submit" className="apple-btn apple-btn-secondary btn-block">
-                  <Plus size={16} /> إضافة وحفظ القائمة في النظام
-                </button>
-              </form>
             </div>
 
             {/* Form 3: WhatsApp Customization & Gateway Credentials */}

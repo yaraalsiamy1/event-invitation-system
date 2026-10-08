@@ -15,21 +15,21 @@ export default function Header({ activeTab, setActiveTab }) {
         </div>
 
         {/* iOS Segmented Control Tabs */}
-        <nav class="ios-segmented-control">
+        <nav className="ios-segmented-control">
           <button
-            class={`segment-btn ${activeTab === 'admin' ? 'active' : ''}`}
+            className={`segment-btn ${activeTab === 'admin' ? 'active' : ''}`}
             onClick={() => setActiveTab('admin')}
           >
             <LayoutDashboard size={16} />
-            <span>لوحة التحكم واستيراد الإكسل</span>
+            <span>لوحة التحكم</span>
           </button>
 
           <button
-            class={`segment-btn ${activeTab === 'guest' ? 'active' : ''}`}
+            className={`segment-btn ${activeTab === 'guest' ? 'active' : ''}`}
             onClick={() => setActiveTab('guest')}
           >
             <Ticket size={16} />
-            <span>معاينة واجهة الضيف وتذكرة الـ QR</span>
+            <span>معاينة واجهة الضيف</span>
           </button>
         </nav>
       </div>

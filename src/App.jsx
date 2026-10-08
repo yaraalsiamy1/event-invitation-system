@@ -37,6 +37,15 @@ export default function App() {
     }
   }, []);
 
+  // Dynamically update browser tab / link title to match active event
+  useEffect(() => {
+    if (eventData?.title) {
+      document.title = `${eventData.title} | دعواتنا`;
+    } else {
+      document.title = 'دعواتنا';
+    }
+  }, [eventData?.title]);
+
   // Helper to safely parse JSON response
   const safeJsonParse = async (response) => {
     const ct = response.headers.get('content-type');
