@@ -23,6 +23,7 @@ export default function AdminDashboard({
   const [batchText, setBatchText] = useState('');
   const [singleName, setSingleName] = useState('');
   const [singlePhone, setSinglePhone] = useState('');
+  const [singleCount, setSingleCount] = useState(1);
   const [previewCardImg, setPreviewCardImg] = useState(eventData?.cardImage || null);
   const [fullViewImage, setFullViewImage] = useState(null);
   
@@ -210,11 +211,12 @@ export default function AdminDashboard({
 
         const extractedRows = [];
 
-        // Method 1: Keyed Objects (matches 'اسم الضيف' and 'رقم الجوال')
+        // Method 1: Keyed Objects (matches 'اسم الضيف' and 'رقم الجوال' and 'عدد المدعوين')
         if (jsonObjects && jsonObjects.length > 0) {
           jsonObjects.forEach((obj) => {
             let name = "";
             let phoneRaw = "";
+            let countRaw = 1;
 
             Object.keys(obj).forEach(key => {
               const val = (obj[key] || '').toString().trim();
@@ -224,6 +226,9 @@ export default function AdminDashboard({
                 name = val;
               } else if (keyClean.includes('جوال') || keyClean.includes('رقم') || keyClean.toLowerCase().includes('phone')) {
                 phoneRaw = val;
+              } else if (keyClean.includes('عدد') || keyClean.includes('مدعوين') || keyClean.includes('مقاعد') || keyClean.includes('مرافق') || keyClean.toLowerCase().includes('count') || keyClean.toLowerCase().includes('seat')) {
+                const parsedNum = parseInt(val);
+                if (!isNaN(parsedNum) && parsedNum > 0) countRaw = parsedNum;
               } else {
                 const cleanDigits = val.replace(/\D/g, '');
                 if (cleanDigits.length >= 8) {
@@ -237,7 +242,8 @@ export default function AdminDashboard({
             if (phoneRaw && name !== 'اسم الضيف' && name !== 'الاسم') {
               extractedRows.push({
                 name: name || "ضيف عزيز",
-                phone: phoneRaw
+                phone: phoneRaw,
+                count: countRaw
               });
             }
           });
@@ -249,6 +255,7 @@ export default function AdminDashboard({
             if (!row || row.length === 0) return;
             let name = "";
             let phoneRaw = "";
+            let countRaw = 1;
 
             row.forEach(cell => {
               if (!cell) return;
@@ -259,13 +266,16 @@ export default function AdminDashboard({
                 phoneRaw = str;
               } else if (str !== 'م' && str !== 'اسم الضيف' && str !== 'رقم الجوال' && isNaN(str)) {
                 if (!name) name = str;
+              } else if (!isNaN(parseInt(str)) && parseInt(str) > 0 && parseInt(str) <= 30 && cleanDigits.length < 4) {
+                countRaw = parseInt(str);
               }
             });
 
             if (phoneRaw) {
               extractedRows.push({
                 name: name || "ضيف عزيز",
-                phone: phoneRaw
+                phone: phoneRaw,
+                count: countRaw
               });
             }
           });
@@ -295,7 +305,7 @@ export default function AdminDashboard({
     }
   };
 
-  // Smart Line Parser for Guest Name and Phone
+  // Smart Line Parser for Guest Name, Phone, and optional Count (e.g., وسن السيامي 0501234567 2)
   const parseGuestLine = (line) => {
     if (!line || !line.trim()) return null;
     let text = line.trim();
@@ -305,6 +315,14 @@ export default function AdminDashboard({
 
     let phoneRaw = "";
     let nameRaw = "";
+    let countRaw = 1;
+
+    // Check if count is specified in parentheses like (2) or (2 مدعوين)
+    const parenMatch = text.match(/\((\d+)[^\)]*\)/);
+    if (parenMatch) {
+      countRaw = parseInt(parenMatch[1]) || 1;
+      text = text.replace(parenMatch[0], ' ').trim();
+    }
 
     // Priority 1: Check standard separators (comma, arabic comma, dash, colon, tab)
     const separators = [',', '،', '\t', ' - ', ' – ', ' — ', '-', '|', ';'];
@@ -313,15 +331,22 @@ export default function AdminDashboard({
     if (foundSep) {
       const parts = text.split(foundSep).map(p => p.trim()).filter(Boolean);
       if (parts.length >= 2) {
-        const p0Digits = parts[0].replace(/\D/g, '');
-        const p1Digits = parts[1].replace(/\D/g, '');
-
-        if (p0Digits.length >= 8 && p1Digits.length < 8) {
-          phoneRaw = parts[0];
-          nameRaw = parts[1];
+        const phoneIdx = parts.findIndex(p => p.replace(/\D/g, '').length >= 8);
+        if (phoneIdx !== -1) {
+          phoneRaw = parts[phoneIdx];
+          const remainingParts = parts.filter((_, i) => i !== phoneIdx);
+          const countIdx = remainingParts.findIndex(p => /^\d{1,2}$/.test(p));
+          if (countIdx !== -1) {
+            countRaw = parseInt(remainingParts[countIdx]) || countRaw;
+            remainingParts.splice(countIdx, 1);
+          }
+          nameRaw = remainingParts.join(' ');
         } else {
           nameRaw = parts[0];
           phoneRaw = parts[1];
+          if (parts[2] && /^\d{1,2}$/.test(parts[2])) {
+            countRaw = parseInt(parts[2]) || 1;
+          }
         }
       }
     }
@@ -331,10 +356,16 @@ export default function AdminDashboard({
       const phoneMatch = text.match(/(?:\+|00)?(?:966|0)?[5]\d{8}|\b05\d{8}\b|\b5\d{8}\b|\b\d{8,15}\b/);
       if (phoneMatch) {
         phoneRaw = phoneMatch[0];
-        nameRaw = text.replace(phoneRaw, '')
-                      .replace(/[,،\-:\t|;]/g, ' ')
-                      .replace(/\s+/g, ' ')
-                      .trim();
+        let remaining = text.replace(phoneRaw, '')
+                            .replace(/[,،\-:\t|;]/g, ' ')
+                            .replace(/\s+/g, ' ')
+                            .trim();
+        const endCountMatch = remaining.match(/\b([1-9]\d?)\s*$/);
+        if (endCountMatch) {
+          countRaw = parseInt(endCountMatch[1]) || countRaw;
+          remaining = remaining.replace(endCountMatch[0], '').trim();
+        }
+        nameRaw = remaining;
       }
     }
 
@@ -346,11 +377,30 @@ export default function AdminDashboard({
 
     return {
       name: cleanName,
-      phone: formatted
+      phone: formatted,
+      count: Math.max(1, countRaw)
     };
   };
 
-  // Add Single Guest Directly (Name + Phone fields)
+  // Quick adjust guest seats count (+ / -) with instant DB sync
+  const handleUpdateGuestCount = async (guestId, newCount) => {
+    const cleanCount = Math.max(1, parseInt(newCount) || 1);
+    const updated = (guests || []).map(g => g.id === guestId ? { ...g, count: cleanCount, companions: cleanCount } : g);
+    setGuests(updated);
+
+    try {
+      await fetch(`/api/guests/${guestId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count: cleanCount, companions: cleanCount })
+      });
+      if (refreshData) refreshData();
+    } catch (e) {
+      console.error('Failed to update guest count on server', e);
+    }
+  };
+
+  // Add Single Guest Directly (Name + Phone + Count fields)
   const handleSingleGuestSubmit = async (e) => {
     e.preventDefault();
     if (!singlePhone.trim()) {
@@ -383,10 +433,14 @@ export default function AdminDashboard({
     }
 
     const cleanName = singleName.trim() || 'ضيف عزيز';
+    const cleanCount = Math.max(1, parseInt(singleCount) || 1);
+
     const newGuest = {
       id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
       name: cleanName,
       phone: formatted,
+      count: cleanCount,
+      companions: cleanCount,
       status: "pending",
       ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
       checkedIn: false,
@@ -396,14 +450,15 @@ export default function AdminDashboard({
     await saveBatchToApi([newGuest]);
     setSingleName('');
     setSinglePhone('');
+    setSingleCount(1);
     if (showConfirmation) {
-      showConfirmation('تمت إضافة الضيف بنجاح!', `تمت إضافة "${cleanName}" برقم (${formatted}) إلى قائمة المناسبة.`);
+      showConfirmation('تمت إضافة الضيف بنجاح!', `تمت إضافة "${cleanName}" (${cleanCount} مدعوين) برقم (${formatted}) إلى قائمة المناسبة.`);
     } else {
       alert(`تم إضافة الضيف ${cleanName} بنجاح!`);
     }
   };
 
-  // Process Batch Text Entry (with Smart Duplicate Check and Smart Parsing)
+  // Process Batch Text Entry (with Smart Duplicate Check, Parsing, and Count)
   const handleBatchSubmit = async (e) => {
     e.preventDefault();
     if (!batchText.trim()) return;
@@ -429,6 +484,8 @@ export default function AdminDashboard({
         id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
         name: parsed.name,
         phone: parsed.phone,
+        count: parsed.count || 1,
+        companions: parsed.count || 1,
         status: "pending",
         ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
         checkedIn: false,
@@ -535,7 +592,9 @@ export default function AdminDashboard({
       setAutoProgress({ sent: i + 1, total: selectedGuestsList.length, currentName: g.name });
 
       const guestLink = `${window.location.origin}/?guest=${g.id}`;
-      const fullText = `مرحباً ${g.name} 👋\n\n${userMsgText}\n\nالمناسبة: ${eventData?.title || ''}\nالتاريخ: ${eventData?.date || ''}\nالمكان: ${eventData?.location || ''}${cardImgNotice}\n\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
+      const guestSeats = g.count || g.companions || 1;
+      const countNotice = guestSeats > 1 ? `\nعدد المقاعد المخصصة: ${guestSeats} أشخاص` : '';
+      const fullText = `مرحباً ${g.name} 👋\n\n${userMsgText}\n\nالمناسبة: ${eventData?.title || ''}\nالتاريخ: ${eventData?.date || ''}\nالمكان: ${eventData?.location || ''}${countNotice}${cardImgNotice}\n\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
       
       const waMsg = encodeURIComponent(fullText);
       const waUrl = `https://api.whatsapp.com/send?phone=${g.phone}&text=${waMsg}`;
@@ -580,11 +639,14 @@ export default function AdminDashboard({
     }
   };
 
-  // Stats
+  // Stats with Seat Counts
   const total = (guests || []).length;
+  const totalSeats = (guests || []).reduce((acc, g) => acc + (parseInt(g.count) || parseInt(g.companions) || 1), 0);
   const accepted = (guests || []).filter(g => g.status === 'accepted').length;
+  const acceptedSeats = (guests || []).filter(g => g.status === 'accepted').reduce((acc, g) => acc + (parseInt(g.count) || parseInt(g.companions) || 1), 0);
   const declined = (guests || []).filter(g => g.status === 'declined').length;
   const pending = (guests || []).filter(g => g.status === 'pending').length;
+  const pendingSeats = (guests || []).filter(g => g.status === 'pending').reduce((acc, g) => acc + (parseInt(g.count) || parseInt(g.companions) || 1), 0);
 
   const baseUrl = window.location.origin;
 
@@ -649,15 +711,15 @@ export default function AdminDashboard({
               <div className="apple-widget">
                 <div className="widget-icon pink"><Users size={24} /></div>
                 <div>
-                  <div className="widget-val">{total}</div>
-                  <div className="widget-lbl">إجمالي المدعوين</div>
+                  <div className="widget-val">{totalSeats} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({total} دعوة)</small></div>
+                  <div className="widget-lbl">إجمالي المقاعد / المدعوين</div>
                 </div>
               </div>
               <div className="apple-widget">
                 <div className="widget-icon green"><CheckCircle2 size={24} /></div>
                 <div>
-                  <div className="widget-val">{accepted}</div>
-                  <div className="widget-lbl">تأكيد القبول</div>
+                  <div className="widget-val">{acceptedSeats} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({accepted} دعوة)</small></div>
+                  <div className="widget-lbl">حضور مؤكد (مقاعد)</div>
                 </div>
               </div>
               <div className="apple-widget">
@@ -670,8 +732,8 @@ export default function AdminDashboard({
               <div className="apple-widget">
                 <div className="widget-icon amber"><Clock size={24} /></div>
                 <div>
-                  <div className="widget-val">{pending}</div>
-                  <div className="widget-lbl">بانتظار الرد</div>
+                  <div className="widget-val">{pendingSeats} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({pending} دعوة)</small></div>
+                  <div className="widget-lbl">بانتظار الرد (مقاعد)</div>
                 </div>
               </div>
             </div>
@@ -810,11 +872,11 @@ export default function AdminDashboard({
                 <label style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', display: 'block' }}>
                   إضافة ضيف سريع (مباشر):
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 110px auto', gap: '10px' }}>
                   <input
                     type="text"
                     className="apple-input"
-                    placeholder="اسم الضيف (مثال: فهد القحطاني)"
+                    placeholder="اسم الضيف (مثال: وسن السيامي)"
                     value={singleName}
                     onChange={(e) => setSingleName(e.target.value)}
                   />
@@ -824,6 +886,17 @@ export default function AdminDashboard({
                     placeholder="رقم الجوال (مثال: 0501234567)"
                     value={singlePhone}
                     onChange={(e) => setSinglePhone(e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    className="apple-input"
+                    style={{ textAlign: 'center' }}
+                    title="عدد المدعوين / المقاعد"
+                    placeholder="العدد (1)"
+                    value={singleCount}
+                    onChange={(e) => setSingleCount(e.target.value)}
                   />
                   <button type="submit" className="apple-btn apple-btn-pink" style={{ whiteSpace: 'nowrap', padding: '12px 20px' }}>
                     <Plus size={16} /> إضافة الضيف
@@ -1002,6 +1075,7 @@ export default function AdminDashboard({
                       </th>
                       <th>#</th>
                       <th>اسم الضيف</th>
+                      <th>عدد المدعوين</th>
                       <th>رقم الجوال</th>
                       <th>الحالة</th>
                       <th>معاينة الكرت</th>
@@ -1011,7 +1085,7 @@ export default function AdminDashboard({
                   <tbody>
                     {guests.length === 0 ? (
                       <tr>
-                        <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
+                        <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
                           لا يوجد مدعوين محفوظين لهذه المناسبة حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.
                         </td>
                       </tr>
@@ -1032,6 +1106,26 @@ export default function AdminDashboard({
                             </td>
                             <td>{displayIndex}</td>
                             <td><strong>{guest.name}</strong></td>
+                            <td>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(64, 123, 161, 0.08)', borderRadius: '50px', padding: '3px 8px', border: '1px solid rgba(64, 123, 161, 0.2)' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateGuestCount(guest.id, (guest.count || guest.companions || 1) - 1)}
+                                  disabled={(guest.count || guest.companions || 1) <= 1}
+                                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 800, color: 'var(--pink-primary)', padding: '0 4px', fontSize: '1rem', lineHeight: 1 }}
+                                  title="إنقاص مقعد"
+                                >-</button>
+                                <span style={{ fontWeight: 800, minWidth: '18px', textAlign: 'center', fontSize: '0.88rem', color: 'var(--pink-dark)' }}>
+                                  {guest.count || guest.companions || 1}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateGuestCount(guest.id, (guest.count || guest.companions || 1) + 1)}
+                                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 800, color: 'var(--pink-primary)', padding: '0 4px', fontSize: '1rem', lineHeight: 1 }}
+                                  title="زيادة مقعد"
+                                >+</button>
+                              </div>
+                            </td>
                             <td dir="ltr">{guest.phone}</td>
                             <td>
                               {renderSingleStatus(guest)}

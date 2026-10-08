@@ -44,6 +44,7 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
         ...item,
         name: cleanName || "ضيف عزيز",
         phone: formattedPhone || item.phone,
+        count: Math.max(1, parseInt(item.count) || parseInt(item.companions) || 1),
         isValid: isValidPhone && isValidName && !isDuplicate,
         isDuplicate,
         errorMsg
@@ -84,6 +85,7 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
       id: i.id || ("g_" + Date.now() + "_" + Math.floor(Math.random() * 100000)),
       name: i.name || "ضيف عزيز",
       phone: i.phone,
+      count: Math.max(1, parseInt(i.count) || parseInt(i.companions) || 1),
       status: "pending",
       ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
       checkedIn: false,
@@ -182,6 +184,7 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
                 <th>#</th>
                 <th>اسم الضيف (من الملف)</th>
                 <th>رقم الجوال المفحوص</th>
+                <th style={{ width: '90px', textAlign: 'center' }}>المدعوين</th>
                 <th>نتيجة التحقق وتوافق البيانات</th>
                 <th>إجراءات</th>
               </tr>
@@ -206,6 +209,17 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
                       style={{ padding: '6px 10px', fontSize: '0.88rem', direction: 'ltr', textAlign: 'right' }}
                       value={item.phone}
                       onChange={(e) => handleItemChange(idx, 'phone', e.target.value)}
+                    />
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      className="apple-input"
+                      style={{ padding: '6px 8px', fontSize: '0.88rem', width: '65px', textAlign: 'center' }}
+                      value={item.count || 1}
+                      onChange={(e) => handleItemChange(idx, 'count', Math.max(1, parseInt(e.target.value) || 1))}
                     />
                   </td>
                   <td>

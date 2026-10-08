@@ -75,11 +75,14 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
     if (refreshData) refreshData();
   };
 
+  const guestCount = activeGuest.count || activeGuest.companions || 1;
+
   const qrPayload = JSON.stringify({
     code: activeGuest.ticketCode,
     id: activeGuest.id,
     name: activeGuest.name,
-    phone: activeGuest.phone
+    phone: activeGuest.phone,
+    count: guestCount
   });
 
   return (
@@ -99,7 +102,7 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
           >
             {(guests || []).map(g => (
               <option key={g.id} value={g.id}>
-                {g.name} ({g.phone}) - [{g.status === 'accepted' ? 'مقبول' : g.status === 'declined' ? 'معتذر' : 'بانتظار'}]
+                {g.name} ({g.phone}) [{g.count > 1 ? `${g.count} مقاعد - ` : ''}{g.status === 'accepted' ? 'مقبول' : g.status === 'declined' ? 'معتذر' : 'بانتظار'}]
               </option>
             ))}
           </select>
@@ -146,6 +149,11 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
           <div style={{ background: 'rgba(64, 123, 161, 0.08)', borderRadius: '16px', padding: '14px', marginBottom: '18px', border: '1px solid rgba(64, 123, 161, 0.2)' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>المكرم / المكرمة:</span>
             <h3 style={{ fontSize: '1.35rem', color: 'var(--pink-dark)', fontWeight: 800 }}>{activeGuest.name}</h3>
+            {guestCount > 1 && (
+              <span className="ios-badge ios-badge-pink" style={{ marginTop: '8px', fontSize: '0.82rem' }}>
+                عدد المقاعد المخصصة: {guestCount} أشخاص
+              </span>
+            )}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', textAlign: 'right', fontSize: '0.84rem' }}>
@@ -211,6 +219,11 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
                 <div>
                   <div className="pass-header-title">APPLE WALLET EVENT PASS</div>
                   <div className="pass-header-name">{activeGuest.name}</div>
+                  {guestCount > 1 && (
+                    <div style={{ fontSize: '0.78rem', opacity: 0.9, marginTop: '2px', fontWeight: 600 }}>
+                      عدد المقاعد / المدعوين: {guestCount}
+                    </div>
+                  )}
                 </div>
                 <ShieldCheck size={28} />
               </div>

@@ -122,7 +122,7 @@
 
     /* Font Tokens */
     --font-headings: 'Thmanyah Serif Display', 'Thmanyah Serif Text', serif;
-    --font-apple: 'Thmanyah Sans', -apple-system, sans-serif;
+    --font-apple: 'Thmanyah Serif Text', 'Thmanyah Sans', -apple-system, sans-serif;
 }
 
 /* Thmanyah Serif Display for ALL headings across the entire app */
@@ -134,12 +134,19 @@ h1, h2, h3, h4, h5, h6,
     font-family: var(--font-headings) !important;
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+*,
+body,
+button,
+input,
+select,
+textarea,
+p,
+span,
+label,
+table,
+td,
+th {
+    font-family: var(--font-apple);
 }
 
 body.apple-theme {
@@ -147,7 +154,6 @@ body.apple-theme {
     background-image: var(--apple-bg-gradient);
     background-attachment: fixed;
     color: var(--text-primary);
-    font-family: var(--font-apple);
     min-height: 100vh;
     direction: rtl;
     line-height: 1.5;

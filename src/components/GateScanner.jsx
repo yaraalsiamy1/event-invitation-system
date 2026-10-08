@@ -73,18 +73,19 @@ export default function GateScanner({ guests, setGuests, gateLogs, setGateLogs }
       }));
 
       // Add to log
+      const seatCount = guest.count || guest.companions || 1;
       const newLog = {
         id: Date.now(),
         name: guest.name,
         code: guest.ticketCode,
-        count: guest.companions || 1,
+        count: seatCount,
         time: timeStr
       };
 
       setGateLogs(prev => [newLog, ...prev]);
       setScanResult({
         type: 'success',
-        guest: { ...guest, checkInTime: timeStr },
+        guest: { ...guest, checkInTime: timeStr, count: seatCount },
         message: 'تم تأكيد تسجيل حضور الضيف ومرافقيه بنجاح!'
       });
       playChime(true);
@@ -196,7 +197,7 @@ export default function GateScanner({ guests, setGuests, gateLogs, setGateLogs }
                 
                 <div style={{ background: 'rgba(48, 209, 88, 0.08)', border: '1px solid rgba(48, 209, 88, 0.3)', borderRadius: '14px', padding: '14px', marginTop: '14px', textAlign: 'right', fontSize: '0.85rem' }}>
                   <p><strong>الجوال:</strong> {scanResult.guest.phone}</p>
-                  <p><strong>عدد المرافقين:</strong> {scanResult.guest.companions || 1} أشخاص</p>
+                  <p><strong>عدد المدعوين / المقاعد:</strong> {scanResult.guest.count || scanResult.guest.companions || 1} أشخاص</p>
                   <p><strong>كود التذكرة:</strong> <code>{scanResult.guest.ticketCode}</code></p>
                   <p><strong>وقت تسجيل الدخول:</strong> {scanResult.guest.checkInTime}</p>
                 </div>

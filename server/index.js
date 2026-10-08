@@ -184,6 +184,13 @@ app.post('/api/guests/:id/rsvp', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+app.put('/api/guests/:id', async (req, res) => {
+  try {
+    const updated = await db.updateGuest(req.params.id, req.body);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // AUTOMATED WHATSAPP BATCH DISPATCHER ENDPOINT

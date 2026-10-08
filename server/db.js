@@ -279,6 +279,17 @@ class MultiEventJSONDatabase {
       });
       this.write(data);
     }
+  async updateGuest(guestId, updatedFields) {
+    const data = this.read();
+    for (const ev of (data.events || [])) {
+      const idx = (ev.guests || []).findIndex(g => g.id === guestId);
+      if (idx !== -1) {
+        ev.guests[idx] = { ...ev.guests[idx], ...updatedFields };
+        this.write(data);
+        return ev.guests[idx];
+      }
+    }
+    return null;
   }
 }
 
