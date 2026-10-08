@@ -134,6 +134,10 @@ h1, h2, h3, h4, h5, h6,
     font-family: var(--font-headings) !important;
 }
 
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 *,
 body,
 button,
@@ -147,6 +151,7 @@ table,
 td,
 th {
     font-family: var(--font-apple);
+    box-sizing: border-box;
 }
 
 body.apple-theme {
@@ -162,9 +167,11 @@ body.apple-theme {
 
 /* Container */
 .apple-container {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 24px 32px;
+    padding: 24px 24px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Navbar */
@@ -329,7 +336,10 @@ body.apple-theme {
 
 /* Forms & Inputs */
 .form-group {
-    margin-bottom: 18px;
+    margin-bottom: 16px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .form-group label {
@@ -342,10 +352,13 @@ body.apple-theme {
 
 .apple-input {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     background: #ffffff;
     border: 1.5px solid rgba(64, 123, 161, 0.25);
     border-radius: 50px;
-    padding: 13px 22px;
+    padding: 12px 20px;
     color: var(--text-primary);
     font-family: var(--font-apple);
     font-size: 0.95rem;
@@ -357,6 +370,33 @@ body.apple-theme {
     outline: none;
     border-color: var(--pink-primary);
     box-shadow: 0 0 0 4px rgba(64, 123, 161, 0.18);
+}
+
+.single-guest-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.4fr) minmax(75px, 95px) auto;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (max-width: 860px) {
+    .single-guest-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .single-guest-grid button {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 500px) {
+    .single-guest-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .single-guest-grid button {
+        grid-column: span 1;
+    }
 }
 
 /* Buttons (Pill Shaped & Dynamic Hover) */
@@ -480,8 +520,15 @@ body.apple-theme {
 /* Dynamic Live Widgets */
 .widgets-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
+    width: 100%;
+}
+
+@media (max-width: 960px) {
+    .widgets-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .apple-widget {
@@ -685,8 +732,92 @@ input, select, textarea {
 
 .grid-2col {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Guest Portal Mobile Phone Frame Container (شاشة معاينة الضيف بمقاس الجوال الفعلي) */
+.guest-portal-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.guest-phone-mockup {
+    width: 100%;
+    max-width: 430px;
+    background: #ffffff;
+    border-radius: 48px;
+    box-shadow: 
+        0 0 0 10px #1e293b,
+        0 0 0 13px rgba(64, 123, 161, 0.25),
+        0 25px 65px -10px rgba(15, 23, 42, 0.35);
+    overflow: hidden;
+    position: relative;
+    border: 3px solid #0f172a;
+    margin: 8px auto 30px auto;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+/* Phone Top Bezel / Dynamic Island Notch */
+.phone-top-island {
+    background: #0f172a;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+}
+
+.phone-speaker-pill {
+    width: 96px;
+    height: 14px;
+    background: #1e293b;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.phone-camera-dot {
+    width: 7px;
+    height: 7px;
+    background: #0f172a;
+    border-radius: 50%;
+}
+
+.phone-screen-body {
+    background: #f4f8fb;
+    padding: 20px 16px 28px 16px;
+    min-height: 580px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-sizing: border-box;
+}
+
+/* On real mobile devices, seamlessly occupy 100% of the screen */
+@media (max-width: 500px) {
+    .guest-phone-mockup {
+        max-width: 100%;
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+        margin: 0;
+    }
+    .phone-top-island {
+        display: none;
+    }
+    .phone-screen-body {
+        padding: 16px 12px 24px 12px;
+    }
 }
 
 /* Mobile & Tablet Responsive Media Queries */

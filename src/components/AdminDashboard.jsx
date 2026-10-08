@@ -773,8 +773,8 @@ export default function AdminDashboard({
                   </div>
                 </div>
 
-                {/* Row 2: Date, Time & Google Maps Link side-by-side */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '14px' }}>
+                {/* Row 2: Date & Time side-by-side */}
+                <div className="grid-2col" style={{ gap: '14px', marginBottom: '14px' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label>تاريخ المناسبة</label>
                     <input
@@ -794,20 +794,21 @@ export default function AdminDashboard({
                       onChange={(e) => setEventData({ ...eventData, time: e.target.value })}
                     />
                   </div>
-
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>رابط اللوكيشن في خرائط جوجل (Google Maps)</label>
-                    <input
-                      type="text"
-                      className="apple-input"
-                      style={{ direction: 'ltr', textAlign: 'right' }}
-                      value={eventData?.mapLink || ''}
-                      onChange={(e) => setEventData({ ...(eventData || {}), mapLink: e.target.value })}
-                    />
-                  </div>
                 </div>
 
-                {/* Row 3: Card Image Upload & Preview & Save Button */}
+                {/* Row 3: Google Maps Link full-width */}
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label>رابط اللوكيشن في خرائط جوجل (Google Maps)</label>
+                  <input
+                    type="text"
+                    className="apple-input"
+                    style={{ direction: 'ltr', textAlign: 'right' }}
+                    value={eventData?.mapLink || ''}
+                    onChange={(e) => setEventData({ ...(eventData || {}), mapLink: e.target.value })}
+                  />
+                </div>
+
+                {/* Row 4: Card Image Upload & Preview & Save Button */}
                 <div className="form-group" style={{ borderTop: '1px solid rgba(64, 123, 161, 0.2)', paddingTop: '14px', marginBottom: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -872,7 +873,7 @@ export default function AdminDashboard({
                 <label style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', display: 'block' }}>
                   إضافة ضيف سريع (مباشر):
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 110px auto', gap: '10px' }}>
+                <div className="single-guest-grid">
                   <input
                     type="text"
                     className="apple-input"
