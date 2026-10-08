@@ -38,7 +38,7 @@
     --radius-ios-md: 50px;
     --radius-ios-sm: 20px;
 
-    --font-apple: 'Cairo', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    --font-apple: 'IBM Plex Sans Arabic', 'Tajawal', 'Alexandria', 'Cairo', sans-serif;
 }
 
 * {
