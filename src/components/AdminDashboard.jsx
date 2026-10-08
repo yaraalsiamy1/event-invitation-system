@@ -243,9 +243,9 @@ export default function AdminDashboard({
               }
             });
 
-            if (phoneRaw && name !== 'اسم الضيف' && name !== 'الاسم') {
+            if ((phoneRaw || name) && name !== 'اسم الضيف' && name !== 'الاسم') {
               extractedRows.push({
-                name: name || "ضيف عزيز",
+                name: name,
                 phone: phoneRaw,
                 count: countRaw
               });
@@ -259,7 +259,7 @@ export default function AdminDashboard({
             if (!row || row.length === 0) return;
             let name = "";
             let phoneRaw = "";
-            let countRaw = 1;
+            let countRaw = "";
 
             row.forEach(cell => {
               if (!cell) return;
@@ -275,9 +275,9 @@ export default function AdminDashboard({
               }
             });
 
-            if (phoneRaw) {
+            if (phoneRaw || name) {
               extractedRows.push({
-                name: name || "ضيف عزيز",
+                name: name,
                 phone: phoneRaw,
                 count: countRaw
               });
@@ -404,24 +404,44 @@ export default function AdminDashboard({
     }
   };
 
-  // Add Single Guest Directly (Name + Phone + Count fields)
+  // Add Single Guest Directly (Name + Phone + Count fields - ALL MANDATORY)
   const handleSingleGuestSubmit = async (e) => {
     e.preventDefault();
+
+    if (!singleName.trim()) {
+      if (showConfirmation) {
+        showConfirmation('حقل إلزامي', 'يرجى إدخال اسم الضيف (اسم الضيف حقل إلزامي).', 'info');
+      } else {
+        alert('يرجى إدخال اسم الضيف (اسم الضيف حقل إلزامي).');
+      }
+      return;
+    }
+
     if (!singlePhone.trim()) {
       if (showConfirmation) {
-        showConfirmation('تنبيه', 'يرجى إدخال رقم جوال الضيف.', 'info');
+        showConfirmation('حقل إلزامي', 'يرجى إدخال رقم جوال الضيف (رقم الجوال حقل إلزامي).', 'info');
       } else {
-        alert('يرجى إدخال رقم جوال الضيف.');
+        alert('يرجى إدخال رقم جوال الضيف (رقم الجوال حقل إلزامي).');
       }
       return;
     }
 
     const formatted = formatPhone(singlePhone.trim());
-    if (!formatted) {
+    if (!formatted || formatted.length < 11 || !formatted.startsWith('9665')) {
       if (showConfirmation) {
-        showConfirmation('رقم غير صالح', 'يرجى إدخال رقم جوال صحيح (مثال: 0501234567).', 'info');
+        showConfirmation('رقم غير صالح', 'يرجى إدخال رقم جوال صحيح يبدأ بـ 05 ويتكون من 10 أرقام (مثال: 0501234567).', 'info');
       } else {
-        alert('يرجى إدخال رقم جوال صحيح.');
+        alert('يرجى إدخال رقم جوال صحيح يبدأ بـ 05.');
+      }
+      return;
+    }
+
+    const parsedCount = parseInt(singleCount);
+    if (!singleCount || isNaN(parsedCount) || parsedCount < 1) {
+      if (showConfirmation) {
+        showConfirmation('حقل إلزامي', 'يرجى إدخال عدد المدعوين (عدد المدعوين حقل إلزامي، 1 على الأقل).', 'info');
+      } else {
+        alert('يرجى إدخال عدد المدعوين (عدد المدعوين حقل إلزامي).');
       }
       return;
     }
@@ -436,8 +456,8 @@ export default function AdminDashboard({
       return;
     }
 
-    const cleanName = singleName.trim() || 'ضيف عزيز';
-    const cleanCount = Math.max(1, parseInt(singleCount) || 1);
+    const cleanName = singleName.trim();
+    const cleanCount = parsedCount;
 
     const newGuest = {
       id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
@@ -909,15 +929,17 @@ export default function AdminDashboard({
                   <input
                     type="text"
                     className="apple-input"
-                    placeholder="اسم الضيف (مثال: وسن السيامي)"
+                    placeholder="اسم الضيف (إلزامي)"
                     value={singleName}
+                    required
                     onChange={(e) => setSingleName(e.target.value)}
                   />
                   <input
                     type="tel"
                     className="apple-input"
-                    placeholder="رقم الجوال (مثال: 0501234567)"
+                    placeholder="رقم الجوال (إلزامي - 0501234567)"
                     value={singlePhone}
+                    required
                     onChange={(e) => setSinglePhone(e.target.value)}
                   />
                   <input
@@ -926,9 +948,10 @@ export default function AdminDashboard({
                     max="50"
                     className="apple-input"
                     style={{ textAlign: 'center' }}
-                    title="عدد المدعوين / المقاعد"
-                    placeholder="العدد (1)"
+                    title="عدد المدعوين / المقاعد (إلزامي)"
+                    placeholder="عدد المدعوين (إلزامي)"
                     value={singleCount}
+                    required
                     onChange={(e) => setSingleCount(e.target.value)}
                   />
                   <button type="submit" className="apple-btn apple-btn-pink" style={{ whiteSpace: 'nowrap', padding: '12px 20px' }}>

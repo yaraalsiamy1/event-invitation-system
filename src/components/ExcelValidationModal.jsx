@@ -25,9 +25,12 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
     return rawList.map((item) => {
       const formattedPhone = formatPhone(item.phone);
       const cleanName = (item.name || '').trim();
+      const rawCount = item.count;
+      const parsedCount = parseInt(rawCount);
+      const hasValidCount = rawCount !== '' && rawCount !== null && rawCount !== undefined && !isNaN(parsedCount) && parsedCount >= 1;
 
-      const isValidPhone = formattedPhone.length >= 11 && formattedPhone.length <= 13 && formattedPhone.startsWith('9665');
-      const isValidName = cleanName.length >= 1;
+      const isValidPhone = formattedPhone && formattedPhone.length >= 11 && formattedPhone.length <= 13 && formattedPhone.startsWith('9665');
+      const isValidName = cleanName.length >= 2 && cleanName !== 'ضيف عزيز';
 
       // Duplicate Check (by phone number only)
       const isDuplicate = isValidPhone && seenPhones.has(formattedPhone);
@@ -36,16 +39,17 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
       if (isValidPhone) seenPhones.add(formattedPhone);
 
       let errorMsg = null;
-      if (!isValidName) errorMsg = 'اسم الضيف غير مدخل';
-      else if (!isValidPhone) errorMsg = 'رقم غير مكتمل (يجب أن يبدأ بـ 05 ويتكون من 10 أرقام)';
+      if (!isValidName) errorMsg = 'اسم الضيف إلزامي (يرجى إدخال اسم صحيح)';
+      else if (!isValidPhone) errorMsg = 'رقم الجوال إلزامي (يجب أن يبدأ بـ 05 ويتكون من 10 أرقام)';
+      else if (!hasValidCount) errorMsg = 'عدد المدعوين إلزامي (يجب إدخال 1 على الأقل)';
       else if (isDuplicate) errorMsg = 'مكرر: رقم الجوال موجود مسبقاً في البيانات';
 
       return {
         ...item,
-        name: cleanName || "ضيف عزيز",
-        phone: formattedPhone || item.phone,
-        count: Math.max(1, parseInt(item.count) || parseInt(item.companions) || 1),
-        isValid: isValidPhone && isValidName && !isDuplicate,
+        name: cleanName,
+        phone: formattedPhone || item.phone || '',
+        count: hasValidCount ? parsedCount : (rawCount !== undefined && rawCount !== null ? rawCount : ''),
+        isValid: isValidPhone && isValidName && hasValidCount && !isDuplicate,
         isDuplicate,
         errorMsg
       };
@@ -83,9 +87,10 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
   const handleConfirm = () => {
     const validItems = items.filter(i => i.isValid).map(i => ({
       id: i.id || ("g_" + Date.now() + "_" + Math.floor(Math.random() * 100000)),
-      name: i.name || "ضيف عزيز",
+      name: i.name.trim(),
       phone: i.phone,
-      count: Math.max(1, parseInt(i.count) || parseInt(i.companions) || 1),
+      count: parseInt(i.count) || 1,
+      companions: parseInt(i.count) || 1,
       status: "pending",
       ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
       checkedIn: false,
@@ -93,7 +98,7 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
     }));
 
     if (validItems.length === 0) {
-      alert('لا يوجد أرقام غير مكررة وسليمة للحفظ. يرجى تصحيح البيانات في الجدول.');
+      alert('لا توجد سجلات مكتملة وسليمة للحفظ. يرجى التأكد من إدخال اسم الضيف، رقم الجوال، وعدد المدعوين لجميع السجلات.');
       return;
     }
 
@@ -182,9 +187,9 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
             <thead>
               <tr>
                 <th>#</th>
-                <th>اسم الضيف (من الملف)</th>
-                <th>رقم الجوال المفحوص</th>
-                <th style={{ width: '90px', textAlign: 'center' }}>المدعوين</th>
+                <th>اسم الضيف (إلزامي)</th>
+                <th>رقم الجوال (إلزامي)</th>
+                <th style={{ width: '90px', textAlign: 'center' }}>المدعوين (إلزامي)</th>
                 <th>نتيجة التحقق وتوافق البيانات</th>
                 <th>إجراءات</th>
               </tr>
@@ -197,8 +202,9 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
                     <input
                       type="text"
                       className="apple-input"
-                      style={{ padding: '6px 10px', fontSize: '0.88rem' }}
-                      value={item.name}
+                      placeholder="اسم الضيف (إلزامي)"
+                      style={{ padding: '6px 10px', fontSize: '0.88rem', borderColor: !item.name ? 'rgba(231, 76, 60, 0.4)' : undefined }}
+                      value={item.name || ''}
                       onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
                     />
                   </td>
@@ -206,8 +212,9 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
                     <input
                       type="text"
                       className="apple-input"
-                      style={{ padding: '6px 10px', fontSize: '0.88rem', direction: 'ltr', textAlign: 'right' }}
-                      value={item.phone}
+                      placeholder="0501234567 (إلزامي)"
+                      style={{ padding: '6px 10px', fontSize: '0.88rem', direction: 'ltr', textAlign: 'right', borderColor: !item.phone ? 'rgba(231, 76, 60, 0.4)' : undefined }}
+                      value={item.phone || ''}
                       onChange={(e) => handleItemChange(idx, 'phone', e.target.value)}
                     />
                   </td>
@@ -217,9 +224,10 @@ export default function ExcelValidationModal({ rawRows, existingGuests = [], onC
                       min="1"
                       max="50"
                       className="apple-input"
-                      style={{ padding: '6px 8px', fontSize: '0.88rem', width: '65px', textAlign: 'center' }}
-                      value={item.count || 1}
-                      onChange={(e) => handleItemChange(idx, 'count', Math.max(1, parseInt(e.target.value) || 1))}
+                      style={{ padding: '6px 8px', fontSize: '0.88rem', width: '65px', textAlign: 'center', borderColor: !item.count || item.count < 1 ? 'rgba(231, 76, 60, 0.4)' : undefined }}
+                      placeholder="1"
+                      value={item.count !== undefined && item.count !== null ? item.count : ''}
+                      onChange={(e) => handleItemChange(idx, 'count', e.target.value)}
                     />
                   </td>
                   <td>
