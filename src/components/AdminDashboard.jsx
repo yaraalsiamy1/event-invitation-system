@@ -21,6 +21,8 @@ export default function AdminDashboard({
   showConfirmation
 }) {
   const [batchText, setBatchText] = useState('');
+  const [singleName, setSingleName] = useState('');
+  const [singlePhone, setSinglePhone] = useState('');
   const [previewCardImg, setPreviewCardImg] = useState(eventData?.cardImage || null);
   const [fullViewImage, setFullViewImage] = useState(null);
   
@@ -293,7 +295,115 @@ export default function AdminDashboard({
     }
   };
 
-  // Process Batch Text Entry (with Duplicate Check)
+  // Smart Line Parser for Guest Name and Phone
+  const parseGuestLine = (line) => {
+    if (!line || !line.trim()) return null;
+    let text = line.trim();
+
+    // Remove leading numbering like "1.", "1-", etc.
+    text = text.replace(/^\d+[\.\-\)]\s*/, '').trim();
+
+    let phoneRaw = "";
+    let nameRaw = "";
+
+    // Priority 1: Check standard separators (comma, arabic comma, dash, colon, tab)
+    const separators = [',', '،', '\t', ' - ', ' – ', ' — ', '-', '|', ';'];
+    const foundSep = separators.find(s => text.includes(s));
+
+    if (foundSep) {
+      const parts = text.split(foundSep).map(p => p.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        const p0Digits = parts[0].replace(/\D/g, '');
+        const p1Digits = parts[1].replace(/\D/g, '');
+
+        if (p0Digits.length >= 8 && p1Digits.length < 8) {
+          phoneRaw = parts[0];
+          nameRaw = parts[1];
+        } else {
+          nameRaw = parts[0];
+          phoneRaw = parts[1];
+        }
+      }
+    }
+
+    // Priority 2: Extract phone sequence matching Saudi or International formats
+    if (!phoneRaw) {
+      const phoneMatch = text.match(/(?:\+|00)?(?:966|0)?[5]\d{8}|\b05\d{8}\b|\b5\d{8}\b|\b\d{8,15}\b/);
+      if (phoneMatch) {
+        phoneRaw = phoneMatch[0];
+        nameRaw = text.replace(phoneRaw, '')
+                      .replace(/[,،\-:\t|;]/g, ' ')
+                      .replace(/\s+/g, ' ')
+                      .trim();
+      }
+    }
+
+    // Format the phone number
+    const formatted = formatPhone(phoneRaw);
+    if (!formatted) return null;
+
+    const cleanName = nameRaw.trim() || 'ضيف عزيز';
+
+    return {
+      name: cleanName,
+      phone: formatted
+    };
+  };
+
+  // Add Single Guest Directly (Name + Phone fields)
+  const handleSingleGuestSubmit = async (e) => {
+    e.preventDefault();
+    if (!singlePhone.trim()) {
+      if (showConfirmation) {
+        showConfirmation('تنبيه', 'يرجى إدخال رقم جوال الضيف.', 'info');
+      } else {
+        alert('يرجى إدخال رقم جوال الضيف.');
+      }
+      return;
+    }
+
+    const formatted = formatPhone(singlePhone.trim());
+    if (!formatted) {
+      if (showConfirmation) {
+        showConfirmation('رقم غير صالح', 'يرجى إدخال رقم جوال صحيح (مثال: 0501234567).', 'info');
+      } else {
+        alert('يرجى إدخال رقم جوال صحيح.');
+      }
+      return;
+    }
+
+    const existingPhones = new Set((guests || []).map(g => (g.phone || '').trim()));
+    if (existingPhones.has(formatted)) {
+      if (showConfirmation) {
+        showConfirmation('رقم مكرر', 'هذا الرقم موجود مسبقاً في قائمة المدعوين.', 'info');
+      } else {
+        alert('هذا الرقم موجود مسبقاً في قائمة المدعوين.');
+      }
+      return;
+    }
+
+    const cleanName = singleName.trim() || 'ضيف عزيز';
+    const newGuest = {
+      id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
+      name: cleanName,
+      phone: formatted,
+      status: "pending",
+      ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
+      checkedIn: false,
+      checkInTime: null
+    };
+
+    await saveBatchToApi([newGuest]);
+    setSingleName('');
+    setSinglePhone('');
+    if (showConfirmation) {
+      showConfirmation('تمت إضافة الضيف بنجاح!', `تمت إضافة "${cleanName}" برقم (${formatted}) إلى قائمة المناسبة.`);
+    } else {
+      alert(`تم إضافة الضيف ${cleanName} بنجاح!`);
+    }
+  };
+
+  // Process Batch Text Entry (with Smart Duplicate Check and Smart Parsing)
   const handleBatchSubmit = async (e) => {
     e.preventDefault();
     if (!batchText.trim()) return;
@@ -305,39 +415,25 @@ export default function AdminDashboard({
     let skippedDups = 0;
 
     lines.forEach(line => {
-      const parts = line.split(',');
-      let name = "";
-      let phoneRaw = "";
+      const parsed = parseGuestLine(line);
+      if (!parsed) return;
 
-      if (parts.length >= 2) {
-        name = parts[0].trim();
-        phoneRaw = parts[1].trim();
-      } else {
-        phoneRaw = parts[0].trim();
-        name = "ضيف عزيز";
+      if (existingPhones.has(parsed.phone)) {
+        skippedDups++;
+        return;
       }
 
-      const formattedPhone = formatPhone(phoneRaw);
-      const cleanName = name || "ضيف عزيز";
+      existingPhones.add(parsed.phone);
 
-      if (formattedPhone) {
-        if (existingPhones.has(formattedPhone)) {
-          skippedDups++;
-          return;
-        }
-
-        existingPhones.add(formattedPhone);
-
-        newGuests.push({
-          id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
-          name: cleanName,
-          phone: formattedPhone,
-          status: "pending",
-          ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
-          checkedIn: false,
-          checkInTime: null
-        });
-      }
+      newGuests.push({
+        id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
+        name: parsed.name,
+        phone: parsed.phone,
+        status: "pending",
+        ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
+        checkedIn: false,
+        checkInTime: null
+      });
     });
 
     if (newGuests.length > 0) {
@@ -709,20 +805,46 @@ export default function AdminDashboard({
                 </label>
               </div>
 
-              {/* Manual Entry */}
-              <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(64, 123, 161, 0.2)', paddingTop: '14px' }}>
+              {/* Direct Single Guest Entry */}
+              <form onSubmit={handleSingleGuestSubmit} style={{ borderTop: '1px solid rgba(64, 123, 161, 0.2)', paddingTop: '16px', marginBottom: '16px' }}>
+                <label style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', display: 'block' }}>
+                  إضافة ضيف سريع (مباشر):
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '10px' }}>
+                  <input
+                    type="text"
+                    className="apple-input"
+                    placeholder="اسم الضيف (مثال: فهد القحطاني)"
+                    value={singleName}
+                    onChange={(e) => setSingleName(e.target.value)}
+                  />
+                  <input
+                    type="tel"
+                    className="apple-input"
+                    placeholder="رقم الجوال (مثال: 0501234567)"
+                    value={singlePhone}
+                    onChange={(e) => setSinglePhone(e.target.value)}
+                  />
+                  <button type="submit" className="apple-btn apple-btn-pink" style={{ whiteSpace: 'nowrap', padding: '12px 20px' }}>
+                    <Plus size={16} /> إضافة الضيف
+                  </button>
+                </div>
+              </form>
+
+              {/* Batch Manual Entry */}
+              <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(64, 123, 161, 0.15)', paddingTop: '14px' }}>
                 <div className="form-group">
-                  <label>أو كتابة الأرقام يدوياً (الاسم، رقم الجوال):</label>
+                  <label>أو كتابة قائمة مدعوين دفعة واحدة (يدعم: مسافة، فاصلة، شرطة، أو سطر جديد لكل ضيف):</label>
                   <textarea
                     className="apple-input"
                     rows="3"
-                    placeholder="مثال:&#10;عبدالله المحمد, 0501234567&#10;سارة الخالد, 0551234567"
+                    placeholder="مثال:&#10;عبدالله المحمد 0501234567&#10;سارة الخالد، 0551234567&#10;تركي الحربي - 0541234567"
                     value={batchText}
                     onChange={(e) => setBatchText(e.target.value)}
                   ></textarea>
                 </div>
                 <button type="submit" className="apple-btn apple-btn-secondary btn-block">
-                  <Plus size={16} /> إضافة وحفظ في القائمة
+                  <Plus size={16} /> إضافة وحفظ القائمة في النظام
                 </button>
               </form>
             </div>

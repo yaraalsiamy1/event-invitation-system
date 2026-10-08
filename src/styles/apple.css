@@ -1,6 +1,60 @@
 /* ==========================================================================
    Official Thmanyah Custom Font Family Definitions
    ========================================================================== */
+/* 1. خط ثمانية للعناوين (thmanyah Serif Display) */
+@font-face {
+  font-family: 'Thmanyah Serif Display';
+  src: url('/fonts/thmanyahserifdisplay-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah Serif Display';
+  src: url('/fonts/thmanyahserifdisplay-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah Serif Display';
+  src: url('/fonts/thmanyahserifdisplay-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah Serif Display';
+  src: url('/fonts/thmanyahserifdisplay-Black.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 2. خط ثمانية للنصوص (thmanyah Serif Text) */
+@font-face {
+  font-family: 'Thmanyah Serif Text';
+  src: url('/fonts/thmanyahseriftext-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah Serif Text';
+  src: url('/fonts/thmanyahseriftext-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Thmanyah Serif Text';
+  src: url('/fonts/thmanyahseriftext-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 3. خط ثمانية الرقمي (thmanyah Sans) */
 @font-face {
   font-family: 'Thmanyah Sans';
   src: url('/fonts/thmanyahsans-Regular.woff2') format('woff2');
@@ -8,7 +62,6 @@
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Thmanyah Sans';
   src: url('/fonts/thmanyahsans-Medium.woff2') format('woff2');
@@ -16,7 +69,6 @@
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Thmanyah Sans';
   src: url('/fonts/thmanyahsans-Bold.woff2') format('woff2');
@@ -24,27 +76,10 @@
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Thmanyah Sans';
   src: url('/fonts/thmanyahsans-Black.woff2') format('woff2');
   font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Thmanyah Serif';
-  src: url('/fonts/thmanyahserifdisplay-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Thmanyah Serif';
-  src: url('/fonts/thmanyahserifdisplay-Bold.woff2') format('woff2');
-  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
@@ -85,7 +120,18 @@
     --radius-ios-md: 50px;
     --radius-ios-sm: 20px;
 
-    --font-apple: 'Thmanyah Sans', 'Thmanyah Serif', -apple-system, sans-serif;
+    /* Font Tokens */
+    --font-headings: 'Thmanyah Serif Display', 'Thmanyah Serif Text', serif;
+    --font-apple: 'Thmanyah Sans', -apple-system, sans-serif;
+}
+
+/* Thmanyah Serif Display for ALL headings across the entire app */
+h1, h2, h3, h4, h5, h6,
+.brand-title,
+.card-title-row h2,
+.pass-header-name,
+.pass-header-title {
+    font-family: var(--font-headings) !important;
 }
 
 * {
