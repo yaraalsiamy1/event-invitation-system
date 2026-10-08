@@ -1,6 +1,53 @@
 /* ==========================================================================
-   Apple Steel Blue Calm & Vibrant HIG Design System
+   Official Thmanyah Custom Font Family Definitions
    ========================================================================== */
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyahsans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyahsans-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyahsans-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('/fonts/thmanyahsans-Black.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif';
+  src: url('/fonts/thmanyahserifdisplay-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif';
+  src: url('/fonts/thmanyahserifdisplay-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
     --apple-bg: #f4f8fb;
@@ -38,7 +85,7 @@
     --radius-ios-md: 50px;
     --radius-ios-sm: 20px;
 
-    --font-apple: 'IBM Plex Sans Arabic', 'Tajawal', 'Alexandria', 'Cairo', sans-serif;
+    --font-apple: 'Thmanyah Sans', 'Thmanyah Serif', -apple-system, sans-serif;
 }
 
 * {
