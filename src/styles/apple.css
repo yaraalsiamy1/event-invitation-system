@@ -1,38 +1,38 @@
 /* ==========================================================================
-   Apple Soft Candy Rose & Pure White HIG Design System
+   Apple Steel Blue HIG Design System
    ========================================================================== */
 
 :root {
-    --apple-bg: #fcf4f7;
-    --apple-bg-gradient: radial-gradient(circle at 10% 20%, rgba(240, 154, 181, 0.12) 0%, transparent 50%),
-                        radial-gradient(circle at 90% 80%, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
+    --apple-bg: #f4f8fb;
+    --apple-bg-gradient: radial-gradient(circle at 10% 20%, rgba(64, 123, 161, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 90% 80%, rgba(64, 123, 161, 0.05) 0%, transparent 50%);
     
     --apple-card-bg: #ffffff;
-    --apple-card-secondary: #fdf0f4;
-    --apple-border: rgba(240, 154, 181, 0.25);
-    --apple-border-gold: rgba(212, 175, 55, 0.35);
+    --apple-card-secondary: #f0f5f9;
+    --apple-border: rgba(64, 123, 161, 0.2);
+    --apple-border-gold: rgba(64, 123, 161, 0.35);
 
-    /* Exact Soft Rose Pink Swatch from User Image */
-    --pink-primary: #f4a5ba;
-    --pink-light: #fdf2f5;
-    --pink-dark: #8c324c;
-    --pink-gradient: linear-gradient(135deg, #f8b8c9 0%, #f4a5ba 50%, #ea8ea5 100%);
+    /* Steel Blue Swatch matching user reference image */
+    --pink-primary: #407BA1;
+    --pink-light: #f0f5f9;
+    --pink-dark: #234761;
+    --pink-gradient: linear-gradient(135deg, #4f8bb3 0%, #407ba1 50%, #32678a 100%);
     
-    --system-blue: #007aff;
+    --system-blue: #407BA1;
     --system-green: #34c759;
     --system-red: #e04848;
-    --system-gold: #c59b27;
+    --system-gold: #407BA1;
 
-    --gold-gradient: linear-gradient(135deg, #fceabb 0%, #e5b839 50%, #c59b27 100%);
+    --gold-gradient: linear-gradient(135deg, #5c97bd 0%, #407ba1 50%, #2b5978 100%);
 
-    --text-primary: #2b2529;
-    --text-secondary: #6e6067;
-    --text-tertiary: #a3959c;
+    --text-primary: #1e3545;
+    --text-secondary: #526b7a;
+    --text-tertiary: #8b9fae;
 
-    --radius-ios-xl: 28px;
-    --radius-ios-lg: 20px;
-    --radius-ios-md: 14px;
-    --radius-ios-sm: 8px;
+    --radius-ios-xl: 50px;
+    --radius-ios-lg: 24px;
+    --radius-ios-md: 50px;
+    --radius-ios-sm: 20px;
 
     --font-apple: 'Cairo', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
 }
@@ -73,7 +73,7 @@ body.apple-theme {
     top: 0;
     z-index: 1000;
     padding: 14px 0;
-    box-shadow: 0 4px 20px rgba(240, 154, 181, 0.06);
+    box-shadow: 0 4px 20px rgba(64, 123, 161, 0.06);
 }
 
 .nav-wrapper {
@@ -94,12 +94,12 @@ body.apple-theme {
     width: 44px;
     height: 44px;
     background: var(--pink-gradient);
-    border-radius: 13px;
+    border-radius: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #ffffff;
-    box-shadow: 0 6px 18px rgba(240, 154, 181, 0.35);
+    box-shadow: 0 6px 18px rgba(64, 123, 161, 0.3);
 }
 
 .brand-title {
@@ -116,21 +116,21 @@ body.apple-theme {
     margin-right: 6px;
 }
 
-/* iOS Segmented Control Tab Navigation (Exact Candy Pink) */
+/* iOS Segmented Control Tab Navigation (Pill-Shaped) */
 .ios-segmented-control {
     display: flex;
-    background: rgba(253, 240, 244, 0.7);
-    padding: 4px;
-    border-radius: 16px;
-    border: 1px solid rgba(240, 154, 181, 0.25);
+    background: rgba(240, 245, 249, 0.85);
+    padding: 5px;
+    border-radius: 50px;
+    border: 1px solid rgba(64, 123, 161, 0.22);
 }
 
 .segment-btn {
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    padding: 8px 20px;
-    border-radius: 11px;
+    padding: 9px 24px;
+    border-radius: 50px;
     font-family: var(--font-apple);
     font-size: 0.9rem;
     font-weight: 700;
@@ -148,7 +148,7 @@ body.apple-theme {
 .segment-btn.active {
     background: #ffffff;
     color: var(--pink-dark);
-    box-shadow: 0 3px 12px rgba(240, 154, 181, 0.2), 0 1px 2px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 3px 12px rgba(64, 123, 161, 0.18), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 /* Light Soft Cards */
@@ -156,14 +156,14 @@ body.apple-theme {
     background: var(--apple-card-bg);
     border: 1px solid var(--apple-border);
     border-radius: var(--radius-ios-lg);
-    box-shadow: 0 8px 25px rgba(240, 154, 181, 0.05);
+    box-shadow: 0 8px 25px rgba(64, 123, 161, 0.06);
     padding: 24px;
     margin-bottom: 24px;
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
 }
 
 .apple-card:hover {
-    border-color: rgba(240, 154, 181, 0.45);
+    border-color: rgba(64, 123, 161, 0.45);
 }
 
 .card-title-row {
@@ -184,8 +184,8 @@ body.apple-theme {
 
 /* Badges */
 .ios-badge {
-    padding: 4px 12px;
-    border-radius: 20px;
+    padding: 5px 16px;
+    border-radius: 50px;
     font-size: 0.78rem;
     font-weight: 700;
     display: inline-flex;
@@ -193,8 +193,8 @@ body.apple-theme {
     gap: 6px;
 }
 
-.ios-badge-gold { background: rgba(197, 155, 39, 0.1); color: #8f6e14; border: 1px solid rgba(197, 155, 39, 0.25); }
-.ios-badge-pink { background: rgba(240, 154, 181, 0.18); color: var(--pink-dark); border: 1px solid rgba(240, 154, 181, 0.35); }
+.ios-badge-gold { background: rgba(64, 123, 161, 0.12); color: var(--pink-dark); border: 1px solid rgba(64, 123, 161, 0.25); }
+.ios-badge-pink { background: rgba(64, 123, 161, 0.15); color: var(--pink-dark); border: 1px solid rgba(64, 123, 161, 0.3); }
 .ios-badge-green { background: rgba(52, 199, 89, 0.12); color: #218339; border: 1px solid rgba(52, 199, 89, 0.3); }
 .ios-badge-red { background: rgba(224, 72, 72, 0.12); color: #b82d2d; border: 1px solid rgba(224, 72, 72, 0.3); }
 
@@ -214,9 +214,9 @@ body.apple-theme {
 .apple-input {
     width: 100%;
     background: #ffffff;
-    border: 1.5px solid rgba(240, 154, 181, 0.28);
-    border-radius: var(--radius-ios-md);
-    padding: 13px 16px;
+    border: 1.5px solid rgba(64, 123, 161, 0.28);
+    border-radius: 50px;
+    padding: 13px 22px;
     color: var(--text-primary);
     font-family: var(--font-apple);
     font-size: 0.95rem;
@@ -227,13 +227,13 @@ body.apple-theme {
 .apple-input:focus {
     outline: none;
     border-color: var(--pink-primary);
-    box-shadow: 0 0 0 4px rgba(240, 154, 181, 0.2);
+    box-shadow: 0 0 0 4px rgba(64, 123, 161, 0.18);
 }
 
-/* Buttons */
+/* Buttons (Pill Shaped from reference image) */
 .apple-btn {
-    padding: 12px 24px;
-    border-radius: var(--radius-ios-md);
+    padding: 13px 28px;
+    border-radius: 50px !important;
     font-family: var(--font-apple);
     font-size: 0.95rem;
     font-weight: 800;
@@ -250,18 +250,20 @@ body.apple-theme {
 .apple-btn-pink {
     background: var(--pink-gradient);
     color: #ffffff;
-    box-shadow: 0 5px 16px rgba(240, 154, 181, 0.35);
+    box-shadow: 0 5px 16px rgba(64, 123, 161, 0.3);
+    border-radius: 50px !important;
 }
 
 .apple-btn-pink:hover {
     transform: translateY(-1px);
-    box-shadow: 0 7px 20px rgba(240, 154, 181, 0.45);
+    box-shadow: 0 7px 20px rgba(64, 123, 161, 0.4);
 }
 
 .apple-btn-gold {
     background: var(--gold-gradient);
     color: #ffffff;
-    box-shadow: 0 4px 14px rgba(197, 155, 39, 0.25);
+    box-shadow: 0 4px 14px rgba(64, 123, 161, 0.25);
+    border-radius: 50px !important;
 }
 
 .apple-btn-gold:hover {
@@ -272,8 +274,8 @@ body.apple-theme {
     background: linear-gradient(135deg, #34c759 0%, #28a745 100%);
     color: #ffffff;
     font-size: 1.1rem;
-    padding: 15px 26px;
-    border-radius: 16px;
+    padding: 15px 28px;
+    border-radius: 50px !important;
     box-shadow: 0 6px 18px rgba(52, 199, 89, 0.25);
 }
 
@@ -287,8 +289,8 @@ body.apple-theme {
     border: 2px solid var(--system-red);
     color: var(--system-red);
     font-size: 1.1rem;
-    padding: 15px 26px;
-    border-radius: 16px;
+    padding: 15px 28px;
+    border-radius: 50px !important;
     box-shadow: 0 4px 14px rgba(224, 72, 72, 0.08);
 }
 
@@ -297,22 +299,26 @@ body.apple-theme {
     transform: scale(1.02);
 }
 
+/* Secondary Outline Pill Button (Matching 'View Album' / 'Leave a Message' in image) */
 .apple-btn-secondary {
     background: #ffffff;
-    color: var(--text-primary);
-    border: 1.5px solid rgba(0, 0, 0, 0.12);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+    color: var(--pink-primary);
+    border: 1.5px solid var(--pink-primary);
+    border-radius: 50px !important;
+    box-shadow: 0 2px 8px rgba(64, 123, 161, 0.06);
 }
 
 .apple-btn-secondary:hover {
-    background: #fdf0f4;
-    border-color: var(--pink-primary);
+    background: #f0f5f9;
+    color: var(--pink-dark);
+    border-color: var(--pink-dark);
 }
 
 .apple-btn-danger {
     background: rgba(224, 72, 72, 0.08);
     border: 1.5px solid var(--system-red);
     color: var(--system-red);
+    border-radius: 50px !important;
 }
 
 .apple-btn-danger:hover {
@@ -325,6 +331,7 @@ body.apple-theme {
     color: #ffffff;
     font-weight: 800;
     box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);
+    border-radius: 50px !important;
 }
 
 .apple-btn-whatsapp:hover {
@@ -343,8 +350,8 @@ body.apple-theme {
 
 .apple-widget {
     background: #ffffff;
-    border: 1.5px solid rgba(240, 154, 181, 0.18);
-    border-radius: var(--radius-ios-md);
+    border: 1.5px solid rgba(64, 123, 161, 0.18);
+    border-radius: 20px;
     padding: 16px;
     display: flex;
     align-items: center;
@@ -355,17 +362,17 @@ body.apple-theme {
 .widget-icon {
     width: 46px;
     height: 46px;
-    border-radius: 12px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.25rem;
 }
 
-.widget-icon.pink { background: rgba(240, 154, 181, 0.18); color: var(--pink-primary); }
+.widget-icon.pink { background: rgba(64, 123, 161, 0.15); color: var(--pink-primary); }
 .widget-icon.green { background: rgba(52, 199, 89, 0.12); color: var(--system-green); }
 .widget-icon.red { background: rgba(224, 72, 72, 0.12); color: var(--system-red); }
-.widget-icon.amber { background: rgba(197, 155, 39, 0.12); color: #8f6e14; }
+.widget-icon.amber { background: rgba(64, 123, 161, 0.12); color: var(--pink-dark); }
 
 .widget-val {
     font-size: 1.5rem;
@@ -382,8 +389,8 @@ body.apple-theme {
 /* Image Live Preview Container */
 .card-preview-container {
     background: #ffffff;
-    border: 2px dashed rgba(240, 154, 181, 0.35);
-    border-radius: var(--radius-ios-md);
+    border: 2px dashed rgba(64, 123, 161, 0.35);
+    border-radius: 20px;
     padding: 16px;
     text-align: center;
     margin-top: 12px;
@@ -392,7 +399,7 @@ body.apple-theme {
 .card-preview-img {
     max-width: 100%;
     max-height: 220px;
-    border-radius: 12px;
+    border-radius: 16px;
     object-fit: contain;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
 }
@@ -405,9 +412,9 @@ body.apple-theme {
 .wallet-pass {
     background: #ffffff;
     border: 2px solid var(--pink-primary);
-    border-radius: var(--radius-ios-xl);
+    border-radius: 32px;
     overflow: hidden;
-    box-shadow: 0 15px 40px rgba(240, 154, 181, 0.15);
+    box-shadow: 0 15px 40px rgba(64, 123, 161, 0.15);
     position: relative;
     max-width: 360px;
     margin: 0 auto;
@@ -435,7 +442,7 @@ body.apple-theme {
 
 .pass-cutout-line {
     height: 18px;
-    background: #fcf4f7;
+    background: #f4f8fb;
     position: relative;
     display: flex;
     align-items: center;
@@ -445,7 +452,7 @@ body.apple-theme {
 .notch-left, .notch-right {
     width: 20px;
     height: 20px;
-    background: #fcf4f7;
+    background: #f4f8fb;
     border: 2px solid var(--pink-primary);
     border-radius: 50%;
     position: absolute;
@@ -456,7 +463,7 @@ body.apple-theme {
 
 .pass-cutout-line .dashed {
     width: 80%;
-    border-bottom: 2px dashed rgba(240, 154, 181, 0.4);
+    border-bottom: 2px dashed rgba(64, 123, 161, 0.4);
 }
 
 .pass-body {
@@ -468,18 +475,18 @@ body.apple-theme {
 .pass-qr-box {
     background: #ffffff;
     padding: 16px;
-    border: 1.5px solid rgba(240, 154, 181, 0.3);
-    border-radius: 18px;
+    border: 1.5px solid rgba(64, 123, 161, 0.3);
+    border-radius: 20px;
     display: inline-block;
-    box-shadow: 0 6px 18px rgba(240, 154, 181, 0.08);
+    box-shadow: 0 6px 18px rgba(64, 123, 161, 0.08);
     margin-bottom: 14px;
 }
 
 .pass-code-pill {
-    background: rgba(240, 154, 181, 0.1);
-    border: 1px solid rgba(240, 154, 181, 0.25);
-    padding: 7px 16px;
-    border-radius: 10px;
+    background: rgba(64, 123, 161, 0.1);
+    border: 1px solid rgba(64, 123, 161, 0.25);
+    padding: 7px 20px;
+    border-radius: 50px;
     display: inline-block;
     font-family: monospace;
     font-size: 1.05rem;
@@ -492,10 +499,10 @@ body.apple-theme {
 /* iPhone Frame */
 .iphone-frame {
     background: #ffffff;
-    border: 10px solid #fdf0f4;
+    border: 10px solid #f0f5f9;
     border-radius: 44px;
     padding: 18px 12px;
-    box-shadow: 0 20px 50px rgba(240, 154, 181, 0.12);
+    box-shadow: 0 20px 50px rgba(64, 123, 161, 0.12);
     max-width: 420px;
     margin: 0 auto;
 }
@@ -510,17 +517,17 @@ body.apple-theme {
 
 .apple-table th, .apple-table td {
     padding: 14px 18px;
-    border-bottom: 1px solid rgba(240, 154, 181, 0.15);
+    border-bottom: 1px solid rgba(64, 123, 161, 0.12);
 }
 
 .apple-table th {
     color: var(--text-secondary);
     font-weight: 700;
-    background: rgba(253, 240, 244, 0.6);
+    background: rgba(240, 245, 249, 0.8);
 }
 
 .apple-table tr:hover {
-    background: rgba(253, 240, 244, 0.3);
+    background: rgba(240, 245, 249, 0.4);
 }
 
 /* Prevent unwanted iOS Safari page zoom when tapping input fields */

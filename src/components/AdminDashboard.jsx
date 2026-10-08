@@ -526,7 +526,7 @@ export default function AdminDashboard({
           </div>
 
           {/* LIVE STATISTICAL METRICS WIDGETS */}
-          <div className="apple-card" style={{ background: '#ffffff', border: '1.5px solid rgba(244, 165, 186, 0.35)', marginBottom: 0 }}>
+          <div className="apple-card" style={{ background: '#ffffff', border: '1.5px solid rgba(64, 123, 161, 0.25)', marginBottom: 0 }}>
             <div className="card-title-row" style={{ marginBottom: '16px' }}>
               <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <BarChart3 size={20} style={{ color: 'var(--pink-primary)' }} /> المؤشرات الإحصائية الحية لمناسبة ({eventData?.title || 'المناسبة الحالية'})
@@ -633,7 +633,7 @@ export default function AdminDashboard({
                 </div>
 
                 {/* Row 3: Card Image Upload & Preview & Save Button */}
-                <div className="form-group" style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px', marginBottom: 0 }}>
+                <div className="form-group" style={{ borderTop: '1px solid rgba(64, 123, 161, 0.2)', paddingTop: '14px', marginBottom: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                       <label className="apple-btn apple-btn-secondary" style={{ cursor: 'pointer', fontSize: '0.85rem' }}>
@@ -693,7 +693,7 @@ export default function AdminDashboard({
               </div>
 
               {/* Manual Entry */}
-              <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(244, 165, 186, 0.2)', paddingTop: '14px' }}>
+              <form onSubmit={handleBatchSubmit} style={{ borderTop: '1px solid rgba(64, 123, 161, 0.2)', paddingTop: '14px' }}>
                 <div className="form-group">
                   <label>أو كتابة الأرقام يدوياً (الاسم، رقم الجوال):</label>
                   <textarea
@@ -731,7 +731,7 @@ export default function AdminDashboard({
               </div>
 
               {/* Live Message Preview Box */}
-              <div style={{ background: '#fff5f7', border: '1px solid rgba(244, 165, 186, 0.3)', borderRadius: '14px', padding: '14px 18px', marginBottom: '14px', fontSize: '0.86rem' }}>
+              <div style={{ background: '#f0f5f9', border: '1px solid rgba(64, 123, 161, 0.25)', borderRadius: '14px', padding: '14px 18px', marginBottom: '14px', fontSize: '0.86rem' }}>
                 <div style={{ fontWeight: 800, color: 'var(--pink-dark)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Sparkles size={16} /> معاينة حية لشكل رسالة الواتساب المرسلة للضيف:
                 </div>
@@ -805,7 +805,7 @@ export default function AdminDashboard({
               <button
                 type="button"
                 className="apple-btn apple-btn-pink"
-                style={{ padding: '8px 18px', fontSize: '0.88rem', fontWeight: 800, boxShadow: '0 4px 14px rgba(244, 165, 186, 0.4)' }}
+                style={{ padding: '8px 18px', fontSize: '0.88rem', fontWeight: 800, boxShadow: '0 4px 14px rgba(64, 123, 161, 0.3)' }}
                 onClick={handleStartAutoDispatch}
                 disabled={isSendingAuto || selectedGuestIds.length === 0}
               >
@@ -825,7 +825,7 @@ export default function AdminDashboard({
 
         {/* Live Auto Sending Progress Bar */}
         {isSendingAuto && autoProgress && (
-          <div style={{ background: 'rgba(253, 242, 245, 0.9)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(244, 165, 186, 0.4)', marginTop: '14px', marginBottom: '14px' }}>
+          <div style={{ background: 'rgba(240, 245, 249, 0.9)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(64, 123, 161, 0.3)', marginTop: '14px', marginBottom: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', fontWeight: 700, marginBottom: '6px', color: 'var(--pink-dark)' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Loader2 size={16} className="animate-spin" style={{ color: 'var(--pink-primary)' }} />
@@ -833,7 +833,7 @@ export default function AdminDashboard({
               </span>
               <span>{autoProgress.sent} / {autoProgress.total} رسالة</span>
             </div>
-            <div style={{ width: '100%', height: '10px', background: 'rgba(244, 165, 186, 0.2)', borderRadius: '10px', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: '10px', background: 'rgba(64, 123, 161, 0.15)', borderRadius: '10px', overflow: 'hidden' }}>
               <div style={{ width: `${(autoProgress.sent / autoProgress.total) * 100}%`, height: '100%', background: 'var(--pink-gradient)', transition: 'width 0.4s ease' }}></div>
             </div>
           </div>

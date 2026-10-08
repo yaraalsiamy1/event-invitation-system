@@ -99,153 +99,144 @@ export default function GuestPortal({ eventData, guests, setGuests, activeGuestI
         </div>
       )}
 
-      {/* iPhone Simulator Frame */}
-      <div className="iphone-frame">
-        <div style={{ background: '#fff5f7', borderRadius: '36px', padding: '24px 16px', minHeight: '620px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* Header Tag */}
-          <div style={{ textAlign: 'center' }}>
-            <span className="ios-badge ios-badge-pink" style={{ padding: '6px 18px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <Mail size={16} /> دعوة خاصة
-            </span>
-          </div>
-
-          {/* Invitation Card */}
-          <div style={{ background: '#ffffff', border: '1.5px solid var(--apple-border-gold)', borderRadius: '22px', padding: '24px 18px', textAlign: 'center', boxShadow: '0 8px 25px rgba(236,72,153,0.06)' }}>
-            <h2 style={{ fontSize: '1.55rem', color: '#997a15', marginBottom: '8px', fontWeight: 800 }}>{activeEv?.title}</h2>
-            <div style={{ height: '1px', background: 'linear-gradient(to right, transparent, #d4af37, transparent)', margin: '12px auto', width: '60%' }}></div>
-            
-            {/* Display Event Card Image if available - Large & Clear for Guest */}
-            {activeEv?.cardImage && (
-              <div style={{ margin: '18px 0', width: '100%', textAlign: 'center' }}>
-                <img
-                  src={activeEv.cardImage}
-                  alt="كرت الدعوة"
-                  style={{
-                    width: '100%',
-                    maxHeight: '480px',
-                    borderRadius: '16px',
-                    objectFit: 'contain',
-                    boxShadow: '0 8px 30px rgba(236,72,153,0.15)',
-                    border: '1px solid rgba(212, 175, 55, 0.35)',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => window.open(activeEv.cardImage, '_blank')}
-                  title="اضغط لتكبير صورة الكرت"
-                />
-              </div>
-            )}
-
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '18px' }}>يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم</p>
-
-            <div style={{ background: 'rgba(236, 72, 153, 0.08)', borderRadius: '16px', padding: '14px', marginBottom: '18px', border: '1px solid rgba(236, 72, 153, 0.15)' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>المكرم / المكرمة:</span>
-              <h3 style={{ fontSize: '1.35rem', color: 'var(--pink-dark)', fontWeight: 800 }}>{activeGuest.name}</h3>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', textAlign: 'right', fontSize: '0.84rem' }}>
-              <div style={{ background: 'rgba(0, 0, 0, 0.03)', padding: '12px', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <Calendar size={18} style={{ color: '#d4af37' }} />
-                <div>
-                  <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>التاريخ</strong>
-                  <span>{activeEv?.date}</span>
-                </div>
-              </div>
-              <div style={{ background: 'rgba(0, 0, 0, 0.03)', padding: '12px', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <Clock size={18} style={{ color: '#d4af37' }} />
-                <div>
-                  <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>الوقت</strong>
-                  <span>{activeEv?.time}</span>
-                </div>
-              </div>
-              <div style={{ gridColumn: 'span 2', background: 'rgba(0, 0, 0, 0.03)', padding: '12px', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <MapPin size={18} style={{ color: '#d4af37' }} />
-                <div>
-                  <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>المكان</strong>
-                  <span>{activeEv?.location}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Pending State -> Prominent & Accessible Large RSVP Buttons */}
-          {activeGuest.status === 'pending' && (
-            <div className="apple-card" style={{ padding: '22px 18px', textAlign: 'center' }}>
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '6px', fontWeight: 800 }}>هل ستتشرفنا بالحضور؟</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                يرجى تحديد اختيارك لتوليد تذكرة وباركود الحضور الخاص بك
-              </p>
-
-              {/* Ultra Clear Large Buttons for All Ages */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <button className="apple-btn apple-btn-success-large btn-block" onClick={() => handleRSVP('accepted')}>
-                  <Check size={26} /> تأكيد الحضور
-                </button>
-                <button className="apple-btn apple-btn-decline-large btn-block" onClick={() => handleRSVP('declined')}>
-                  <X size={26} /> الاعتذار عن الحضور
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Declined State */}
-          {activeGuest.status === 'declined' && (
-            <div className="apple-card" style={{ padding: '24px', textAlign: 'center', borderColor: 'var(--system-red)' }}>
-              <HeartHandshake size={52} style={{ color: 'var(--system-red)', margin: '0 auto 12px' }} />
-              <h3 style={{ color: 'var(--system-red)', marginBottom: '6px', fontSize: '1.25rem', fontWeight: 800 }}>تم تسجيل اعتذارك بنجاح</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 0 }}>نشكرك على إبلاغنا ونتمنى لك كل التوفيق.</p>
-            </div>
-          )}
-
-          {/* Accepted State -> Apple Wallet Ticket */}
-          {activeGuest.status === 'accepted' && (
-            <div className="wallet-pass-container">
-              <div className="wallet-pass">
-                {/* Header */}
-                <div className="pass-header">
-                  <div>
-                    <div className="pass-header-title">APPLE WALLET EVENT PASS</div>
-                    <div className="pass-header-name">{activeGuest.name}</div>
-                  </div>
-                  <ShieldCheck size={28} />
-                </div>
-
-                {/* Tear Notch */}
-                <div className="pass-cutout-line">
-                  <div className="notch-left"></div>
-                  <div className="dashed"></div>
-                  <div className="notch-right"></div>
-                </div>
-
-                {/* Body */}
-                <div className="pass-body">
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>ابرز هذا الرمز لمنظمي المناسبة عند الوصول</p>
-                  
-                  <div className="pass-qr-box">
-                    <QRCodeSVG value={qrPayload} size={160} level="H" includeMargin={false} />
-                  </div>
-
-                  <div>
-                    <div className="pass-code-pill">{activeGuest.ticketCode}</div>
-                  </div>
-
-                  <div style={{ borderTop: '1px solid rgba(244,114,182,0.15)', paddingTop: '12px', fontSize: '0.88rem' }}>
-                    <span style={{ color: 'var(--system-green)', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                      <CheckCircle2 size={18} /> تذكرة صالحة ومؤكدة باسمك
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pass-footer">
-                  <button className="apple-btn apple-btn-pink btn-block" style={{ fontSize: '0.88rem' }} onClick={() => alert('تم حفظ بطاقة الدخول محلياً على الجوال!')}>
-                    <Download size={16} /> حفظ بطاقة الدخول للجوال
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
+      <div style={{ background: '#f0f5f9', borderRadius: '36px', padding: '24px 16px', minHeight: '620px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* Header Tag */}
+        <div style={{ textAlign: 'center' }}>
+          <span className="ios-badge ios-badge-pink" style={{ padding: '6px 18px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Mail size={16} /> دعوة خاصة
+          </span>
         </div>
+
+        {/* Invitation Card */}
+        <div style={{ background: '#ffffff', border: '1.5px solid var(--apple-border-gold)', borderRadius: '22px', padding: '24px 18px', textAlign: 'center', boxShadow: '0 8px 25px rgba(64,123,161,0.08)' }}>
+          <h2 style={{ fontSize: '1.55rem', color: '#407BA1', marginBottom: '8px', fontWeight: 800 }}>{activeEv?.title}</h2>
+          <div style={{ height: '1px', background: 'linear-gradient(to right, transparent, #407BA1, transparent)', margin: '12px auto', width: '60%' }}></div>
+          
+          {/* Display Event Card Image if available - Large & Clear for Guest */}
+          {activeEv?.cardImage && (
+            <div style={{ margin: '18px 0', width: '100%', textAlign: 'center' }}>
+              <img
+                src={activeEv.cardImage}
+                alt="كرت الدعوة"
+                style={{
+                  width: '100%',
+                  maxHeight: '480px',
+                  borderRadius: '16px',
+                  objectFit: 'contain',
+                  boxShadow: '0 8px 30px rgba(64,123,161,0.15)',
+                  border: '1px solid rgba(64, 123, 161, 0.35)',
+                  cursor: 'pointer'
+                }}
+                onClick={() => window.open(activeEv.cardImage, '_blank')}
+                title="اضغط لتكبير صورة الكرت"
+              />
+            </div>
+          )}
+
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '18px' }}>يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم</p>
+
+          <div style={{ background: 'rgba(64, 123, 161, 0.08)', borderRadius: '16px', padding: '14px', marginBottom: '18px', border: '1px solid rgba(64, 123, 161, 0.2)' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>المكرم / المكرمة:</span>
+            <h3 style={{ fontSize: '1.35rem', color: 'var(--pink-dark)', fontWeight: 800 }}>{activeGuest.name}</h3>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', textAlign: 'right', fontSize: '0.84rem' }}>
+            <div style={{ background: 'rgba(0, 0, 0, 0.03)', padding: '12px', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <Calendar size={18} style={{ color: '#407BA1' }} />
+              <div>
+                <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>التاريخ</strong>
+                <span>{activeEv?.date}</span>
+              </div>
+            </div>
+            <div style={{ background: 'rgba(0, 0, 0, 0.03)', padding: '12px', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <Clock size={18} style={{ color: '#407BA1' }} />
+              <div>
+                <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>الوقت</strong>
+                <span>{activeEv?.time}</span>
+              </div>
+            </div>
+            <div style={{ gridColumn: 'span 2', background: 'rgba(0, 0, 0, 0.03)', padding: '12px', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <MapPin size={18} style={{ color: '#407BA1' }} />
+              <div>
+                <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>المكان</strong>
+                <span>{activeEv?.location}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pending State -> Prominent & Accessible Large RSVP Buttons */}
+        {activeGuest.status === 'pending' && (
+          <div className="apple-card" style={{ padding: '22px 18px', textAlign: 'center' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '6px', fontWeight: 800 }}>هل ستتشرفنا بالحضور؟</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+              يرجى تحديد اختيارك لتوليد تذكرة وباركود الحضور الخاص بك
+            </p>
+
+            {/* Ultra Clear Large Buttons for All Ages */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <button className="apple-btn apple-btn-success-large btn-block" onClick={() => handleRSVP('accepted')}>
+                <Check size={26} /> تأكيد الحضور
+              </button>
+              <button className="apple-btn apple-btn-decline-large btn-block" onClick={() => handleRSVP('declined')}>
+                <X size={26} /> الاعتذار عن الحضور
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Declined State */}
+        {activeGuest.status === 'declined' && (
+          <div className="apple-card" style={{ padding: '24px', textAlign: 'center', borderColor: 'var(--system-red)' }}>
+            <HeartHandshake size={52} style={{ color: 'var(--system-red)', margin: '0 auto 12px' }} />
+            <h3 style={{ color: 'var(--system-red)', marginBottom: '6px', fontSize: '1.25rem', fontWeight: 800 }}>تم تسجيل اعتذارك بنجاح</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 0 }}>نشكرك على إبلاغنا ونتمنى لك كل التوفيق.</p>
+          </div>
+        )}
+
+        {/* Accepted State -> Apple Wallet Ticket */}
+        {activeGuest.status === 'accepted' && (
+          <div className="wallet-pass-container">
+            <div className="wallet-pass">
+              {/* Header */}
+              <div className="pass-header">
+                <div>
+                  <div className="pass-header-title">APPLE WALLET EVENT PASS</div>
+                  <div className="pass-header-name">{activeGuest.name}</div>
+                </div>
+                <ShieldCheck size={28} />
+              </div>
+
+              {/* Tear Notch */}
+              <div className="pass-cutout-line">
+                <div className="notch-left"></div>
+                <div className="dashed"></div>
+                <div className="notch-right"></div>
+              </div>
+
+              {/* Body */}
+              <div className="pass-body">
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>ابرز هذا الرمز لمنظمي المناسبة عند الوصول</p>
+                
+                <div className="pass-qr-box">
+                  <QRCodeSVG value={qrPayload} size={160} level="H" includeMargin={false} />
+                </div>
+
+                <div>
+                  <div className="pass-code-pill">{activeGuest.ticketCode}</div>
+                </div>
+              </div>
+
+              <div className="pass-footer">
+                <button className="apple-btn apple-btn-pink btn-block" style={{ fontSize: '0.88rem' }} onClick={() => alert('تم حفظ بطاقة الدخول محلياً على الجوال!')}>
+                  <Download size={16} /> حفظ بطاقة الدخول للجوال
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
