@@ -992,7 +992,7 @@ export default function AdminDashboard({
       <div className="apple-card" style={{ marginBottom: '28px' }}>
         <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
           <div>
-            <h2>4. قائمة المدعوين المفحوصة والمحفوظة لمناسبة ({eventData?.title})</h2>
+            <h2><Users className="system-gold" size={20} /> 4. قائمة المدعوين</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>تصفية المدعوين حسب الحالة والتحكم في إرسال الدعوات وحفظ التغييرات</p>
           </div>
 
