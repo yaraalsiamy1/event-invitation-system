@@ -660,7 +660,6 @@ export default function AdminDashboard({
     if (statusFilter === 'accepted') return g.status === 'accepted';
     if (statusFilter === 'declined') return g.status === 'declined';
     if (statusFilter === 'pending') return g.status === 'pending';
-    if (statusFilter === 'sent') return Boolean(g.sent);
     if (statusFilter === 'unsent') return !g.sent;
     return true;
   });
@@ -673,8 +672,6 @@ export default function AdminDashboard({
         return `معتذرون (${declined})`;
       case 'pending':
         return `بانتظار الرد (${pending})`;
-      case 'sent':
-        return `تم الإرسال (${sentCount})`;
       case 'unsent':
         return `لم يُرسل بعد (${unsentCount})`;
       case 'all':
@@ -1022,26 +1019,38 @@ export default function AdminDashboard({
                 تم تحديد ({selectedGuestIds.length}) من أصل ({filteredGuests.length})
               </span>
 
-              {/* Inline Filter Dropdown Button */}
+              {/* Inline Filter Dropdown Button (Icon Only) */}
               <div style={{ position: 'relative' }}>
                 <button
                   type="button"
                   className={`apple-btn ${statusFilter !== 'all' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
                   onClick={() => setIsFilterMenuOpen(prev => !prev)}
                   style={{
-                    fontSize: '0.78rem',
-                    padding: '6px 14px',
+                    padding: '7px 11px',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    justifyContent: 'center',
                     cursor: 'pointer',
-                    fontWeight: 700
+                    position: 'relative'
                   }}
-                  title="تصفية حسب الحالة"
+                  title={`تصفية حسب الحالة (${getFilterLabel()})`}
+                  aria-label="تصفية حسب الحالة"
                 >
-                  <Filter size={14} />
-                  <span>تصفية: {getFilterLabel()}</span>
-                  <ChevronDown size={14} style={{ transform: isFilterMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
+                  <Filter size={16} />
+                  {statusFilter !== 'all' && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        width: '7px',
+                        height: '7px',
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        boxShadow: '0 0 4px rgba(0,0,0,0.3)'
+                      }}
+                    />
+                  )}
                 </button>
 
                 {isFilterMenuOpen && (
@@ -1062,7 +1071,7 @@ export default function AdminDashboard({
                         border: '1px solid rgba(64, 123, 161, 0.2)',
                         padding: '6px',
                         zIndex: 50,
-                        minWidth: '200px',
+                        minWidth: '190px',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '4px'
@@ -1113,23 +1122,16 @@ export default function AdminDashboard({
                         </span>
                         <span className="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{pending}</span>
                       </button>
-                      <div style={{ height: '1px', background: 'rgba(0,0,0,0.06)', margin: '2px 0' }} />
-                      <button
-                        type="button"
-                        className={`apple-btn ${statusFilter === 'sent' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
-                        style={{ width: '100%', justifyContent: 'space-between', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '10px' }}
-                        onClick={() => { setStatusFilter('sent'); setIsFilterMenuOpen(false); }}
-                      >
-                        <span>تم الإرسال</span>
-                        <span className="ios-badge ios-badge-green" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{sentCount}</span>
-                      </button>
                       <button
                         type="button"
                         className={`apple-btn ${statusFilter === 'unsent' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
                         style={{ width: '100%', justifyContent: 'space-between', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '10px' }}
                         onClick={() => { setStatusFilter('unsent'); setIsFilterMenuOpen(false); }}
                       >
-                        <span>لم يُرسل بعد</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6b7280' }}></span>
+                          لم يُرسل بعد
+                        </span>
                         <span className="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{unsentCount}</span>
                       </button>
                     </div>
@@ -1140,11 +1142,6 @@ export default function AdminDashboard({
               <button className="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
                 تحديد غير المرسل لهم فقط
               </button>
-              {guests.length > 0 && (
-                <button className="apple-btn apple-btn-danger" onClick={handleClearAll} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
-                  مسح القائمة
-                </button>
-              )}
             </div>
 
             {/* Left side: Rocket Auto Dispatch Button */}
@@ -1256,24 +1253,46 @@ export default function AdminDashboard({
                             <td>{displayIndex}</td>
                             <td><strong>{guest.name}</strong></td>
                             <td>
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(64, 123, 161, 0.08)', borderRadius: '50px', padding: '3px 8px', border: '1px solid rgba(64, 123, 161, 0.2)' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateGuestCount(guest.id, (guest.count || guest.companions || 1) - 1)}
-                                  disabled={(guest.count || guest.companions || 1) <= 1}
-                                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 800, color: 'var(--pink-primary)', padding: '0 4px', fontSize: '1rem', lineHeight: 1 }}
-                                  title="إنقاص مقعد"
-                                >-</button>
-                                <span style={{ fontWeight: 800, minWidth: '18px', textAlign: 'center', fontSize: '0.88rem', color: 'var(--pink-dark)' }}>
+                              {!guest.sent ? (
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: 'rgba(64, 123, 161, 0.08)', borderRadius: '50px', padding: '2px 8px', border: '1px solid rgba(64, 123, 161, 0.2)' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateGuestCount(guest.id, (guest.count || guest.companions || 1) - 1)}
+                                    disabled={(guest.count || guest.companions || 1) <= 1}
+                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 800, color: 'var(--pink-primary)', padding: '0 4px', fontSize: '1rem', lineHeight: 1 }}
+                                    title="إنقاص مقعد"
+                                  >-</button>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="50"
+                                    value={guest.count || guest.companions || 1}
+                                    onChange={(e) => handleUpdateGuestCount(guest.id, Math.max(1, parseInt(e.target.value) || 1))}
+                                    style={{
+                                      width: '28px',
+                                      textAlign: 'center',
+                                      fontWeight: 800,
+                                      fontSize: '0.88rem',
+                                      color: 'var(--pink-dark)',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      outline: 'none',
+                                      padding: 0
+                                    }}
+                                    title="تعديل عدد المدعوين مباشرة"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateGuestCount(guest.id, (guest.count || guest.companions || 1) + 1)}
+                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 800, color: 'var(--pink-primary)', padding: '0 4px', fontSize: '1rem', lineHeight: 1 }}
+                                    title="زيادة مقعد"
+                                  >+</button>
+                                </div>
+                              ) : (
+                                <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-secondary)', padding: '4px 12px', background: 'rgba(0,0,0,0.04)', borderRadius: '20px', display: 'inline-block' }} title="تم إرسال الدعوة - لا يمكن تعديل عدد المقاعد">
                                   {guest.count || guest.companions || 1}
                                 </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateGuestCount(guest.id, (guest.count || guest.companions || 1) + 1)}
-                                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 800, color: 'var(--pink-primary)', padding: '0 4px', fontSize: '1rem', lineHeight: 1 }}
-                                  title="زيادة مقعد"
-                                >+</button>
-                              </div>
+                              )}
                             </td>
                             <td dir="ltr">{guest.phone}</td>
                             <td>
