@@ -810,6 +810,10 @@ export default function AdminDashboard({
   const pending = (guests || []).filter(g => g.status === 'pending').length;
   const sentCount = (guests || []).filter(g => !g.parent_guest_id && g.sent).length;
   const unsentCount = (guests || []).filter(g => !g.parent_guest_id && !g.sent).length;
+  // Aliases for backward compatibility
+  const totalSeats = total;
+  const acceptedSeats = accepted;
+  const pendingSeats = pending;
 
   const getFilterLabel = () => {
     switch (statusFilter) {
@@ -1062,29 +1066,37 @@ export default function AdminDashboard({
               <div className="apple-widget">
                 <div className="widget-icon pink"><Users size={24} /></div>
                 <div>
-                  <div className="widget-val">{totalSeats} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({total} دعوة)</small></div>
-                  <div className="widget-lbl">إجمالي المقاعد / المدعوين</div>
+                  <div className="widget-val">
+                    {total} <small style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({ownersCount} صاحب دعوة{dependentsCount > 0 ? ` + ${dependentsCount} مرافق` : ''})</small>
+                  </div>
+                  <div className="widget-lbl">إجمالي المدعوين</div>
                 </div>
               </div>
               <div className="apple-widget">
                 <div className="widget-icon green"><CheckCircle2 size={24} /></div>
                 <div>
-                  <div className="widget-val">{acceptedSeats} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({accepted} دعوة)</small></div>
-                  <div className="widget-lbl">حضور مؤكد (مقاعد)</div>
+                  <div className="widget-val">
+                    {accepted} {total > 0 && <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({Math.round((accepted / total) * 100)}%)</small>}
+                  </div>
+                  <div className="widget-lbl">حضور مؤكد</div>
                 </div>
               </div>
               <div className="apple-widget">
                 <div className="widget-icon red"><XCircle size={24} /></div>
                 <div>
-                  <div className="widget-val">{declined}</div>
+                  <div className="widget-val">
+                    {declined} {total > 0 && <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({Math.round((declined / total) * 100)}%)</small>}
+                  </div>
                   <div className="widget-lbl">معتذرون</div>
                 </div>
               </div>
               <div className="apple-widget">
                 <div className="widget-icon amber"><Clock size={24} /></div>
                 <div>
-                  <div className="widget-val">{pendingSeats} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({pending} دعوة)</small></div>
-                  <div className="widget-lbl">بانتظار الرد (مقاعد)</div>
+                  <div className="widget-val">
+                    {pending} {total > 0 && <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({Math.round((pending / total) * 100)}%)</small>}
+                  </div>
+                  <div className="widget-lbl">بانتظار الرد</div>
                 </div>
               </div>
             </div>
