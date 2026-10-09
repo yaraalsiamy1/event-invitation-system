@@ -1,10 +1,138 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_FILE = path.join(__dirname, '../data_invitation.json');
+
+/**
+ * Normalizes Arabic text for matching:
+ * ى -> ي, ة -> ه, أ/إ/آ -> ا, removes tashkeel and excessive spaces
+ */
+export function normalizeArabicName(name) {
+  if (!name || typeof name !== 'string') return '';
+  return name
+    .trim()
+    .replace(/[\u064B-\u065F\u0670]/g, '') // remove tashkeel
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * Normalizes phone numbers:
+ * Converts 05XXXXXXXX or 5XXXXXXXX or +9665XXXXXXXX or 009665XXXXXXXX into 9665XXXXXXXX
+ */
+export function normalizePhone(phone) {
+  if (!phone) return null;
+  let clean = phone.toString().trim().replace(/\D/g, '');
+  if (!clean) return null;
+
+  if (clean.startsWith('00966')) {
+    clean = clean.substring(2);
+  } else if (clean.startsWith('05')) {
+    clean = '966' + clean.substring(1);
+  } else if (clean.startsWith('5') && clean.length === 9) {
+    clean = '966' + clean;
+  }
+  return clean;
+}
+
+/**
+ * Checks if a phone number matches Saudi mobile format: 966 + 9 digits starting with 5 (12 digits)
+ */
+export function isValidSaudiPhone(phone) {
+  const normalized = normalizePhone(phone);
+  if (!normalized) return false;
+  return /^9665\d{8}$/.test(normalized);
+}
+
+/**
+ * Generates a cryptographically secure random token (at least 22 characters)
+ */
+export function generateInviteToken() {
+  return crypto.randomBytes(24).toString('base64url'); // 32 URL-safe characters
+}
+
+/**
+ * Validates a guest against Phase 1 business rules
+ * @param {Object} guest - The guest record to validate
+ * @param {Array} existingEventGuests - All guests belonging to the same event
+ * @param {string|null} guestIdToIgnore - Optional ID of guest being updated
+ */
+export function validateGuest(guest, existingEventGuests = [], guestIdToIgnore = null) {
+  const errors = [];
+
+  const cleanName = (guest.name || '').trim();
+  if (!cleanName || cleanName.length < 1) {
+    errors.push('اسم الضيف مطلوب');
+  }
+
+  const parentId = guest.parent_guest_id || null;
+  const rawPhone = (guest.phone !== undefined && guest.phone !== null && guest.phone !== '') ? guest.phone.toString().trim() : null;
+  const normalizedPhone = rawPhone ? normalizePhone(rawPhone) : null;
+
+  // Rule: A guest has either a phone OR a parent_guest_id, never both.
+  if (parentId && rawPhone) {
+    errors.push('المرافق لا يمكن أن يمتلك رقم جوال (إما رقم جوال أو مرافق لـ، وليس كلاهما)');
+  }
+  if (!parentId && !rawPhone) {
+    errors.push('رقم الجوال مطلوب للضيف المستقل');
+  }
+
+  // If independent guest (has phone)
+  if (!parentId && rawPhone) {
+    if (!isValidSaudiPhone(rawPhone)) {
+      errors.push('صيغة رقم الجوال غير صحيحة (يجب أن يبدأ بـ 05 ويتكون من 10 أرقام)');
+    } else {
+      // Check duplicate phone within the SAME event
+      const isDuplicate = existingEventGuests.some(g => {
+        if (guestIdToIgnore && g.id === guestIdToIgnore) return false;
+        return g.phone && normalizePhone(g.phone) === normalizedPhone;
+      });
+      if (isDuplicate) {
+        errors.push('رقم الجوال مكرر ومسجل مسبقاً في هذه المناسبة');
+      }
+    }
+  }
+
+  // If dependent guest (has parent_guest_id)
+  if (parentId) {
+    // A guest cannot follow themselves
+    if (guestIdToIgnore && parentId === guestIdToIgnore) {
+      errors.push('لا يمكن للضيف أن يكون مرافقاً لنفسه');
+    }
+
+    // Owner must exist in the same event
+    const owner = existingEventGuests.find(g => g.id === parentId);
+    if (!owner) {
+      errors.push('صاحب الدعوة غير موجود في هذه المناسبة');
+    } else {
+      // An owner cannot themselves be a dependent (one level only)
+      if (owner.parent_guest_id) {
+        errors.push('لا يمكن أن يكون صاحب الدعوة مرافقاً لشخص آخر (مستوى واحد فقط للمرافقين)');
+      }
+    }
+
+    // If editing a guest who is already an owner with dependents, they cannot become a dependent!
+    if (guestIdToIgnore) {
+      const hasDependents = existingEventGuests.some(g => g.parent_guest_id === guestIdToIgnore);
+      if (hasDependents) {
+        errors.push('لا يمكن تحويل ضيف لديه مرافقون إلى مرافق لشخص آخر');
+      }
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    cleanName,
+    normalizedPhone: parentId ? null : normalizedPhone
+  };
+}
 
 class MultiEventJSONDatabase {
   constructor() {
@@ -35,6 +163,64 @@ class MultiEventJSONDatabase {
       if (!data.events || data.events.length === 0) {
         this.write(createDefault());
       }
+    }
+
+    // Run Migration so existing guests stay as they are, with no dependents and secure invite_tokens
+    this.migrateGuests();
+  }
+
+  /**
+   * Phase 1 Migration:
+   * Ensures every guest has event_id, parent_guest_id (default null),
+   * normalized phone, and every owner has a cryptographically secure invite_token (>= 22 chars)
+   */
+  migrateGuests() {
+    try {
+      const data = this.read();
+      let hasChanges = false;
+
+      (data.events || []).forEach(ev => {
+        if (Array.isArray(ev.guests)) {
+          ev.guests.forEach(g => {
+            if (!g.eventId) { g.eventId = ev.id; hasChanges = true; }
+            if (!g.event_id) { g.event_id = ev.id; hasChanges = true; }
+
+            if (g.parent_guest_id === undefined) {
+              g.parent_guest_id = null;
+              hasChanges = true;
+            }
+
+            if (!g.parent_guest_id && (!g.invite_token || g.invite_token.length < 22)) {
+              g.invite_token = generateInviteToken();
+              hasChanges = true;
+            }
+
+            if (g.parent_guest_id) {
+              if (g.invite_token) {
+                g.invite_token = null;
+                hasChanges = true;
+              }
+              if (g.phone) {
+                g.phone = null;
+                hasChanges = true;
+              }
+            } else if (g.phone) {
+              const norm = normalizePhone(g.phone);
+              if (norm && norm !== g.phone) {
+                g.phone = norm;
+                hasChanges = true;
+              }
+            }
+          });
+        }
+      });
+
+      if (hasChanges) {
+        this.write(data);
+        console.log('Phase 1 Guest Data Migration completed successfully.');
+      }
+    } catch (e) {
+      console.error('Error during guest data migration:', e);
     }
   }
 
@@ -75,7 +261,9 @@ class MultiEventJSONDatabase {
   write(data) {
     try {
       fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error writing to DB_FILE:', e);
+    }
   }
 
   async getAllEvents() {
@@ -176,42 +364,39 @@ class MultiEventJSONDatabase {
       targetId = ev.id;
     }
     if (!ev) {
-      ev = {
-        id: "ev_1789587103668_307",
-        title: "عقد قران تركي قاري & لمار السيامي",
-        type: "wedding",
-        date: "2026-09-30",
-        time: "20:00",
-        location: "قاعة ميلا | مكة-العوالي",
-        mapLink: "https://maps.app.goo.gl/eGuQzLPJbqEkNk1W6",
-        cardImage: "/uploads/card_ev_1789587103668_307_1789592678834.jpg",
-        guests: []
-      };
-      data.events = [ev];
-      data.activeEventId = ev.id;
-      targetId = ev.id;
+      throw new Error('المناسبة غير موجودة');
     }
 
     const existing = ev.guests || [];
-    const uniqueNew = [];
+    const added = [];
 
-    (newGuests || []).forEach(g => {
-      const gPhone = (g.phone || '').trim();
-
-      const isDup = existing.some(e => {
-        const ePhone = (e.phone || '').trim();
-        return gPhone && ePhone === gPhone;
-      }) || uniqueNew.some(u => {
-        const uPhone = (u.phone || '').trim();
-        return gPhone && uPhone === gPhone;
-      });
-
-      if (!isDup) {
-        uniqueNew.push({ ...g, eventId: targetId });
+    for (const raw of (newGuests || [])) {
+      const validation = validateGuest(raw, [...existing, ...added]);
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join('، '));
       }
-    });
 
-    ev.guests = [...existing, ...uniqueNew];
+      const isDependent = Boolean(raw.parent_guest_id);
+      const guestRecord = {
+        id: raw.id || ("g_" + Date.now() + "_" + Math.floor(Math.random() * 100000)),
+        eventId: targetId,
+        event_id: targetId,
+        name: validation.cleanName,
+        phone: isDependent ? null : validation.normalizedPhone,
+        parent_guest_id: isDependent ? raw.parent_guest_id : null,
+        invite_token: isDependent ? null : (raw.invite_token || generateInviteToken()),
+        status: raw.status || "pending",
+        ticketCode: raw.ticketCode || ("EV-" + Math.floor(100000 + Math.random() * 900000)),
+        checkedIn: Boolean(raw.checkedIn),
+        checkInTime: raw.checkInTime || null,
+        sent: Boolean(raw.sent),
+        sentAt: raw.sentAt || null
+      };
+
+      added.push(guestRecord);
+    }
+
+    ev.guests = [...existing, ...added];
     this.write(data);
     return ev.guests;
   }
@@ -227,14 +412,40 @@ class MultiEventJSONDatabase {
     return [];
   }
 
-  async deleteGuest(eventId, guestId) {
+  /**
+   * Delete guest with support for owner dependents:
+   * @param {string} eventId
+   * @param {string} guestId
+   * @param {Object} options - { deleteDependents: boolean }
+   * If deleteDependents is true (default): deletes owner and all their dependents
+   * If deleteDependents is false: deletes owner and converts dependents to independent guests
+   */
+  async deleteGuest(eventId, guestId, options = {}) {
+    const { deleteDependents = true } = options;
     const data = this.read();
     const targetId = eventId || data.activeEventId;
     const ev = (data.events || []).find(e => e.id === targetId);
-    if (ev) {
-      ev.guests = (ev.guests || []).filter(g => g.id !== guestId);
-      this.write(data);
+    if (!ev) return false;
+
+    const guest = (ev.guests || []).find(g => g.id === guestId);
+    if (!guest) return false;
+
+    if (deleteDependents) {
+      ev.guests = (ev.guests || []).filter(g => g.id !== guestId && g.parent_guest_id !== guestId);
+    } else {
+      ev.guests = (ev.guests || []).filter(g => g.id !== guestId).map(g => {
+        if (g.parent_guest_id === guestId) {
+          return {
+            ...g,
+            parent_guest_id: null,
+            invite_token: generateInviteToken()
+          };
+        }
+        return g;
+      });
     }
+
+    this.write(data);
     return true;
   }
 
@@ -243,7 +454,27 @@ class MultiEventJSONDatabase {
     for (const ev of (data.events || [])) {
       const guest = (ev.guests || []).find(g => g.id === guestId);
       if (guest) {
-        return { guest, event: ev };
+        const dependents = (ev.guests || []).filter(g => g.parent_guest_id === guest.id);
+        return { guest, dependents, event: ev };
+      }
+    }
+    return null;
+  }
+
+  async getGuestByTokenOrId(tokenOrId) {
+    const data = this.read();
+    for (const ev of (data.events || [])) {
+      const guest = (ev.guests || []).find(g => g.invite_token === tokenOrId || g.id === tokenOrId);
+      if (guest) {
+        // If guest is an owner, fetch dependents
+        // If guest is a dependent, fetch owner and sibling dependents
+        let owner = guest;
+        if (guest.parent_guest_id) {
+          const parent = (ev.guests || []).find(g => g.id === guest.parent_guest_id);
+          if (parent) owner = parent;
+        }
+        const dependents = (ev.guests || []).filter(g => g.parent_guest_id === owner.id);
+        return { guest: owner, activePerson: guest, dependents, event: ev };
       }
     }
     return null;
@@ -254,12 +485,13 @@ class MultiEventJSONDatabase {
     for (const ev of (data.events || [])) {
       const guest = (ev.guests || []).find(g => g.id === guestId);
       if (guest) {
-        // Only allow changing RSVP status if guest status is currently pending or empty
-        if (!guest.status || guest.status === 'pending') {
+        if (!guest.status || guest.status === 'pending' || guest.status !== status) {
           guest.status = status;
+          guest.rsvpAt = new Date().toISOString();
           this.write(data);
         }
-        return { guest, event: ev };
+        const dependents = (ev.guests || []).filter(g => g.parent_guest_id === (guest.parent_guest_id || guest.id));
+        return { guest, dependents, event: ev };
       }
     }
     return null;
@@ -279,14 +511,34 @@ class MultiEventJSONDatabase {
       });
       this.write(data);
     }
-  async updateGuest(guestId, updatedFields) {
+  }
+
+  async updateGuest(guestId, updatedFields, eventId = null) {
     const data = this.read();
     for (const ev of (data.events || [])) {
+      if (eventId && ev.id !== eventId) continue;
       const idx = (ev.guests || []).findIndex(g => g.id === guestId);
       if (idx !== -1) {
-        ev.guests[idx] = { ...ev.guests[idx], ...updatedFields };
+        const current = ev.guests[idx];
+        const merged = { ...current, ...updatedFields };
+
+        const validation = validateGuest(merged, ev.guests, guestId);
+        if (!validation.isValid) {
+          throw new Error(validation.errors.join('، '));
+        }
+
+        const isDependent = Boolean(merged.parent_guest_id);
+        const updated = {
+          ...merged,
+          name: validation.cleanName,
+          phone: isDependent ? null : validation.normalizedPhone,
+          parent_guest_id: isDependent ? merged.parent_guest_id : null,
+          invite_token: isDependent ? null : (current.invite_token || generateInviteToken())
+        };
+
+        ev.guests[idx] = updated;
         this.write(data);
-        return ev.guests[idx];
+        return updated;
       }
     }
     return null;
@@ -294,3 +546,4 @@ class MultiEventJSONDatabase {
 }
 
 export const db = new MultiEventJSONDatabase();
+

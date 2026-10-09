@@ -159,7 +159,8 @@ app.delete('/api/guests', async (req, res) => {
 app.delete('/api/guests/:id', async (req, res) => {
   try {
     const eventId = req.query.eventId;
-    await db.deleteGuest(eventId, req.params.id);
+    const deleteDependents = req.query.deleteDependents === 'false' ? false : (req.body?.deleteDependents === false ? false : true);
+    await db.deleteGuest(eventId, req.params.id, { deleteDependents });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -168,9 +169,9 @@ app.delete('/api/guests/:id', async (req, res) => {
 
 app.get('/api/guests/:id', async (req, res) => {
   try {
-    const result = await db.getGuestById(req.params.id);
+    const result = await db.getGuestByTokenOrId(req.params.id);
     if (!result) return res.status(404).json({ error: 'Guest not found' });
-    res.json(result); // returns { guest, event }
+    res.json(result); // returns { guest, dependents, event }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -184,12 +185,15 @@ app.post('/api/guests/:id/rsvp', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
 app.put('/api/guests/:id', async (req, res) => {
   try {
-    const updated = await db.updateGuest(req.params.id, req.body);
+    const eventId = req.query.eventId;
+    const updated = await db.updateGuest(req.params.id, req.body, eventId);
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
@@ -240,7 +244,7 @@ app.post('/api/send-whatsapp-batch', async (req, res) => {
     const userMessage = (customMessage && customMessage.trim()) ? customMessage.trim() : 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
 
     for (const guest of targetGuests) {
-      const guestLink = `${baseUrl}/?guest=${guest.id}`;
+      const guestLink = `${baseUrl}/?token=${guest.invite_token || guest.id}`;
       const messageText = `مرحباً ${guest.name}\n\n${userMessage}\n\nالمناسبة: ${event.title}\nالتاريخ: ${event.date || ''}\nالمكان: ${event.location || ''}\n\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
       
       let success = false;

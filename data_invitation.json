@@ -12,16 +12,6 @@
       "cardImage": "/uploads/card_ev_1789587103668_307_1791460392359.png",
       "guests": [
         {
-          "id": "g_1791462231622_85474",
-          "name": "يارا السيامي",
-          "phone": "966534303484",
-          "status": "declined",
-          "ticketCode": "EV-531833",
-          "checkedIn": false,
-          "checkInTime": null,
-          "eventId": "ev_1789587103668_307"
-        },
-        {
           "id": "g_1791465969260_46401",
           "name": "وسن",
           "phone": "966554545592",
@@ -31,7 +21,25 @@
           "ticketCode": "EV-707595",
           "checkedIn": false,
           "checkInTime": null,
-          "eventId": "ev_1789587103668_307"
+          "eventId": "ev_1789587103668_307",
+          "event_id": "ev_1789587103668_307",
+          "parent_guest_id": null,
+          "invite_token": "PZvXur02ITM7R5RD26ti2DiPCsTJv8Fo"
+        },
+        {
+          "id": "g_1791466885758_80775",
+          "name": "ضيف عزيز",
+          "phone": "966534303484",
+          "count": 2,
+          "companions": 2,
+          "status": "pending",
+          "ticketCode": "EV-343513",
+          "checkedIn": false,
+          "checkInTime": null,
+          "eventId": "ev_1789587103668_307",
+          "event_id": "ev_1789587103668_307",
+          "parent_guest_id": null,
+          "invite_token": "XH4IakVFSG5t-gSKTku28fXxsQqZeXyW"
         }
       ]
     }

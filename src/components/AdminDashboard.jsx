@@ -23,7 +23,8 @@ export default function AdminDashboard({
   const [batchText, setBatchText] = useState('');
   const [singleName, setSingleName] = useState('');
   const [singlePhone, setSinglePhone] = useState('');
-  const [singleCount, setSingleCount] = useState(1);
+  const [singleParentId, setSingleParentId] = useState('');
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState(null);
   const [previewCardImg, setPreviewCardImg] = useState(eventData?.cardImage || null);
   const [fullViewImage, setFullViewImage] = useState(null);
   
@@ -407,7 +408,7 @@ export default function AdminDashboard({
     }
   };
 
-  // Add Single Guest Directly (Name + Phone + Count fields - ALL MANDATORY)
+  // Add Single Guest Directly (supports independent owner OR dependent)
   const handleSingleGuestSubmit = async (e) => {
     e.preventDefault();
 
@@ -415,73 +416,90 @@ export default function AdminDashboard({
       if (showConfirmation) {
         showConfirmation('حقل إلزامي', 'يرجى إدخال اسم الضيف (اسم الضيف حقل إلزامي).', 'info');
       } else {
-        alert('يرجى إدخال اسم الضيف (اسم الضيف حقل إلزامي).');
+        alert('يرجى إدخال اسم الضيف.');
       }
       return;
     }
 
-    if (!singlePhone.trim()) {
-      if (showConfirmation) {
-        showConfirmation('حقل إلزامي', 'يرجى إدخال رقم جوال الضيف (رقم الجوال حقل إلزامي).', 'info');
-      } else {
-        alert('يرجى إدخال رقم جوال الضيف (رقم الجوال حقل إلزامي).');
-      }
-      return;
-    }
+    const isDependent = Boolean(singleParentId);
+    let formattedPhone = null;
 
-    const formatted = formatPhone(singlePhone.trim());
-    if (!formatted || formatted.length < 11 || !formatted.startsWith('9665')) {
-      if (showConfirmation) {
-        showConfirmation('رقم غير صالح', 'يرجى إدخال رقم جوال صحيح يبدأ بـ 05 ويتكون من 10 أرقام (مثال: 0501234567).', 'info');
-      } else {
-        alert('يرجى إدخال رقم جوال صحيح يبدأ بـ 05.');
+    if (!isDependent) {
+      if (!singlePhone.trim()) {
+        if (showConfirmation) {
+          showConfirmation('حقل إلزامي', 'يرجى إدخال رقم جوال الضيف المستقل.', 'info');
+        } else {
+          alert('يرجى إدخال رقم جوال الضيف المستقل.');
+        }
+        return;
       }
-      return;
-    }
 
-    const parsedCount = parseInt(singleCount);
-    if (!singleCount || isNaN(parsedCount) || parsedCount < 1) {
-      if (showConfirmation) {
-        showConfirmation('حقل إلزامي', 'يرجى إدخال عدد المدعوين (عدد المدعوين حقل إلزامي، 1 على الأقل).', 'info');
-      } else {
-        alert('يرجى إدخال عدد المدعوين (عدد المدعوين حقل إلزامي).');
+      formattedPhone = formatPhone(singlePhone.trim());
+      if (!formattedPhone || formattedPhone.length !== 12 || !formattedPhone.startsWith('9665')) {
+        if (showConfirmation) {
+          showConfirmation('رقم غير صالح', 'يرجى إدخال رقم جوال صحيح يبدأ بـ 05 ويتكون من 10 أرقام (مثال: 0501234567).', 'info');
+        } else {
+          alert('يرجى إدخال رقم جوال صحيح يبدأ بـ 05.');
+        }
+        return;
       }
-      return;
-    }
 
-    const existingPhones = new Set((guests || []).map(g => (g.phone || '').trim()));
-    if (existingPhones.has(formatted)) {
-      if (showConfirmation) {
-        showConfirmation('رقم مكرر', 'هذا الرقم موجود مسبقاً في قائمة المدعوين.', 'info');
-      } else {
-        alert('هذا الرقم موجود مسبقاً في قائمة المدعوين.');
+      const existingPhones = new Set((guests || []).filter(g => !g.parent_guest_id).map(g => (g.phone || '').trim()));
+      if (existingPhones.has(formattedPhone)) {
+        if (showConfirmation) {
+          showConfirmation('رقم مكرر', 'هذا الرقم موجود مسبقاً في قائمة هذه المناسبة.', 'info');
+        } else {
+          alert('هذا الرقم موجود مسبقاً في قائمة هذه المناسبة.');
+        }
+        return;
       }
-      return;
     }
 
     const cleanName = singleName.trim();
-    const cleanCount = parsedCount;
 
     const newGuest = {
       id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
       name: cleanName,
-      phone: formatted,
-      count: cleanCount,
-      companions: cleanCount,
+      phone: isDependent ? null : formattedPhone,
+      parent_guest_id: isDependent ? singleParentId : null,
       status: "pending",
       ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
       checkedIn: false,
       checkInTime: null
     };
 
-    await saveBatchToApi([newGuest]);
-    setSingleName('');
-    setSinglePhone('');
-    setSingleCount(1);
-    if (showConfirmation) {
-      showConfirmation('تمت إضافة الضيف بنجاح!', `تمت إضافة "${cleanName}" (${cleanCount} مدعوين) برقم (${formatted}) إلى قائمة المناسبة.`);
-    } else {
-      alert(`تم إضافة الضيف ${cleanName} بنجاح!`);
+    try {
+      const res = await fetch('/api/guests/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guests: [newGuest], eventId: activeEventId })
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'فشلت إضافة الضيف');
+      }
+
+      setSingleName('');
+      setSinglePhone('');
+      setSingleParentId('');
+      if (refreshData) refreshData();
+
+      const ownerName = isDependent ? (guests.find(g => g.id === singleParentId)?.name || 'صاحب الدعوة') : null;
+      const successMsg = isDependent
+        ? `تمت إضافة "${cleanName}" كمرافق للمدعو "${ownerName}" بنجاح.`
+        : `تمت إضافة صاحب الدعوة "${cleanName}" برقم (${formattedPhone}) بنجاح.`;
+
+      if (showConfirmation) {
+        showConfirmation('تمت إضافة الضيف بنجاح!', successMsg);
+      } else {
+        alert(successMsg);
+      }
+    } catch (err) {
+      if (showConfirmation) {
+        showConfirmation('خطأ في البيانات', err.message, 'error');
+      } else {
+        alert(err.message);
+      }
     }
   };
 
@@ -652,18 +670,35 @@ export default function AdminDashboard({
     }
   };
 
-  // Delete Single Guest
+  // Delete Single Guest with dependent check
   const handleDeleteGuest = async (id) => {
-    if (window.confirm('هل أنت تأكد من حذف هذا المدعو؟')) {
-      try {
-        await fetch(`/api/guests/${id}?eventId=${activeEventId}`, { method: 'DELETE' });
-      } catch (e) {
-        console.error('Failed to delete guest', e);
-      }
-      const updated = guests.filter(g => g.id !== id);
-      setGuests(updated);
-      if (refreshData) refreshData();
+    const targetGuest = (guests || []).find(g => g.id === id);
+    if (!targetGuest) return;
+
+    const dependents = (guests || []).filter(g => g.parent_guest_id === id);
+
+    if (dependents.length > 0) {
+      setDeleteConfirmModal({
+        isOpen: true,
+        guest: targetGuest,
+        dependents
+      });
+      return;
     }
+
+    if (window.confirm(`هل أنت متأكد من حذف المدعو "${targetGuest.name}"؟`)) {
+      await executeDeleteGuest(id, true);
+    }
+  };
+
+  const executeDeleteGuest = async (id, deleteDependents = true) => {
+    try {
+      await fetch(`/api/guests/${id}?eventId=${activeEventId}&deleteDependents=${deleteDependents}`, { method: 'DELETE' });
+    } catch (e) {
+      console.error('Failed to delete guest from server', e);
+    }
+    setDeleteConfirmModal(null);
+    if (refreshData) refreshData();
   };
 
   // Stats with Seat Counts
@@ -928,7 +963,7 @@ export default function AdminDashboard({
                 <label style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', display: 'block' }}>
                   إضافة ضيف سريع (مباشر):
                 </label>
-                <div className="single-guest-grid">
+                <div className="single-guest-grid" style={{ gridTemplateColumns: '1.2fr 1.2fr 1.2fr auto', gap: '8px' }}>
                   <input
                     type="text"
                     className="apple-input"
@@ -940,23 +975,30 @@ export default function AdminDashboard({
                   <input
                     type="tel"
                     className="apple-input"
-                    placeholder="رقم الجوال (إلزامي - 0501234567)"
+                    placeholder={singleParentId ? "المرافق لا يحتاج جوال" : "رقم الجوال (0501234567)"}
                     value={singlePhone}
-                    required
+                    disabled={Boolean(singleParentId)}
+                    required={!singleParentId}
                     onChange={(e) => setSinglePhone(e.target.value)}
                   />
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
+                  <select
                     className="apple-input"
-                    style={{ textAlign: 'center' }}
-                    title="عدد المدعوين / المقاعد (إلزامي)"
-                    placeholder="عدد المدعوين (إلزامي)"
-                    value={singleCount}
-                    required
-                    onChange={(e) => setSingleCount(e.target.value)}
-                  />
+                    value={singleParentId}
+                    onChange={(e) => {
+                      setSingleParentId(e.target.value);
+                      if (e.target.value) setSinglePhone('');
+                    }}
+                    title="تحديد صاحب الدعوة إذا كان هذا الضيف مرافقاً"
+                  >
+                    <option value="">ضيف مستقل (صاحب دعوة)</option>
+                    {(guests || [])
+                      .filter(g => !g.parent_guest_id)
+                      .map(owner => (
+                        <option key={owner.id} value={owner.id}>
+                          مرافق لـ: {owner.name}
+                        </option>
+                      ))}
+                  </select>
                   <button type="submit" className="apple-btn apple-btn-pink" style={{ whiteSpace: 'nowrap', padding: '12px 20px' }}>
                     <Plus size={16} /> إضافة الضيف
                   </button>
@@ -1233,7 +1275,7 @@ export default function AdminDashboard({
                       </th>
                       <th>#</th>
                       <th>اسم الضيف</th>
-                      <th>عدد المدعوين</th>
+                      <th>التابع / المرافقون</th>
                       <th>رقم الجوال</th>
                       <th>الحالة</th>
                       <th>معاينة الكرت</th>
@@ -1277,50 +1319,42 @@ export default function AdminDashboard({
                               />
                             </td>
                             <td>{displayIndex}</td>
-                            <td><strong>{guest.name}</strong></td>
                             <td>
-                              {!guest.sent ? (
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: 'rgba(64, 123, 161, 0.08)', borderRadius: '50px', padding: '2px 8px', border: '1px solid rgba(64, 123, 161, 0.2)' }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleUpdateGuestCount(guest.id, (guest.count || guest.companions || 1) - 1)}
-                                    disabled={(guest.count || guest.companions || 1) <= 1}
-                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 800, color: 'var(--pink-primary)', padding: '0 4px', fontSize: '1rem', lineHeight: 1 }}
-                                    title="إنقاص مقعد"
-                                  >-</button>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    max="50"
-                                    value={guest.count || guest.companions || 1}
-                                    onChange={(e) => handleUpdateGuestCount(guest.id, Math.max(1, parseInt(e.target.value) || 1))}
-                                    style={{
-                                      width: '28px',
-                                      textAlign: 'center',
-                                      fontWeight: 800,
-                                      fontSize: '0.88rem',
-                                      color: 'var(--pink-dark)',
-                                      background: 'transparent',
-                                      border: 'none',
-                                      outline: 'none',
-                                      padding: 0
-                                    }}
-                                    title="تعديل عدد المدعوين مباشرة"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleUpdateGuestCount(guest.id, (guest.count || guest.companions || 1) + 1)}
-                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 800, color: 'var(--pink-primary)', padding: '0 4px', fontSize: '1rem', lineHeight: 1 }}
-                                    title="زيادة مقعد"
-                                  >+</button>
-                                </div>
-                              ) : (
-                                <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-secondary)', padding: '4px 12px', background: 'rgba(0,0,0,0.04)', borderRadius: '20px', display: 'inline-block' }} title="تم إرسال الدعوة - لا يمكن تعديل عدد المقاعد">
-                                  {guest.count || guest.companions || 1}
+                              <strong>{guest.name}</strong>
+                              {guest.parent_guest_id && (
+                                <span style={{ display: 'block', fontSize: '0.75rem', color: '#6366f1', marginTop: '2px', fontWeight: 600 }}>
+                                  ↳ مرافق
                                 </span>
                               )}
                             </td>
-                            <td dir="ltr">{guest.phone}</td>
+                            <td>
+                              {guest.parent_guest_id ? (
+                                (() => {
+                                  const owner = (guests || []).find(g => g.id === guest.parent_guest_id);
+                                  return (
+                                    <span style={{ fontSize: '0.82rem', padding: '3px 10px', background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', borderRadius: '12px', fontWeight: 600, display: 'inline-block' }}>
+                                      ↳ مرافق لـ {owner ? owner.name : 'صاحب الدعوة'}
+                                    </span>
+                                  );
+                                })()
+                              ) : (
+                                (() => {
+                                  const deps = (guests || []).filter(g => g.parent_guest_id === guest.id);
+                                  return deps.length > 0 ? (
+                                    <span style={{ fontSize: '0.82rem', padding: '3px 10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669', borderRadius: '12px', fontWeight: 600, display: 'inline-block' }}>
+                                      صاحب دعوة ({deps.length} مرافقين)
+                                    </span>
+                                  ) : (
+                                    <span style={{ fontSize: '0.82rem', padding: '3px 10px', background: 'rgba(0,0,0,0.04)', color: 'var(--text-secondary)', borderRadius: '12px', display: 'inline-block' }}>
+                                      ضيف مستقل
+                                    </span>
+                                  );
+                                })()
+                              )}
+                            </td>
+                            <td dir="ltr">
+                              {guest.phone ? guest.phone : <span style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>بدون جوال (مرافق)</span>}
+                            </td>
                             <td>
                               {renderSingleStatus(guest)}
                             </td>
@@ -1461,6 +1495,81 @@ export default function AdminDashboard({
           );
         })()}
       </div>
+
+      {/* Delete Confirmation Modal for Guests with Dependents */}
+      {deleteConfirmModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => setDeleteConfirmModal(null)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              padding: '30px 24px',
+              maxWidth: '460px',
+              width: '100%',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
+              textAlign: 'center',
+              direction: 'rtl'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <Trash2 size={28} />
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
+              حذف صاحب الدعوة "{deleteConfirmModal.guest.name}"
+            </h3>
+            <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '14px', lineHeight: 1.6, fontWeight: 600 }}>
+              عنده مرافقون، حذفهم معه أم تحويلهم لضيوف مستقلين؟
+            </p>
+            <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '14px', marginBottom: '22px', fontSize: '0.86rem', color: '#475569', textAlign: 'right', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontWeight: 700, color: '#1e293b' }}>المرافقون ({deleteConfirmModal.dependents.length}): </span>
+              {deleteConfirmModal.dependents.map(d => d.name).join('، ')}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                type="button"
+                className="apple-btn apple-btn-danger"
+                style={{ width: '100%', justifyContent: 'center', padding: '12px', fontWeight: 700, fontSize: '0.95rem' }}
+                onClick={() => executeDeleteGuest(deleteConfirmModal.guest.id, true)}
+              >
+                حذفهم معه
+              </button>
+              <button
+                type="button"
+                className="apple-btn apple-btn-secondary"
+                style={{ width: '100%', justifyContent: 'center', padding: '12px', fontWeight: 700, fontSize: '0.95rem', borderColor: 'var(--pink-primary)', color: 'var(--pink-dark)' }}
+                onClick={() => executeDeleteGuest(deleteConfirmModal.guest.id, false)}
+              >
+                تحويلهم لضيوف مستقلين
+              </button>
+              <button
+                type="button"
+                className="apple-btn"
+                style={{ width: '100%', justifyContent: 'center', padding: '10px', background: '#f1f5f9', color: '#64748b', border: 'none', fontWeight: 600 }}
+                onClick={() => setDeleteConfirmModal(null)}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Full Size Image Lightbox Modal */}
       {fullViewImage && (
