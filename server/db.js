@@ -355,6 +355,101 @@ class MultiEventJSONDatabase {
     return ev ? (ev.guests || []) : [];
   }
 
+  /**
+   * Paged guests with hierarchical grouping (owners + their dependents)
+   * Supports search (by name or phone), status filtering, and pagination.
+   */
+  async getGuestsPaged({ eventId, page = 1, limit = 10, search = '', status = 'all' }) {
+    const data = this.read();
+    const targetId = eventId || data.activeEventId;
+    const ev = (data.events || []).find(e => e.id === targetId);
+    const allGuests = ev ? (ev.guests || []) : [];
+
+    const cleanSearch = (search || '').trim().toLowerCase();
+    const normSearch = normalizeArabicName(cleanSearch);
+    const digitsSearch = cleanSearch.replace(/\D/g, '');
+
+    const matchesStatus = (g) => {
+      if (!status || status === 'all') return true;
+      if (status === 'accepted') return g.status === 'accepted';
+      if (status === 'declined') return g.status === 'declined';
+      if (status === 'pending') return g.status === 'pending';
+      if (status === 'unsent') return !g.sent;
+      return true;
+    };
+
+    const ownersMap = new Map();
+    const allDependents = [];
+
+    allGuests.forEach(g => {
+      if (!g.parent_guest_id) {
+        ownersMap.set(g.id, { ...g, dependents: [] });
+      } else {
+        allDependents.push(g);
+      }
+    });
+
+    allDependents.forEach(dep => {
+      if (ownersMap.has(dep.parent_guest_id)) {
+        ownersMap.get(dep.parent_guest_id).dependents.push(dep);
+      } else {
+        ownersMap.set(dep.id, { ...dep, dependents: [], isOrphan: true });
+      }
+    });
+
+    let filteredUnits = Array.from(ownersMap.values()).filter(unit => {
+      const ownerNameNorm = normalizeArabicName(unit.name || '');
+      const ownerPhoneDigits = (unit.phone || '').replace(/\D/g, '');
+
+      let matchesSearch = true;
+      if (normSearch || digitsSearch) {
+        const ownerMatches = (normSearch && ownerNameNorm.includes(normSearch)) ||
+                             (digitsSearch && digitsSearch.length >= 3 && ownerPhoneDigits.includes(digitsSearch));
+        const dependentMatches = unit.dependents.some(d => {
+          const depNameNorm = normalizeArabicName(d.name || '');
+          return normSearch && depNameNorm.includes(normSearch);
+        });
+        matchesSearch = ownerMatches || dependentMatches;
+      }
+      if (!matchesSearch) return false;
+
+      if (status && status !== 'all') {
+        const ownerStatusMatches = matchesStatus(unit);
+        const depStatusMatches = unit.dependents.some(d => matchesStatus(d));
+        if (!ownerStatusMatches && !depStatusMatches) return false;
+      }
+
+      return true;
+    });
+
+    const totalUnits = filteredUnits.length;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const pageSize = Math.max(1, parseInt(limit) || 10);
+    const totalPages = Math.ceil(totalUnits / pageSize) || 1;
+    const safePage = Math.min(pageNum, totalPages);
+    const startIndex = (safePage - 1) * pageSize;
+    const pagedOwners = filteredUnits.slice(startIndex, startIndex + pageSize);
+
+    return {
+      owners: pagedOwners,
+      totalUnits,
+      totalPeopleCount: allGuests.length,
+      page: safePage,
+      pageSize,
+      totalPages,
+      stats: {
+        total: allGuests.length,
+        ownersCount: ownersMap.size,
+        dependentsCount: allDependents.length,
+        accepted: allGuests.filter(g => g.status === 'accepted').length,
+        declined: allGuests.filter(g => g.status === 'declined').length,
+        pending: allGuests.filter(g => g.status === 'pending').length,
+        sent: allGuests.filter(g => g.sent).length,
+        unsent: allGuests.filter(g => !g.sent).length
+      }
+    };
+  }
+
   async addGuests(eventId, newGuests) {
     const data = this.read();
     let targetId = eventId || data.activeEventId;

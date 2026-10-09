@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles, HelpCircle, Filter, ChevronDown } from 'lucide-react';
+import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles, HelpCircle, Filter, ChevronDown, Search, Edit, UserPlus } from 'lucide-react';
 import ExcelValidationModal from './ExcelValidationModal';
 import EventsSidebar from './EventsSidebar';
 import NewEventModal from './NewEventModal';
@@ -49,6 +49,9 @@ export default function AdminDashboard({
   // Checkbox selection state for batch sending
   const [selectedGuestIds, setSelectedGuestIds] = useState([]);
 
+  // Search by Name or Phone (Phase 2 Requirement 6)
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Status Filter State ('all' | 'accepted' | 'declined' | 'pending' | 'sent' | 'unsent')
   const [statusFilter, setStatusFilter] = useState('all');
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
@@ -60,16 +63,21 @@ export default function AdminDashboard({
     return saved ? parseInt(saved) : 10;
   });
 
+  // Modal states for Quick-Add Companion & Edit Guest (Phase 2 Requirements 3 & 4)
+  const [addCompanionModal, setAddCompanionModal] = useState(null); // { ownerId, ownerName, companionName }
+  const [editingGuestModal, setEditingGuestModal] = useState(null); // { id, name, phone, parent_guest_id, isDependent, ... }
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeEventId, statusFilter, pageSize]);
+  }, [activeEventId, statusFilter, pageSize, searchQuery]);
 
   // Render single unified status badge per guest
+  // Rule (Phase 2 Req 5): Dependents do not show "لم يُرسل بعد". Show "عبر دعوة [owner name]" instead.
   const renderSingleStatus = (guest) => {
     if (guest.status === 'accepted') {
       return (
         <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
-          <Check size={13} /> مقبول
+          <Check size={13} /> حضور مؤكد
         </span>
       );
     }
@@ -80,10 +88,18 @@ export default function AdminDashboard({
         </span>
       );
     }
+    if (guest.parent_guest_id) {
+      const owner = (guests || []).find(g => g.id === guest.parent_guest_id);
+      return (
+        <span className="ios-badge" style={{ background: 'rgba(99, 102, 241, 0.12)', color: '#4f46e5', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+          عبر دعوة {owner ? owner.name : 'صاحبها'}
+        </span>
+      );
+    }
     if (guest.sent) {
       return (
         <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
-          <Check size={13} /> تم الإرسال
+          <Check size={13} /> تم الإرسال (بانتظار الرد)
         </span>
       );
     }
@@ -94,35 +110,43 @@ export default function AdminDashboard({
     );
   };
 
-  // Auto-sync selection state when guests change
+  // Rule (Phase 2 Req 5): Only owners are selected for sending (dependents never receive messages directly)
+  const ownerGuests = useMemo(() => (guests || []).filter(g => !g.parent_guest_id), [guests]);
+
+  // Auto-sync selection state when owners change
   useEffect(() => {
-    if (guests && guests.length > 0) {
-      const validIds = new Set(guests.map(g => g.id));
+    if (ownerGuests.length > 0) {
+      const validOwnerIds = new Set(ownerGuests.map(g => g.id));
       setSelectedGuestIds(prev => {
-        const filtered = prev.filter(id => validIds.has(id));
-        return filtered.length > 0 ? filtered : guests.map(g => g.id);
+        const filtered = prev.filter(id => validOwnerIds.has(id));
+        return filtered.length > 0 ? filtered : ownerGuests.map(g => g.id);
       });
     } else {
       setSelectedGuestIds([]);
     }
-  }, [guests]);
+  }, [ownerGuests]);
 
-  const isAllSelected = guests.length > 0 && selectedGuestIds.length === guests.length;
+  const isAllSelected = ownerGuests.length > 0 && ownerGuests.every(o => selectedGuestIds.includes(o.id));
 
   const handleToggleSelectAll = () => {
     if (isAllSelected) {
       setSelectedGuestIds([]);
     } else {
-      setSelectedGuestIds((guests || []).map(g => g.id));
+      setSelectedGuestIds(ownerGuests.map(g => g.id));
     }
   };
 
   const handleSelectUnsentOnly = () => {
-    const unsent = (guests || []).filter(g => !g.sent).map(g => g.id);
-    setSelectedGuestIds(unsent);
+    const unsentOwners = ownerGuests.filter(g => !g.sent).map(g => g.id);
+    setSelectedGuestIds(unsentOwners);
   };
 
   const handleToggleSelectGuest = (id) => {
+    const target = (guests || []).find(g => g.id === id);
+    if (target?.parent_guest_id) {
+      // Dependents are never selectable for batch dispatch
+      return;
+    }
     setSelectedGuestIds(prev =>
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
@@ -701,26 +725,91 @@ export default function AdminDashboard({
     if (refreshData) refreshData();
   };
 
-  // Stats with Seat Counts
+  // Group all guests into owner units (each unit contains owner + their dependents)
+  const ownerUnits = useMemo(() => {
+    const ownerMap = new Map();
+
+    (guests || []).forEach(g => {
+      if (!g.parent_guest_id) {
+        ownerMap.set(g.id, { ...g, dependents: [] });
+      }
+    });
+
+    (guests || []).forEach(g => {
+      if (g.parent_guest_id) {
+        if (ownerMap.has(g.parent_guest_id)) {
+          ownerMap.get(g.parent_guest_id).dependents.push(g);
+        } else {
+          ownerMap.set(g.id, { ...g, dependents: [], isOrphan: true });
+        }
+      }
+    });
+
+    return Array.from(ownerMap.values());
+  }, [guests]);
+
+  // Filter owner units by search query and status filter
+  const filteredUnits = useMemo(() => {
+    let result = ownerUnits;
+
+    // 1. Search Query (Name or Phone)
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const qNorm = q.replace(/[\u064B-\u065F\u0670]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/\s+/g, ' ');
+      const qDigits = q.replace(/\D/g, '');
+
+      result = result.filter(unit => {
+        const ownerNameNorm = (unit.name || '').replace(/[\u064B-\u065F\u0670]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/\s+/g, ' ').toLowerCase();
+        const ownerPhone = (unit.phone || '').replace(/\D/g, '');
+
+        const ownerMatch = ownerNameNorm.includes(qNorm) || (qDigits.length >= 3 && ownerPhone.includes(qDigits));
+        const depMatch = unit.dependents.some(d => {
+          const depNameNorm = (d.name || '').replace(/[\u064B-\u065F\u0670]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/\s+/g, ' ').toLowerCase();
+          return depNameNorm.includes(qNorm);
+        });
+
+        return ownerMatch || depMatch;
+      });
+    }
+
+    // 2. Status Filter
+    if (statusFilter !== 'all') {
+      result = result.filter(unit => {
+        const ownerMatches = statusFilter === 'accepted' ? unit.status === 'accepted'
+          : statusFilter === 'declined' ? unit.status === 'declined'
+          : statusFilter === 'pending' ? unit.status === 'pending'
+          : statusFilter === 'unsent' ? !unit.sent
+          : true;
+
+        const depMatches = unit.dependents.some(d => {
+          if (statusFilter === 'accepted') return d.status === 'accepted';
+          if (statusFilter === 'declined') return d.status === 'declined';
+          if (statusFilter === 'pending') return d.status === 'pending';
+          if (statusFilter === 'unsent') return !unit.sent;
+          return true;
+        });
+
+        return ownerMatches || depMatches;
+      });
+    }
+
+    return result;
+  }, [ownerUnits, searchQuery, statusFilter]);
+
+  // Total people in current filtered view (owners + companions)
+  const filteredPeopleCount = useMemo(() => {
+    return filteredUnits.reduce((acc, u) => acc + 1 + (u.dependents?.length || 0), 0);
+  }, [filteredUnits]);
+
+  // Overall Statistics
   const total = (guests || []).length;
-  const totalSeats = (guests || []).reduce((acc, g) => acc + (parseInt(g.count) || parseInt(g.companions) || 1), 0);
+  const ownersCount = (guests || []).filter(g => !g.parent_guest_id).length;
+  const dependentsCount = (guests || []).filter(g => g.parent_guest_id).length;
   const accepted = (guests || []).filter(g => g.status === 'accepted').length;
-  const acceptedSeats = (guests || []).filter(g => g.status === 'accepted').reduce((acc, g) => acc + (parseInt(g.count) || parseInt(g.companions) || 1), 0);
   const declined = (guests || []).filter(g => g.status === 'declined').length;
   const pending = (guests || []).filter(g => g.status === 'pending').length;
-  const pendingSeats = (guests || []).filter(g => g.status === 'pending').reduce((acc, g) => acc + (parseInt(g.count) || parseInt(g.companions) || 1), 0);
-  const sentCount = (guests || []).filter(g => g.sent).length;
-  const unsentCount = (guests || []).filter(g => !g.sent).length;
-
-  // Filtered guests by active status filter
-  const filteredGuests = (guests || []).filter(g => {
-    if (statusFilter === 'all') return true;
-    if (statusFilter === 'accepted') return g.status === 'accepted';
-    if (statusFilter === 'declined') return g.status === 'declined';
-    if (statusFilter === 'pending') return g.status === 'pending';
-    if (statusFilter === 'unsent') return !g.sent;
-    return true;
-  });
+  const sentCount = (guests || []).filter(g => !g.parent_guest_id && g.sent).length;
+  const unsentCount = (guests || []).filter(g => !g.parent_guest_id && !g.sent).length;
 
   const getFilterLabel = () => {
     switch (statusFilter) {
@@ -736,6 +825,178 @@ export default function AdminDashboard({
       default:
         return `الكل (${guests.length})`;
     }
+  };
+
+  // Handle adding companion directly from owner's row (Phase 2 Req 3)
+  const handleSaveCompanion = async (e) => {
+    e.preventDefault();
+    if (!addCompanionModal || !addCompanionModal.companionName?.trim()) {
+      alert('يرجى كتابة اسم المرافق.');
+      return;
+    }
+
+    const cleanName = addCompanionModal.companionName.trim();
+    const newGuest = {
+      id: "g_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
+      name: cleanName,
+      phone: null,
+      parent_guest_id: addCompanionModal.ownerId,
+      status: "pending",
+      ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
+      checkedIn: false,
+      checkInTime: null
+    };
+
+    try {
+      const res = await fetch('/api/guests/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guests: [newGuest], eventId: activeEventId })
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'فشلت إضافة المرافق');
+      }
+      setAddCompanionModal(null);
+      if (refreshData) refreshData();
+      if (showConfirmation) {
+        showConfirmation('تمت إضافة المرافق!', `تمت إضافة "${cleanName}" كمرافق للمدعو "${addCompanionModal.ownerName}" بنجاح.`);
+      } else {
+        alert(`تمت إضافة "${cleanName}" كمرافق للمدعو "${addCompanionModal.ownerName}" بنجاح.`);
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // Open edit modal for guest (Phase 2 Req 4)
+  const handleOpenEdit = (guest) => {
+    const isDep = Boolean(guest.parent_guest_id);
+    const deps = (guests || []).filter(g => g.parent_guest_id === guest.id);
+    setEditingGuestModal({
+      id: guest.id,
+      name: guest.name || '',
+      phone: guest.phone || '',
+      parent_guest_id: guest.parent_guest_id || '',
+      isDependent: isDep,
+      hasDependents: deps.length > 0,
+      dependentsCount: deps.length
+    });
+  };
+
+  // Save guest edits (Phase 2 Req 4)
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingGuestModal) return;
+
+    const cleanName = editingGuestModal.name.trim();
+    if (!cleanName) {
+      alert('يرجى إدخال اسم الضيف.');
+      return;
+    }
+
+    let cleanPhone = null;
+    let parentId = null;
+
+    if (editingGuestModal.isDependent) {
+      if (!editingGuestModal.parent_guest_id) {
+        alert('يرجى اختيار صاحب الدعوة الذي يتبعه هذا المرافق.');
+        return;
+      }
+      parentId = editingGuestModal.parent_guest_id;
+      cleanPhone = null;
+    } else {
+      if (!editingGuestModal.phone || !editingGuestModal.phone.trim()) {
+        alert('يرجى إدخال رقم جوال للضيف المستقل.');
+        return;
+      }
+      cleanPhone = formatPhone(editingGuestModal.phone.trim());
+      if (!cleanPhone || cleanPhone.length !== 12 || !cleanPhone.startsWith('9665')) {
+        alert('يرجى إدخال رقم جوال صحيح يبدأ بـ 05 ويتكون من 10 أرقام (مثال: 0501234567).');
+        return;
+      }
+      parentId = null;
+    }
+
+    try {
+      const res = await fetch(`/api/guests/${editingGuestModal.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: cleanName,
+          phone: cleanPhone,
+          parent_guest_id: parentId,
+          eventId: activeEventId
+        })
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'فشل حفظ التعديلات');
+      }
+      setEditingGuestModal(null);
+      if (refreshData) refreshData();
+      if (showConfirmation) {
+        showConfirmation('تم حفظ التعديلات!', `تم تحديث بيانات الضيف "${cleanName}" بنجاح.`);
+      } else {
+        alert(`تم تحديث بيانات الضيف "${cleanName}" بنجاح.`);
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // Export filtered guests to Excel (Phase 2 Req 6)
+  const handleExportToExcel = () => {
+    if (!filteredUnits || filteredUnits.length === 0) {
+      alert('لا توجد بيانات لتصديرها.');
+      return;
+    }
+
+    const rows = [
+      ['م', 'اسم الضيف', 'رقم الجوال', 'التبعية / المرافقون', 'الحالة']
+    ];
+
+    let counter = 1;
+    filteredUnits.forEach(unit => {
+      const ownerStatusText = unit.status === 'accepted' ? 'حضور مؤكد'
+        : unit.status === 'declined' ? 'معتذر'
+        : unit.sent ? 'تم الإرسال (بانتظار الرد)'
+        : 'لم يُرسل بعد';
+
+      const depBadge = unit.dependents.length > 0
+        ? `صاحب دعوة (${unit.dependents.length} مرافقين)`
+        : 'ضيف مستقل';
+
+      rows.push([
+        counter++,
+        unit.name,
+        unit.phone ? `'${unit.phone}` : '-',
+        depBadge,
+        ownerStatusText
+      ]);
+
+      unit.dependents.forEach(dep => {
+        const depStatusText = dep.status === 'accepted' ? 'حضور مؤكد'
+          : dep.status === 'declined' ? 'معتذر'
+          : `عبر دعوة ${unit.name}`;
+
+        rows.push([
+          '↳',
+          `↳ ${dep.name}`,
+          '-',
+          `مرافق لـ ${unit.name}`,
+          depStatusText
+        ]);
+      });
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!views'] = [{ rightToLeft: true }];
+    ws['!cols'] = [{ wch: 6 }, { wch: 25 }, { wch: 18 }, { wch: 25 }, { wch: 22 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'قائمة المدعوين');
+    const safeTitle = (eventData?.title || 'المناسبة').replace(/[\\/:*?"<>|]/g, '_');
+    XLSX.writeFile(wb, `قائمة_المدعوين_${safeTitle}.xlsx`);
   };
 
   const baseUrl = window.location.origin;
@@ -1080,12 +1341,46 @@ export default function AdminDashboard({
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>تصفية المدعوين حسب الحالة والتحكم في إرسال الدعوات وحفظ التغييرات</p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', width: '100%', justifyContent: 'space-between', marginTop: '4px' }}>
-            {/* Right side selection badges & quick selection & inline filter */}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', width: '100%', justifyContent: 'space-between', marginTop: '6px' }}>
+            {/* Search Box (Phase 2 Req 6) */}
+            <div style={{ position: 'relative', minWidth: '220px', flex: '1 1 260px' }}>
+              <Search size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input
+                type="text"
+                className="apple-input"
+                placeholder="بحث بالاسم أو رقم الجوال..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ paddingRight: '36px', paddingLeft: '32px', height: '38px', fontSize: '0.85rem' }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 0 }}
+                  title="مسح البحث"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Action Badges & Filter & Export */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', position: 'relative' }}>
-              <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.84rem', padding: '6px 14px', fontWeight: 800 }}>
-                تم تحديد ({selectedGuestIds.length}) من أصل ({filteredGuests.length})
+              <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.82rem', padding: '6px 12px', fontWeight: 800 }}>
+                تم تحديد ({selectedGuestIds.length}) من أصل ({ownerGuests.length}) صاحب دعوة
               </span>
+
+              {/* Export to Excel (Phase 2 Req 6) */}
+              <button
+                type="button"
+                className="apple-btn apple-btn-secondary"
+                onClick={handleExportToExcel}
+                style={{ fontSize: '0.82rem', padding: '7px 12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                title="تصدير النتائج الحالية إلى ملف إكسل"
+              >
+                <Download size={15} /> تصدير إكسل
+              </button>
 
               {/* Inline Filter Dropdown Button (Icon Only) */}
               <div style={{ position: 'relative' }}>
@@ -1123,7 +1418,6 @@ export default function AdminDashboard({
 
                 {isFilterMenuOpen && (
                   <>
-                    {/* Backdrop to close menu when clicking outside */}
                     <div
                       style={{ position: 'fixed', inset: 0, zIndex: 40 }}
                       onClick={() => setIsFilterMenuOpen(false)}
@@ -1253,10 +1547,10 @@ export default function AdminDashboard({
 
         {/* Paginated Calculations */}
         {(() => {
-          const totalPages = Math.max(1, Math.ceil(filteredGuests.length / pageSize));
+          const totalPages = Math.max(1, Math.ceil(filteredUnits.length / pageSize));
           const safePage = Math.min(currentPage, totalPages);
           const startIndex = (safePage - 1) * pageSize;
-          const paginatedGuests = filteredGuests.slice(startIndex, startIndex + pageSize);
+          const paginatedUnits = filteredUnits.slice(startIndex, startIndex + pageSize);
 
           return (
             <>
@@ -1270,32 +1564,32 @@ export default function AdminDashboard({
                           checked={isAllSelected}
                           onChange={handleToggleSelectAll}
                           style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--pink-primary)' }}
-                          title="تحديد / إلغاء تحديد الكل"
+                          title="تحديد / إلغاء تحديد الكل (أصحاب الدعوات)"
                         />
                       </th>
-                      <th>#</th>
+                      <th style={{ width: '45px' }}>#</th>
                       <th>اسم الضيف</th>
-                      <th>التابع / المرافقون</th>
                       <th>رقم الجوال</th>
+                      <th>التابع / المرافقون</th>
                       <th>الحالة</th>
                       <th>معاينة الكرت</th>
-                      <th>حذف</th>
+                      <th style={{ minWidth: '95px' }}>إجراءات</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredGuests.length === 0 ? (
+                    {filteredUnits.length === 0 ? (
                       <tr>
                         <td colSpan="8" style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--text-secondary)' }}>
                           {guests.length === 0 ? (
                             'لا يوجد مدعوين محفوظين لهذه المناسبة حالياً. قم برفع تمبلت الدعوات.xlsx للتحقق والحفظ.'
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                              <span>لا توجد سجلات تطابق حالة التصفية المحددة.</span>
+                              <span>لا توجد سجلات تطابق البحث أو حالة التصفية المحددة.</span>
                               <button
                                 type="button"
                                 className="apple-btn apple-btn-secondary"
                                 style={{ padding: '6px 14px', fontSize: '0.8rem' }}
-                                onClick={() => setStatusFilter('all')}
+                                onClick={() => { setStatusFilter('all'); setSearchQuery(''); }}
                               >
                                 عرض الكل ({guests.length})
                               </button>
@@ -1304,83 +1598,155 @@ export default function AdminDashboard({
                         </td>
                       </tr>
                     ) : (
-                      paginatedGuests.map((guest, idx) => {
-                        const isChecked = selectedGuestIds.includes(guest.id);
+                      paginatedUnits.map((owner, idx) => {
+                        const isChecked = selectedGuestIds.includes(owner.id);
                         const displayIndex = startIndex + idx + 1;
 
                         return (
-                          <tr key={guest.id} style={{ background: isChecked ? 'rgba(253, 242, 245, 0.4)' : 'transparent' }}>
-                            <td style={{ textAlign: 'center' }}>
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => handleToggleSelectGuest(guest.id)}
-                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--pink-primary)' }}
-                              />
-                            </td>
-                            <td>{displayIndex}</td>
-                            <td>
-                              <strong>{guest.name}</strong>
-                              {guest.parent_guest_id && (
-                                <span style={{ display: 'block', fontSize: '0.75rem', color: '#6366f1', marginTop: '2px', fontWeight: 600 }}>
-                                  ↳ مرافق
-                                </span>
-                              )}
-                            </td>
-                            <td>
-                              {guest.parent_guest_id ? (
-                                (() => {
-                                  const owner = (guests || []).find(g => g.id === guest.parent_guest_id);
-                                  return (
-                                    <span style={{ fontSize: '0.82rem', padding: '3px 10px', background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', borderRadius: '12px', fontWeight: 600, display: 'inline-block' }}>
-                                      ↳ مرافق لـ {owner ? owner.name : 'صاحب الدعوة'}
-                                    </span>
-                                  );
-                                })()
-                              ) : (
-                                (() => {
-                                  const deps = (guests || []).filter(g => g.parent_guest_id === guest.id);
-                                  return deps.length > 0 ? (
-                                    <span style={{ fontSize: '0.82rem', padding: '3px 10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669', borderRadius: '12px', fontWeight: 600, display: 'inline-block' }}>
-                                      صاحب دعوة ({deps.length} مرافقين)
+                          <React.Fragment key={owner.id}>
+                            {/* Primary Owner Row */}
+                            <tr style={{ background: isChecked ? 'rgba(253, 242, 245, 0.4)' : 'transparent' }}>
+                              <td style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => handleToggleSelectGuest(owner.id)}
+                                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--pink-primary)' }}
+                                  title="تحديد لإرسال الواتساب"
+                                />
+                              </td>
+                              <td>{displayIndex}</td>
+                              <td>
+                                <strong>{owner.name}</strong>
+                              </td>
+                              <td dir="ltr">{owner.phone || '-'}</td>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  {owner.dependents && owner.dependents.length > 0 ? (
+                                    <span style={{ fontSize: '0.8rem', padding: '3px 10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669', borderRadius: '12px', fontWeight: 600 }}>
+                                      صاحب دعوة ({owner.dependents.length} مرافقين)
                                     </span>
                                   ) : (
-                                    <span style={{ fontSize: '0.82rem', padding: '3px 10px', background: 'rgba(0,0,0,0.04)', color: 'var(--text-secondary)', borderRadius: '12px', display: 'inline-block' }}>
+                                    <span style={{ fontSize: '0.8rem', padding: '3px 10px', background: 'rgba(0,0,0,0.04)', color: 'var(--text-secondary)', borderRadius: '12px' }}>
                                       ضيف مستقل
                                     </span>
-                                  );
-                                })()
-                              )}
-                            </td>
-                            <td dir="ltr">
-                              {guest.phone ? guest.phone : <span style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>بدون جوال (مرافق)</span>}
-                            </td>
-                            <td>
-                              {renderSingleStatus(guest)}
-                            </td>
-                            <td>
-                              <button
-                                className="apple-btn apple-btn-secondary"
-                                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                                onClick={() => {
-                                  setActiveGuestId(guest.id);
-                                  setActiveTab('guest');
+                                  )}
+
+                                  {/* Add Companion Button (Phase 2 Req 3) */}
+                                  <button
+                                    type="button"
+                                    className="apple-btn apple-btn-secondary"
+                                    style={{ padding: '3px 8px', fontSize: '0.74rem', color: '#059669', borderColor: 'rgba(5, 150, 105, 0.3)', gap: '4px' }}
+                                    onClick={() => setAddCompanionModal({ ownerId: owner.id, ownerName: owner.name, companionName: '' })}
+                                    title="إضافة مرافق لهذا الضيف"
+                                  >
+                                    <UserPlus size={12} /> إضافة مرافق
+                                  </button>
+                                </div>
+                              </td>
+                              <td>
+                                {renderSingleStatus(owner)}
+                              </td>
+                              <td>
+                                <button
+                                  className="apple-btn apple-btn-secondary"
+                                  style={{ padding: '5px 10px', fontSize: '0.78rem' }}
+                                  onClick={() => {
+                                    setActiveGuestId(owner.id);
+                                    setActiveTab('guest');
+                                  }}
+                                >
+                                  <Eye size={13} /> معاينة الكرت
+                                </button>
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  {/* Edit Button (Phase 2 Req 4) */}
+                                  <button
+                                    className="apple-btn apple-btn-secondary"
+                                    style={{ padding: '5px 8px' }}
+                                    title="تعديل بيانات الضيف"
+                                    onClick={() => handleOpenEdit(owner)}
+                                  >
+                                    <Edit size={13} />
+                                  </button>
+                                  {/* Delete Button */}
+                                  <button
+                                    className="apple-btn apple-btn-danger"
+                                    style={{ padding: '5px 8px' }}
+                                    title="حذف هذا المدعو"
+                                    onClick={() => handleDeleteGuest(owner.id)}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+
+                            {/* Indented Dependent Rows (Phase 2 Req 2) */}
+                            {owner.dependents && owner.dependents.map((dep) => (
+                              <tr
+                                key={dep.id}
+                                style={{
+                                  background: 'rgba(240, 245, 249, 0.55)',
+                                  borderTop: '1px dashed rgba(64, 123, 161, 0.15)'
                                 }}
                               >
-                                <Eye size={13} /> معاينة كرت الضيف
-                              </button>
-                            </td>
-                            <td>
-                              <button
-                                className="apple-btn apple-btn-danger"
-                                style={{ padding: '5px 9px' }}
-                                title="حذف هذا المدعو"
-                                onClick={() => handleDeleteGuest(guest.id)}
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </td>
-                          </tr>
+                                <td style={{ textAlign: 'center', color: 'var(--text-secondary)' }} title="تصل الدعوة عبر صاحبها">
+                                  <span style={{ fontSize: '0.82rem' }}>-</span>
+                                </td>
+                                <td style={{ color: 'var(--pink-primary)', fontWeight: 800 }}>↳</td>
+                                <td>
+                                  <div style={{ paddingRight: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ color: 'var(--pink-primary)', fontWeight: 800 }}>↳</span>
+                                    <strong>{dep.name}</strong>
+                                    <span style={{ fontSize: '0.7rem', padding: '1px 6px', background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', borderRadius: '10px' }}>مرافق</span>
+                                  </div>
+                                </td>
+                                <td style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>بدون جوال</td>
+                                <td>
+                                  <span style={{ fontSize: '0.8rem', color: '#4f46e5', fontWeight: 600 }}>
+                                    ↳ مرافق لـ {owner.name}
+                                  </span>
+                                </td>
+                                <td>
+                                  {renderSingleStatus(dep)}
+                                </td>
+                                <td>
+                                  <button
+                                    className="apple-btn apple-btn-secondary"
+                                    style={{ padding: '4px 8px', fontSize: '0.74rem' }}
+                                    onClick={() => {
+                                      setActiveGuestId(dep.id);
+                                      setActiveTab('guest');
+                                    }}
+                                  >
+                                    <Eye size={12} /> كرت المرافق
+                                  </button>
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <button
+                                      className="apple-btn apple-btn-secondary"
+                                      style={{ padding: '5px 8px' }}
+                                      title="تعديل بيانات المرافق"
+                                      onClick={() => handleOpenEdit(dep)}
+                                    >
+                                      <Edit size={13} />
+                                    </button>
+                                    <button
+                                      className="apple-btn apple-btn-danger"
+                                      style={{ padding: '5px 8px' }}
+                                      title="حذف هذا المرافق"
+                                      onClick={() => handleDeleteGuest(dep.id)}
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </React.Fragment>
                         );
                       })
                     )}
@@ -1389,12 +1755,12 @@ export default function AdminDashboard({
               </div>
 
               {/* Pagination & Display Controls */}
-              {filteredGuests.length > 0 && (
+              {filteredUnits.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(64, 123, 161, 0.2)', flexWrap: 'wrap', gap: '12px' }}>
                   {/* Right side: Page size selector & record counts */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      عرض {startIndex + 1} - {Math.min(startIndex + pageSize, filteredGuests.length)} من أصل {filteredGuests.length} مدعو
+                      عرض {startIndex + 1} - {Math.min(startIndex + pageSize, filteredUnits.length)} من أصل {filteredUnits.length} صاحب دعوة (إجمالي {filteredPeopleCount} مدعو ومرافق)
                     </span>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-primary)' }}>
@@ -1446,7 +1812,7 @@ export default function AdminDashboard({
                           .filter(page => page === 1 || page === totalPages || Math.abs(page - safePage) <= 1)
                           .reduce((acc, page, idx, arr) => {
                             if (idx > 0 && page - arr[idx - 1] > 1) {
-                              acc.push(-1 * page); // Ellipsis marker
+                              acc.push(-1 * page);
                             }
                             acc.push(page);
                             return acc;
@@ -1567,6 +1933,264 @@ export default function AdminDashboard({
                 إلغاء
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Add Companion Modal (Phase 2 Req 3) */}
+      {addCompanionModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => setAddCompanionModal(null)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              padding: '28px 24px',
+              maxWidth: '440px',
+              width: '100%',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
+              direction: 'rtl'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <UserPlus size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                    إضافة مرافق
+                  </h3>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    تابع للمدعو: {addCompanionModal.ownerName}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddCompanionModal(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCompanion}>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem' }}>اسم المرافق (إلزامي - فقط الاسم):</label>
+                <input
+                  type="text"
+                  className="apple-input"
+                  placeholder="مثال: لين، سارة، فيصل..."
+                  value={addCompanionModal.companionName || ''}
+                  autoFocus
+                  required
+                  onChange={(e) => setAddCompanionModal(prev => ({ ...prev, companionName: e.target.value }))}
+                />
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5, border: '1px solid #e2e8f0' }}>
+                💡 <strong>ملاحظة:</strong> المرافق لا يحتاج رقم جوال؛ وسيتم إدراج بطاقته التفاعلية وتذكرته تلقائياً داخل رابط دعوة صاحب الدعوة ({addCompanionModal.ownerName}).
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="submit"
+                  className="apple-btn apple-btn-pink"
+                  style={{ flex: 1, justifyContent: 'center', padding: '11px', fontWeight: 700 }}
+                >
+                  <Plus size={16} /> حفظ المرافق
+                </button>
+                <button
+                  type="button"
+                  className="apple-btn apple-btn-secondary"
+                  style={{ padding: '11px 18px' }}
+                  onClick={() => setAddCompanionModal(null)}
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Guest Modal (Phase 2 Req 4) */}
+      {editingGuestModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => setEditingGuestModal(null)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              padding: '28px 24px',
+              maxWidth: '460px',
+              width: '100%',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
+              direction: 'rtl'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Edit size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                    تعديل بيانات الضيف
+                  </h3>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    {editingGuestModal.isDependent ? 'مرافق تابع' : 'صاحب دعوة مستقل'}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingGuestModal(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit}>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem' }}>اسم الضيف (إلزامي):</label>
+                <input
+                  type="text"
+                  className="apple-input"
+                  value={editingGuestModal.name}
+                  required
+                  onChange={(e) => setEditingGuestModal(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+
+              {/* Type Switcher / Ownership Rules */}
+              <div style={{ marginBottom: '14px', background: '#f8fafc', padding: '12px 14px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.84rem', color: '#1e293b', marginBottom: '8px', display: 'block' }}>
+                  نوع وصفة الضيف:
+                </label>
+
+                {editingGuestModal.hasDependents ? (
+                  <div style={{ fontSize: '0.82rem', color: '#059669', background: 'rgba(16, 185, 129, 0.1)', padding: '8px 12px', borderRadius: '10px', fontWeight: 600 }}>
+                    صاحب دعوة لديه ({editingGuestModal.dependentsCount}) مرافقين - لا يمكن تحويله لمرافق.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', cursor: 'pointer', fontWeight: 600 }}>
+                      <input
+                        type="radio"
+                        name="guest_type"
+                        checked={!editingGuestModal.isDependent}
+                        onChange={() => setEditingGuestModal(prev => ({ ...prev, isDependent: false, parent_guest_id: '' }))}
+                      />
+                      صاحب دعوة (مستقل)
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', cursor: 'pointer', fontWeight: 600 }}>
+                      <input
+                        type="radio"
+                        name="guest_type"
+                        checked={editingGuestModal.isDependent}
+                        onChange={() => {
+                          const firstOtherOwner = (ownerGuests || []).find(o => o.id !== editingGuestModal.id);
+                          setEditingGuestModal(prev => ({
+                            ...prev,
+                            isDependent: true,
+                            phone: '',
+                            parent_guest_id: firstOtherOwner ? firstOtherOwner.id : ''
+                          }));
+                        }}
+                      />
+                      مرافق لشخص آخر
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              {/* Dynamic Field: Phone (for owner) OR Parent selector (for dependent) */}
+              {!editingGuestModal.isDependent ? (
+                <div className="form-group" style={{ marginBottom: '18px' }}>
+                  <label style={{ fontWeight: 700, fontSize: '0.88rem' }}>رقم الجوال (0501234567):</label>
+                  <input
+                    type="tel"
+                    className="apple-input"
+                    placeholder="0501234567"
+                    value={editingGuestModal.phone || ''}
+                    required
+                    onChange={(e) => setEditingGuestModal(prev => ({ ...prev, phone: e.target.value }))}
+                  />
+                </div>
+              ) : (
+                <div className="form-group" style={{ marginBottom: '18px' }}>
+                  <label style={{ fontWeight: 700, fontSize: '0.88rem' }}>مرافق لـ (صاحب الدعوة):</label>
+                  <select
+                    className="apple-input"
+                    value={editingGuestModal.parent_guest_id}
+                    required
+                    onChange={(e) => setEditingGuestModal(prev => ({ ...prev, parent_guest_id: e.target.value }))}
+                  >
+                    <option value="">-- اختر صاحب الدعوة --</option>
+                    {(ownerGuests || [])
+                      .filter(o => o.id !== editingGuestModal.id)
+                      .map(owner => (
+                        <option key={owner.id} value={owner.id}>
+                          {owner.name} ({owner.phone})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="submit"
+                  className="apple-btn apple-btn-pink"
+                  style={{ flex: 1, justifyContent: 'center', padding: '11px', fontWeight: 700 }}
+                >
+                  <Check size={16} /> حفظ التعديلات
+                </button>
+                <button
+                  type="button"
+                  className="apple-btn apple-btn-secondary"
+                  style={{ padding: '11px 18px' }}
+                  onClick={() => setEditingGuestModal(null)}
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

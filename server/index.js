@@ -129,8 +129,30 @@ app.post('/api/event', async (req, res) => {
 app.get('/api/guests', async (req, res) => {
   try {
     const eventId = req.query.eventId;
+    if (req.query.paged === 'true' || req.query.page) {
+      const page = req.query.page || 1;
+      const limit = req.query.limit || req.query.pageSize || 10;
+      const search = req.query.search || '';
+      const status = req.query.status || 'all';
+      const result = await db.getGuestsPaged({ eventId, page, limit, search, status });
+      return res.json(result);
+    }
     const guests = await db.getGuests(eventId);
     res.json(guests);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/guests/paged', async (req, res) => {
+  try {
+    const eventId = req.query.eventId;
+    const page = req.query.page || 1;
+    const limit = req.query.limit || req.query.pageSize || 10;
+    const search = req.query.search || '';
+    const status = req.query.status || 'all';
+    const result = await db.getGuestsPaged({ eventId, page, limit, search, status });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
