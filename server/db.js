@@ -58,6 +58,133 @@ export function generateInviteToken() {
 }
 
 /**
+ * Checks if an event's date has passed (Phase 4 Req 4)
+ */
+export function isEventPast(dateStr, timeStr) {
+  if (!dateStr) return false;
+  try {
+    const cleanDate = dateStr.toString().trim();
+    const ymd = cleanDate.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+    const dmy = cleanDate.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+    let year, month, day;
+    if (ymd) {
+      year = parseInt(ymd[1], 10);
+      month = parseInt(ymd[2], 10);
+      day = parseInt(ymd[3], 10);
+    } else if (dmy) {
+      day = parseInt(dmy[1], 10);
+      month = parseInt(dmy[2], 10);
+      year = parseInt(dmy[3], 10);
+    } else {
+      const d = new Date(cleanDate);
+      if (isNaN(d.getTime())) return false;
+      year = d.getFullYear();
+      month = d.getMonth() + 1;
+      day = d.getDate();
+    }
+
+    let hours = 23;
+    let minutes = 59;
+    if (timeStr) {
+      const tm = timeStr.toString().trim().match(/(\d{1,2}):(\d{2})/);
+      if (tm) {
+        hours = parseInt(tm[1], 10);
+        minutes = parseInt(tm[2], 10);
+      }
+    }
+
+    const eventEnd = new Date(year, month - 1, day, hours, minutes, 59);
+    return new Date() > eventEnd;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Unified Arabic Date & Time Formatter (Phase 4 Req 6)
+ * Output example: "الخميس 8 يناير 2026، 9:30 م"
+ */
+export function formatArabicDateTime(dateStr, timeStr) {
+  if (!dateStr) return '';
+
+  const ARABIC_WEEKDAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const ARABIC_MONTHS = [
+    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+  ];
+
+  let year, month, day;
+  const cleanDate = dateStr.toString().trim();
+
+  const ymd = cleanDate.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  const dmy = cleanDate.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+
+  if (ymd) {
+    year = parseInt(ymd[1], 10);
+    month = parseInt(ymd[2], 10);
+    day = parseInt(ymd[3], 10);
+  } else if (dmy) {
+    day = parseInt(dmy[1], 10);
+    month = parseInt(dmy[2], 10);
+    year = parseInt(dmy[3], 10);
+  } else {
+    const d = new Date(cleanDate);
+    if (isNaN(d.getTime())) return cleanDate;
+    year = d.getFullYear();
+    month = d.getMonth() + 1;
+    day = d.getDate();
+  }
+
+  const dateObj = new Date(year, month - 1, day);
+  const weekdayName = ARABIC_WEEKDAYS[dateObj.getDay()] || '';
+  const monthName = ARABIC_MONTHS[month - 1] || '';
+
+  const formattedDate = `${weekdayName} ${day} ${monthName} ${year}`.trim();
+
+  let formattedTime = '';
+  if (timeStr) {
+    const cleanTime = timeStr.toString().trim();
+    const timeMatch = cleanTime.match(/(\d{1,2}):(\d{2})(?:\s*(AM|PM|am|pm|ص|م))?/i);
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1], 10);
+      const minutes = timeMatch[2];
+      const marker = (timeMatch[3] || '').toUpperCase();
+
+      if (marker === 'PM' || marker === 'م') {
+        if (hours < 12) hours += 12;
+      } else if (marker === 'AM' || marker === 'ص') {
+        if (hours === 12) hours = 0;
+      }
+
+      const period = hours >= 12 ? 'م' : 'ص';
+      const h12 = hours % 12 || 12;
+      formattedTime = `${h12}:${minutes} ${period}`;
+    } else {
+      formattedTime = cleanTime;
+    }
+  }
+
+  if (formattedTime) {
+    return `${formattedDate}، ${formattedTime}`;
+  }
+  return formattedDate;
+}
+
+/**
+ * Dynamic Greeting Text Generator (Phase 4 Req 2)
+ * No dependents: "تشرفنا بدعوتك"
+ * With dependents: "الدعوة لك ولـ لين" أو "الدعوة لك ولـ لين وسارة"
+ */
+export function getGreetingText(dependents = []) {
+  if (!dependents || dependents.length === 0) {
+    return 'تشرفنا بدعوتك';
+  }
+  const names = dependents.map(d => (d && d.name) ? d.name.trim() : '').filter(Boolean);
+  if (names.length === 0) return 'تشرفنا بدعوتك';
+  return `الدعوة لك ولـ ${names.join(' و')}`;
+}
+
+/**
  * Validates a guest against Phase 1 business rules
  * @param {Object} guest - The guest record to validate
  * @param {Array} existingEventGuests - All guests belonging to the same event
@@ -803,7 +930,23 @@ class MultiEventJSONDatabase {
           if (parent) owner = parent;
         }
         const dependents = (ev.guests || []).filter(g => g.parent_guest_id === owner.id);
-        return { guest: owner, activePerson: guest, dependents, event: ev };
+        const isLocked = isEventPast(ev.date, ev.time);
+
+        // Mark as opened if sent and not yet recorded (Phase 5 Req 4)
+        if (owner.sent && !owner.openedAt) {
+          owner.openedAt = new Date().toISOString();
+          owner.opened = true;
+          this.write(data);
+        }
+
+        return {
+          guest: owner,
+          owner,
+          activePerson: guest,
+          dependents,
+          event: ev,
+          isLocked
+        };
       }
     }
     return null;
@@ -812,15 +955,22 @@ class MultiEventJSONDatabase {
   async updateGuestRSVP(guestId, status) {
     const data = this.read();
     for (const ev of (data.events || [])) {
-      const guest = (ev.guests || []).find(g => g.id === guestId);
-      if (guest) {
-        if (!guest.status || guest.status === 'pending' || guest.status !== status) {
-          guest.status = status;
-          guest.rsvpAt = new Date().toISOString();
-          this.write(data);
+      const targetGuest = (ev.guests || []).find(g => g.id === guestId);
+      if (targetGuest) {
+        if (isEventPast(ev.date, ev.time)) {
+          throw new Error('انتهت فترة الرد على الدعوة لانتهاء موعد المناسبة');
         }
-        const dependents = (ev.guests || []).filter(g => g.parent_guest_id === (guest.parent_guest_id || guest.id));
-        return { guest, dependents, event: ev };
+        targetGuest.status = status;
+        targetGuest.rsvpAt = new Date().toISOString();
+        this.write(data);
+
+        let owner = targetGuest;
+        if (targetGuest.parent_guest_id) {
+          const parent = (ev.guests || []).find(g => g.id === targetGuest.parent_guest_id);
+          if (parent) owner = parent;
+        }
+        const dependents = (ev.guests || []).filter(g => g.parent_guest_id === owner.id);
+        return { guest: targetGuest, owner, dependents, event: ev, isLocked: false };
       }
     }
     return null;

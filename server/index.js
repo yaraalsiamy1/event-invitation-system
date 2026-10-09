@@ -215,7 +215,7 @@ app.post('/api/guests/:id/rsvp', async (req, res) => {
     const result = await db.updateGuestRSVP(req.params.id, status);
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 

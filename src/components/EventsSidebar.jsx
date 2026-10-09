@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, Plus, Trash2, CheckCircle, Award, GraduationCap, Heart, Gift, FileText, Sparkles, ChevronRight, Check } from 'lucide-react';
+import { formatArabicDateTime } from './GuestPortal';
 
 export default function EventsSidebar({ events = [], activeEventId, onSelectEvent, onOpenNewEventModal, onDeleteEvent }) {
   const getEventIcon = (type) => {
@@ -80,7 +81,9 @@ export default function EventsSidebar({ events = [], activeEventId, onSelectEven
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={13} /> {ev.date || 'بدون تاريخ'}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Calendar size={13} /> {ev.date ? formatArabicDateTime(ev.date) : 'بدون تاريخ'}
+                  </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span className="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem' }}>
                       {ev.totalGuests || 0} مدعوين
