@@ -191,11 +191,11 @@ export default function AdminDashboard({
     return clean;
   };
 
-  // Download EXACT original user template file "تمبلت الدعوات.xlsx"
+  // Download Updated Template File "تمبلت_الدعوات_المحدث.xlsx" (Phase 3 Req 4)
   const downloadExcelTemplate = () => {
     const link = document.createElement('a');
-    link.href = '/تمبلت الدعوات.xlsx';
-    link.setAttribute('download', 'تمبلت الدعوات.xlsx');
+    link.href = '/تمبلت_الدعوات_المحدث.xlsx';
+    link.setAttribute('download', 'تمبلت_الدعوات_المحدث.xlsx');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -225,7 +225,8 @@ export default function AdminDashboard({
     }
   };
 
-  // Parse Uploaded Excel (.xlsx / .xls / .csv) File with 100% precision for "اسم الضيف" and "رقم الجوال"
+  // Parse Uploaded Excel (.xlsx / .xls / .csv) File supporting the updated template columns:
+  // "م", "اسم الضيف", "رقم الجوال", "مرافق لـ", "التحقق (تلقائي)", "سبب المشكلة" (Phase 3 Req 5)
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -238,102 +239,141 @@ export default function AdminDashboard({
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        const jsonObjects = XLSX.utils.sheet_to_json(worksheet);
-        const rawArrays = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        const jsonObjects = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        const rawArrays = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
         const extractedRows = [];
 
-        // Method 1: Keyed Objects (matches 'اسم الضيف' and 'رقم الجوال' and 'عدد المدعوين')
+        // Method 1: Keyed Objects matching column headers
         if (jsonObjects && jsonObjects.length > 0) {
           jsonObjects.forEach((obj) => {
             let name = "";
             let phoneRaw = "";
-            let countRaw = 1;
+            let companionOf = "";
 
             Object.keys(obj).forEach(key => {
-              const val = (obj[key] || '').toString().trim();
+              const val = (obj[key] !== undefined && obj[key] !== null) ? obj[key].toString().trim() : '';
               const keyClean = key.toString().trim();
 
-              if (keyClean.includes('اسم') || keyClean.toLowerCase().includes('name')) {
+              // Ignore validation / error reason columns
+              if (keyClean.includes('التحقق') || keyClean.includes('تلقائي') || keyClean.includes('سبب المشكلة') || keyClean.includes('سبب')) {
+                return;
+              }
+
+              if (keyClean.includes('مرافق') || keyClean.includes('تابع') || keyClean.toLowerCase().includes('companion') || keyClean.toLowerCase().includes('parent')) {
+                companionOf = val;
+              } else if (keyClean.includes('اسم') || keyClean.toLowerCase().includes('name')) {
                 name = val;
-              } else if (keyClean.includes('جوال') || keyClean.includes('رقم') || keyClean.toLowerCase().includes('phone')) {
+              } else if (keyClean.includes('جوال') || keyClean.includes('هاتف') || keyClean.includes('موبايل') || keyClean.toLowerCase().includes('phone') || keyClean.toLowerCase().includes('mobile')) {
                 phoneRaw = val;
-              } else if (keyClean.includes('عدد') || keyClean.includes('مدعوين') || keyClean.includes('مقاعد') || keyClean.includes('مرافق') || keyClean.toLowerCase().includes('count') || keyClean.toLowerCase().includes('seat')) {
-                const parsedNum = parseInt(val);
-                if (!isNaN(parsedNum) && parsedNum > 0) countRaw = parsedNum;
+              } else if (keyClean === 'م' || keyClean.toLowerCase() === 'id' || keyClean.toLowerCase() === '#') {
+                // Row counter, ignore
               } else {
+                // Heuristic fallback for unexpected headers
                 const cleanDigits = val.replace(/\D/g, '');
-                if (cleanDigits.length >= 8) {
+                if (cleanDigits.length >= 8 && !phoneRaw) {
                   phoneRaw = val;
-                } else if (val && val !== 'م' && isNaN(val) && !name) {
+                } else if (val && isNaN(val) && !name) {
                   name = val;
                 }
               }
             });
 
-            if ((phoneRaw || name) && name !== 'اسم الضيف' && name !== 'الاسم') {
-              extractedRows.push({
-                name: name,
-                phone: phoneRaw,
-                count: countRaw
-              });
-            }
+            // Skip fully empty rows
+            if (!name && !phoneRaw && !companionOf) return;
+            if (name === 'اسم الضيف' || name === 'الاسم') return;
+
+            extractedRows.push({
+              name,
+              phone: phoneRaw,
+              companionOf
+            });
           });
         }
 
-        // Method 2: Fallback 2D Array matching columns (Column B: Name, Column C: Phone)
+        // Method 2: Fallback 2D Array matching columns by header row
         if (extractedRows.length === 0 && rawArrays && rawArrays.length > 1) {
-          rawArrays.slice(1).forEach(row => {
-            if (!row || row.length === 0) return;
+          let headerRowIdx = -1;
+          let nameCol = -1;
+          let phoneCol = -1;
+          let companionCol = -1;
+
+          for (let r = 0; r < Math.min(5, rawArrays.length); r++) {
+            const row = rawArrays[r];
+            if (!Array.isArray(row)) continue;
+            row.forEach((cell, c) => {
+              const str = (cell || '').toString().trim();
+              if (str.includes('مرافق') || str.includes('تابع')) companionCol = c;
+              else if (str.includes('اسم') || str.toLowerCase().includes('name')) nameCol = c;
+              else if (str.includes('جوال') || str.includes('هاتف') || str.toLowerCase().includes('phone')) phoneCol = c;
+            });
+            if (nameCol !== -1) {
+              headerRowIdx = r;
+              break;
+            }
+          }
+
+          const startIdx = headerRowIdx !== -1 ? headerRowIdx + 1 : 1;
+          rawArrays.slice(startIdx).forEach(row => {
+            if (!row || !Array.isArray(row) || row.length === 0) return;
             let name = "";
             let phoneRaw = "";
-            let countRaw = "";
+            let companionOf = "";
 
-            row.forEach(cell => {
-              if (!cell) return;
-              const str = cell.toString().trim();
-              const cleanDigits = str.replace(/\D/g, '');
-
-              if (cleanDigits.length >= 8) {
-                phoneRaw = str;
-              } else if (str !== 'م' && str !== 'اسم الضيف' && str !== 'رقم الجوال' && isNaN(str)) {
-                if (!name) name = str;
-              } else if (!isNaN(parseInt(str)) && parseInt(str) > 0 && parseInt(str) <= 30 && cleanDigits.length < 4) {
-                countRaw = parseInt(str);
-              }
-            });
-
-            if (phoneRaw || name) {
-              extractedRows.push({
-                name: name,
-                phone: phoneRaw,
-                count: countRaw
+            if (nameCol !== -1) {
+              name = (row[nameCol] || '').toString().trim();
+              phoneRaw = phoneCol !== -1 ? (row[phoneCol] || '').toString().trim() : '';
+              companionOf = companionCol !== -1 ? (row[companionCol] || '').toString().trim() : '';
+            } else {
+              row.forEach((cell, idx) => {
+                if (!cell) return;
+                const str = cell.toString().trim();
+                const cleanDigits = str.replace(/\D/g, '');
+                if (cleanDigits.length >= 8 && !phoneRaw) {
+                  phoneRaw = str;
+                } else if (idx === 1 && !name) {
+                  name = str;
+                } else if (idx === 3 && !companionOf) {
+                  companionOf = str;
+                }
               });
             }
+
+            if (!name && !phoneRaw && !companionOf) return;
+            if (name === 'اسم الضيف' || name === 'الاسم') return;
+
+            extractedRows.push({
+              name,
+              phone: phoneRaw,
+              companionOf
+            });
           });
         }
 
         if (extractedRows.length > 0) {
           setPendingExcelRows(extractedRows);
         } else {
-          alert('لم يتم العثور على أرقام وأسماء مدعوين صالحة في ملف الإكسل. يرجى التأكد من تعبئة عمودي "اسم الضيف" و "رقم الجوال" في تمبلت الدعوات.xlsx.');
+          alert('لم يتم العثور على بيانات صالحة في ملف الإكسل. يرجى التأكد من تعبئة عمود "اسم الضيف" في تمبلت_الدعوات_المحدث.xlsx.');
         }
       } catch (err) {
-        alert('حدث خطأ أثناء قراءة ملف الإكسل. يرجى التأكد من رفع ملف XLSX صالحة.');
+        alert('حدث خطأ أثناء قراءة ملف الإكسل. يرجى التأكد من رفع ملف XLSX صالح.');
       }
     };
     reader.readAsArrayBuffer(file);
     e.target.value = '';
   };
 
-  // Confirm Save Validated Excel Guests to DB
-  const handleConfirmValidationSave = async (validGuests) => {
-    setPendingExcelRows(null);
-    await saveBatchToApi(validGuests);
+  // Confirm Save Validated Excel Guests (Called after atomic save in ExcelValidationModal)
+  const handleConfirmValidationSave = async (result) => {
+    if (refreshData) refreshData();
+    const count = result?.savedCount || 0;
+    if (result && (!result.errorCount || result.errorCount === 0)) {
+      setPendingExcelRows(null);
+    }
     if (showConfirmation) {
-      showConfirmation('تم استيراد قائمة الضيوف بنجاح!', `تم فحص وتأكيد واعتماد ${validGuests.length} مدعو بنجاح للمناسبة "${eventData?.title || ''}".`);
+      showConfirmation('تم استيراد قائمة الضيوف بنجاح!', `تم فحص واعتماد ${count} مدعو بنجاح للمناسبة "${eventData?.title || ''}".`);
     } else {
-      alert(`تم فحص وتأكيد واعتماد ${validGuests.length} مدعو بنجاح للمناسبة "${eventData?.title || ''}"!`);
+      alert(`تم فحص واعتماد ${count} مدعو بنجاح للمناسبة "${eventData?.title || ''}"!`);
     }
   };
 
@@ -1013,6 +1053,7 @@ export default function AdminDashboard({
         <ExcelValidationModal
           rawRows={pendingExcelRows}
           existingGuests={guests}
+          activeEventId={activeEventId}
           onConfirmSave={handleConfirmValidationSave}
           onClose={() => setPendingExcelRows(null)}
         />
@@ -1222,7 +1263,7 @@ export default function AdminDashboard({
 
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
                 <button className="apple-btn apple-btn-secondary" style={{ flex: 1 }} onClick={downloadExcelTemplate}>
-                  <Download size={16} /> تحميل تمبلت الدعوات.xlsx الأصلي
+                  <Download size={16} /> تحميل تمبلت الدعوات المحدث.xlsx
                 </button>
 
                 <label className="apple-btn apple-btn-pink" style={{ flex: 1, cursor: 'pointer' }}>

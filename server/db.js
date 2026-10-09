@@ -496,6 +496,240 @@ class MultiEventJSONDatabase {
     return ev.guests;
   }
 
+  /**
+   * Phase 3: Single-Transaction Excel Import
+   * Validates and imports Excel rows into active event
+   * - Owners saved first, then dependents
+   * - Dependents can point to owners in the same file OR existing owners in the database
+   * - Normalized name matching (ى=ي, ة=ه, أ/إ/آ=ا, no tashkeel)
+   * - Rows matching existing guests in same event skipped with "موجود مسبقاً"
+   */
+  async importExcelGuests(eventId, rawRows) {
+    const data = this.read();
+    const targetId = eventId || data.activeEventId;
+    const ev = (data.events || []).find(e => e.id === targetId);
+    if (!ev) throw new Error('المناسبة غير موجودة');
+
+    const existing = ev.guests || [];
+    const existingOwners = existing.filter(g => !g.parent_guest_id);
+
+    // Existing lookups
+    const existingPhonesSet = new Set(existing.filter(g => g.phone).map(g => normalizePhone(g.phone)));
+    const existingNamesSet = new Set(existing.map(g => normalizeArabicName(g.name)));
+    const existingOwnersByName = new Map();
+    existingOwners.forEach(o => {
+      existingOwnersByName.set(normalizeArabicName(o.name), o);
+    });
+
+    // 1. First pass: Pre-process and collect file rows
+    const processedRows = [];
+    const filePhonesCount = new Map();
+    const fileNamesCount = new Map();
+
+    (rawRows || []).forEach((r, idx) => {
+      const cleanName = (r.name || '').trim();
+      const normName = normalizeArabicName(cleanName);
+      const rawPhone = (r.phone !== undefined && r.phone !== null && r.phone !== '') ? r.phone.toString().trim() : '';
+      const normPhone = rawPhone ? normalizePhone(rawPhone) : '';
+      const companionRaw = (r.companionOf || r.parent_name || '').trim();
+      const normCompanion = normalizeArabicName(companionRaw);
+
+      if (normPhone) {
+        filePhonesCount.set(normPhone, (filePhonesCount.get(normPhone) || 0) + 1);
+      }
+      if (normName) {
+        fileNamesCount.set(normName, (fileNamesCount.get(normName) || 0) + 1);
+      }
+
+      processedRows.push({
+        rowNum: idx + 1,
+        rawName: cleanName,
+        normName,
+        rawPhone,
+        normPhone,
+        companionRaw,
+        normCompanion,
+        isOwner: !normCompanion,
+        isValid: false,
+        errorReason: null
+      });
+    });
+
+    // 2. Validate independent rows (owners)
+    const fileOwnersByName = new Map();
+
+    processedRows.forEach(row => {
+      if (!row.rawName || row.rawName.length < 2) {
+        row.errorReason = 'اسم الضيف مطلوب';
+        return;
+      }
+
+      // Duplicate name inside file
+      if (fileNamesCount.get(row.normName) > 1) {
+        row.errorReason = 'اسم الضيف مكرر في الملف';
+        return;
+      }
+
+      // Existing guest in same event
+      if (existingNamesSet.has(row.normName)) {
+        row.errorReason = 'موجود مسبقاً';
+        return;
+      }
+
+      // Check exclusivity
+      if (!row.rawPhone && !row.companionRaw) {
+        row.errorReason = 'يجب إدخال رقم الجوال أو تحديد صاحب الدعوة (مرافق لـ)';
+        return;
+      }
+      if (row.rawPhone && row.companionRaw) {
+        row.errorReason = 'المرافق لا يمتلك جوال (إما رقم جوال أو مرافق لـ، وليس كلاهما)';
+        return;
+      }
+
+      // If owner
+      if (row.isOwner) {
+        if (!isValidSaudiPhone(row.rawPhone)) {
+          row.errorReason = 'صيغة رقم الجوال غير صحيحة (يجب أن يبدأ بـ 05 ويتكون من 10 أرقام)';
+          return;
+        }
+        if (filePhonesCount.get(row.normPhone) > 1) {
+          row.errorReason = 'رقم الجوال مكرر في الملف';
+          return;
+        }
+        if (existingPhonesSet.has(row.normPhone)) {
+          row.errorReason = 'موجود مسبقاً';
+          return;
+        }
+
+        row.isValid = true;
+        fileOwnersByName.set(row.normName, row);
+      }
+    });
+
+    // 3. Validate dependent rows (companions)
+    processedRows.forEach(row => {
+      if (!row.isOwner) {
+        if (row.errorReason) return;
+
+        // Guest follows themselves
+        if (row.normCompanion === row.normName) {
+          row.errorReason = 'الضيف لا يمكن أن يرافق نفسه';
+          return;
+        }
+
+        // Search for owner in file first, then in DB
+        const ownerInFile = fileOwnersByName.get(row.normCompanion);
+        const ownerInDB = existingOwnersByName.get(row.normCompanion);
+
+        if (!ownerInFile && !ownerInDB) {
+          const matchingRawFileRow = processedRows.find(r => r.normName === row.normCompanion);
+          if (matchingRawFileRow) {
+            if (!matchingRawFileRow.isOwner) {
+              row.errorReason = 'صاحب الدعوة لا يمكن أن يكون مرافقاً (مستوى واحد فقط)';
+            } else {
+              row.errorReason = 'صاحب الدعوة به خطأ';
+            }
+          } else {
+            row.errorReason = 'صاحب الدعوة غير موجود';
+          }
+          return;
+        }
+
+        if (ownerInFile && !ownerInFile.isValid) {
+          row.errorReason = 'صاحب الدعوة به خطأ';
+          return;
+        }
+
+        row.isValid = true;
+        row.resolvedOwnerInFile = ownerInFile || null;
+        row.resolvedOwnerInDB = ownerInDB || null;
+      }
+    });
+
+    // 4. Atomic Database Persistence
+    const validOwners = processedRows.filter(r => r.isOwner && r.isValid);
+    const validDependents = processedRows.filter(r => !r.isOwner && r.isValid);
+    const errorRows = processedRows.filter(r => !r.isValid);
+
+    const savedGuests = [];
+    const newOwnerIdMap = new Map();
+
+    // Save owners first
+    validOwners.forEach(row => {
+      const guestId = "g_" + Date.now() + "_" + Math.floor(Math.random() * 1000000) + "_" + row.rowNum;
+      const guest = {
+        id: guestId,
+        eventId: targetId,
+        event_id: targetId,
+        name: row.rawName,
+        phone: row.normPhone,
+        parent_guest_id: null,
+        invite_token: generateInviteToken(),
+        status: "pending",
+        ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
+        checkedIn: false,
+        checkInTime: null,
+        sent: false,
+        sentAt: null
+      };
+      savedGuests.push(guest);
+      newOwnerIdMap.set(row.normName, guestId);
+    });
+
+    // Save dependents with correct parent_guest_id
+    validDependents.forEach(row => {
+      let parentId = null;
+      if (row.resolvedOwnerInFile) {
+        parentId = newOwnerIdMap.get(row.normCompanion);
+      } else if (row.resolvedOwnerInDB) {
+        parentId = row.resolvedOwnerInDB.id;
+      }
+
+      if (!parentId) {
+        row.isValid = false;
+        row.errorReason = 'صاحب الدعوة به خطأ';
+        errorRows.push(row);
+        return;
+      }
+
+      const guestId = "g_" + Date.now() + "_" + Math.floor(Math.random() * 1000000) + "_" + row.rowNum;
+      const guest = {
+        id: guestId,
+        eventId: targetId,
+        event_id: targetId,
+        name: row.rawName,
+        phone: null,
+        parent_guest_id: parentId,
+        invite_token: null,
+        status: "pending",
+        ticketCode: "EV-" + Math.floor(100000 + Math.random() * 900000),
+        checkedIn: false,
+        checkInTime: null,
+        sent: false,
+        sentAt: null
+      };
+      savedGuests.push(guest);
+    });
+
+    if (savedGuests.length > 0) {
+      ev.guests = [...existing, ...savedGuests];
+      this.write(data);
+    }
+
+    return {
+      savedCount: savedGuests.length,
+      savedGuests,
+      errorRows: errorRows.map(r => ({
+        rowNum: r.rowNum,
+        name: r.rawName,
+        phone: r.rawPhone,
+        companionOf: r.companionRaw,
+        reason: r.errorReason,
+        errorReason: r.errorReason
+      }))
+    };
+  }
+
   async clearGuests(eventId) {
     const data = this.read();
     const targetId = eventId || data.activeEventId;

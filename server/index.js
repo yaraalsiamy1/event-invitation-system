@@ -168,6 +168,16 @@ app.post('/api/guests/batch', async (req, res) => {
   }
 });
 
+app.post('/api/guests/import-excel', async (req, res) => {
+  try {
+    const { rows, eventId } = req.body;
+    const result = await db.importExcelGuests(eventId, rows || []);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 app.delete('/api/guests', async (req, res) => {
   try {
     const eventId = req.query.eventId;
