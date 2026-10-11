@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Plus, Trash2, CheckCircle, Award, GraduationCap, Heart, Gift, FileText, Sparkles, ChevronRight, Check } from 'lucide-react';
+import { Calendar, Plus, Trash2, CheckCircle, Award, GraduationCap, Heart, Gift, FileText, Sparkles, ChevronRight, Check, Users } from 'lucide-react';
 import { formatArabicDateTime } from './GuestPortal';
 
 export default function EventsSidebar({ events = [], activeEventId, onSelectEvent, onOpenNewEventModal, onDeleteEvent }) {
@@ -68,16 +68,10 @@ export default function EventsSidebar({ events = [], activeEventId, onSelectEven
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {getEventIcon(ev.type)}
-                    <h3 style={{ fontSize: '0.94rem', fontWeight: isActive ? 800 : 600, color: 'var(--text-primary)' }}>
+                    <h3 style={{ fontSize: '0.94rem', fontWeight: isActive ? 800 : 600, color: 'var(--text-primary)', margin: 0 }}>
                       {ev.title}
                     </h3>
                   </div>
-
-                  {isActive && (
-                    <span className="ios-badge ios-badge-green" style={{ fontSize: '0.7rem', padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                      <Check size={12} /> نشط حالياً
-                    </span>
-                  )}
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
@@ -85,8 +79,8 @@ export default function EventsSidebar({ events = [], activeEventId, onSelectEven
                     <Calendar size={13} /> {ev.date ? formatArabicDateTime(ev.date) : 'بدون تاريخ'}
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem' }}>
-                      {ev.totalGuests || 0} مدعوين
+                    <span className="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <Users size={12} /> {ev.totalGuests || 0}
                     </span>
                     {events.length > 1 && (
                       <button
