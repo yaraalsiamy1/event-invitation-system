@@ -1415,21 +1415,16 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          {/* LIVE STATISTICAL METRICS WIDGETS (Phase 6: Live Statistics per event counting actual people) */}
+          {/* STATISTICAL METRICS WIDGETS */}
           <div className="apple-card" style={{ background: '#ffffff', border: '1.5px solid rgba(64, 123, 161, 0.25)', marginBottom: 0 }}>
-            <div className="card-title-row" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px', justifyContent: 'space-between' }}>
-              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <BarChart3 size={20} style={{ color: 'var(--pink-primary)' }} /> المؤشرات الإحصائية الحية لمناسبة ({eventData?.title || 'المناسبة الحالية'})
+            <div className="card-title-row" style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <BarChart3 size={20} style={{ color: 'var(--pink-primary)' }} /> إحصائيات المناسبة
               </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="ios-badge" style={{ background: 'rgba(64, 123, 161, 0.1)', color: 'var(--pink-dark)', fontSize: '0.78rem', fontWeight: 700 }}>
-                  إحصائيات فعلية لكل شخص (أصحاب دعوات ومرافقين)
-                </span>
-              </div>
             </div>
 
-            {/* 4 Widgets Grid */}
-            <div className="widgets-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
+            {/* 4 Widgets Grid (2x2) */}
+            <div className="widgets-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
               {/* Widget 1: Total invitees with breakdown */}
               <div className="apple-widget">
                 <div className="widget-icon pink"><Users size={24} /></div>
