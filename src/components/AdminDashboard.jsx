@@ -1735,7 +1735,7 @@ export default function AdminDashboard({
                 <div className="form-group" style={{ borderTop: '1px solid rgba(64, 123, 161, 0.2)', paddingTop: '16px', marginBottom: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                     
-                    {/* Left: Action button + status badge + thumbnail (Requirement 1 & 4) */}
+                    {/* Left: Action button + thumbnail */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                       <label className="apple-btn apple-btn-secondary" style={{ cursor: 'pointer', fontSize: '0.84rem' }}>
                         <Upload size={15} />
@@ -1749,34 +1749,28 @@ export default function AdminDashboard({
                       </label>
 
                       {eventData?.cardImage ? (
-                        <>
-                          <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Check size={14} /> تم رفع الكرت
-                          </span>
-
-                          {/* Thumbnail of saved card (Requirement 4) */}
-                          <img
-                            src={eventData.cardImage}
-                            alt="مصغرة كرت الدعوة"
-                            style={{
-                              width: '38px',
-                              height: '38px',
-                              borderRadius: '8px',
-                              objectFit: 'cover',
-                              border: '1.5px solid rgba(64, 123, 161, 0.25)',
-                              cursor: 'pointer',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
-                            }}
-                            onClick={() => setFullViewImage(eventData.cardImage)}
-                            title="انقر لعرض الصورة بالحجم الكامل"
-                          />
-                        </>
+                        /* Thumbnail of saved card */
+                        <img
+                          src={eventData.cardImage}
+                          alt="مصغرة كرت الدعوة"
+                          style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '8px',
+                            objectFit: 'cover',
+                            border: '1.5px solid rgba(64, 123, 161, 0.25)',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+                          }}
+                          onClick={() => setFullViewImage(eventData.cardImage)}
+                          title="انقر لعرض الصورة بالحجم الكامل"
+                        />
                       ) : (
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>لم يتم رفع كرت دعوة بعد</span>
                       )}
                     </div>
 
-                    {/* Right: "عرض الصورة" button (Requirement 4 & 5) */}
+                    {/* Right: "عرض الصورة" button */}
                     {eventData?.cardImage && (
                       <button
                         type="button"
@@ -1790,84 +1784,10 @@ export default function AdminDashboard({
                     )}
                   </div>
 
-                  {/* Validation Error Message (Requirement 3) */}
+                  {/* Validation Error Message */}
                   {cardUploadError && (
                     <div style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <AlertTriangle size={14} /> {cardUploadError}
-                    </div>
-                  )}
-
-                  {/* Immediate Preview Section for newly chosen file (Requirement 2) */}
-                  {pendingCardPreview && (
-                    <div style={{ marginTop: '14px', background: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1.5px solid rgba(64, 123, 161, 0.25)' }}>
-                      {eventData?.cardImage ? (
-                        /* Side-by-side comparison when replacing (Requirement 2) */
-                        <div>
-                          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '10px' }}>
-                            مقارنة الكرت الحالي والكرت الجديد المختار:
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
-                            <div style={{ textAlign: 'center', background: '#ffffff', padding: '10px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.08)' }}>
-                              <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>الكرت الحالي المحفوظ</div>
-                              <img
-                                src={eventData.cardImage}
-                                alt="الكرت الحالي"
-                                style={{ width: '100%', maxHeight: '160px', objectFit: 'contain', borderRadius: '8px' }}
-                              />
-                            </div>
-                            <div style={{ textAlign: 'center', background: '#ffffff', padding: '10px', borderRadius: '10px', border: '2px solid var(--pink-primary)' }}>
-                              <div style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--pink-dark)', marginBottom: '6px' }}>الكرت الجديد (المعاينة)</div>
-                              <img
-                                src={pendingCardPreview}
-                                alt="الكرت الجديد"
-                                style={{ width: '100%', maxHeight: '160px', objectFit: 'contain', borderRadius: '8px' }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        /* First time upload preview */
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--pink-dark)', marginBottom: '8px' }}>
-                            معاينة كرت الدعوة المختار:
-                          </div>
-                          <img
-                            src={pendingCardPreview}
-                            alt="معاينة الكرت الجديد"
-                            style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '10px', border: '2px solid var(--pink-primary)', background: '#ffffff', padding: '8px' }}
-                          />
-                        </div>
-                      )}
-
-                      {/* Confirm & Cancel buttons (Requirement 2) */}
-                      <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'flex-end' }}>
-                        <button
-                          type="button"
-                          className="apple-btn apple-btn-secondary"
-                          onClick={handleCancelPendingCard}
-                          disabled={isSavingCard}
-                          style={{ padding: '7px 16px', fontSize: '0.82rem' }}
-                        >
-                          إلغاء
-                        </button>
-                        <button
-                          type="button"
-                          className="apple-btn apple-btn-pink"
-                          onClick={handleConfirmSaveCard}
-                          disabled={isSavingCard}
-                          style={{ padding: '7px 20px', fontSize: '0.82rem', fontWeight: 700 }}
-                        >
-                          {isSavingCard ? (
-                            <>
-                              <Loader2 size={14} className="animate-spin" /> جاري الحفظ...
-                            </>
-                          ) : (
-                            <>
-                              <Check size={14} /> تأكيد وحفظ
-                            </>
-                          )}
-                        </button>
-                      </div>
                     </div>
                   )}
 
@@ -3137,6 +3057,125 @@ export default function AdminDashboard({
               alt="كرت الدعوة بالحجم الكامل"
               style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '16px', objectFit: 'contain', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Pending Card Preview & Save Modal */}
+      {pendingCardPreview && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '20px'
+          }}
+          onClick={handleCancelPendingCard}
+        >
+          <div
+            className="apple-card"
+            style={{
+              width: '100%',
+              maxWidth: '460px',
+              padding: '24px',
+              borderRadius: '20px',
+              background: '#ffffff',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.25)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'rgba(64, 123, 161, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--pink-primary)'
+                }}>
+                  <ImageIcon size={20} />
+                </div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                  معاينة كرت الدعوة الجديد
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelPendingCard}
+                style={{
+                  background: 'rgba(0,0,0,0.05)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Image Preview */}
+            <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '14px', border: '1px solid rgba(0,0,0,0.06)', marginBottom: '18px' }}>
+              <img
+                src={pendingCardPreview}
+                alt="معاينة كرت الدعوة الجديد"
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '55vh',
+                  objectFit: 'contain',
+                  borderRadius: '10px',
+                  display: 'block',
+                  margin: '0 auto'
+                }}
+              />
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="apple-btn apple-btn-secondary"
+                onClick={handleCancelPendingCard}
+                disabled={isSavingCard}
+                style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                className="apple-btn apple-btn-pink"
+                onClick={handleConfirmSaveCard}
+                disabled={isSavingCard}
+                style={{ padding: '8px 24px', fontSize: '0.85rem', fontWeight: 700 }}
+              >
+                {isSavingCard ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" /> جاري الحفظ...
+                  </>
+                ) : (
+                  <>
+                    <Check size={15} /> حفظ
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
