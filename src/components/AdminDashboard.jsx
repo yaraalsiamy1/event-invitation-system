@@ -1264,7 +1264,7 @@ export default function AdminDashboard({
       cleanPhone = null;
     } else {
       if (!editingGuestModal.phone || !editingGuestModal.phone.trim()) {
-        alert('يرجى إدخال رقم جوال للضيف المستقل.');
+        alert('يرجى إدخال رقم جوال صحيح للضيف.');
         return;
       }
       cleanPhone = formatPhone(editingGuestModal.phone.trim());
@@ -1733,7 +1733,7 @@ export default function AdminDashboard({
                           const depCount = (guests || []).filter(d => d.parent_guest_id === o.id).length;
                           return (
                             <option key={o.id} value={o.id}>
-                              معاينة لـ: {o.name} {depCount > 0 ? `(${depCount} مرافقين)` : '(مستقل)'}
+                              معاينة لـ: {o.name} {depCount > 0 ? `(${depCount} مرافقين)` : ''}
                             </option>
                           );
                         })}
@@ -2180,13 +2180,9 @@ export default function AdminDashboard({
                               <td dir="ltr">{owner.phone || '-'}</td>
                               <td>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                  {owner.dependents && owner.dependents.length > 0 ? (
+                                  {owner.dependents && owner.dependents.length > 0 && (
                                     <span style={{ fontSize: '0.8rem', padding: '3px 10px', background: 'rgba(16, 185, 129, 0.1)', color: '#059669', borderRadius: '12px', fontWeight: 600 }}>
                                       صاحب دعوة ({owner.dependents.length} مرافقين)
-                                    </span>
-                                  ) : (
-                                    <span style={{ fontSize: '0.8rem', padding: '3px 10px', background: 'rgba(0,0,0,0.04)', color: 'var(--text-secondary)', borderRadius: '12px' }}>
-                                      ضيف مستقل
                                     </span>
                                   )}
 
@@ -2644,7 +2640,7 @@ export default function AdminDashboard({
                         checked={!editingGuestModal.isDependent}
                         onChange={() => setEditingGuestModal(prev => ({ ...prev, isDependent: false, parent_guest_id: '' }))}
                       />
-                      صاحب دعوة (مستقل)
+                      صاحب دعوة
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', cursor: 'pointer', fontWeight: 600 }}>
                       <input

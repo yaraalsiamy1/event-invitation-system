@@ -552,7 +552,7 @@ export default function ExcelValidationModal({
                           value={item.companionOf || ''}
                           onChange={(e) => handleItemChange(itemIndex, 'companionOf', e.target.value)}
                         >
-                          <option value="">-- ضيف مستقل (صاحب دعوة) --</option>
+                          <option value="">-- صاحب دعوة --</option>
                           {companionOptions
                             .filter(opt => normalizeArabicName(opt.name) !== item.normName)
                             .map((opt, oIdx) => (
