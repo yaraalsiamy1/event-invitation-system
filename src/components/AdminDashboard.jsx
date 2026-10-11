@@ -3299,9 +3299,9 @@ export default function AdminDashboard({
                 </div>
                 <div>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                    إعدادات بوابة الواتساب السحابية
+                    إعدادات المناسبة
                   </h3>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Green-API / UltraMsg</span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>بوابة الواتساب السحابية وإدارة المناسبة</span>
                 </div>
               </div>
               <button
@@ -3414,6 +3414,44 @@ export default function AdminDashboard({
                 حفظ الإعدادات
               </button>
             </div>
+
+            {/* Danger Zone: Delete Active Event */}
+            {onDeleteEvent && activeEventId && (
+              <div style={{ marginTop: '22px', paddingTop: '16px', borderTop: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Trash2 size={15} /> حذف المناسبة
+                    </div>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                      حذف المناسبة الحالية ({eventData?.title || 'الحالية'}) وكافة بياناتها نهائياً.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="apple-btn"
+                    style={{
+                      background: '#fef2f2',
+                      color: '#dc2626',
+                      border: '1.5px solid #fecaca',
+                      fontSize: '0.82rem',
+                      padding: '7px 16px',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => {
+                      setIsGatewayModalOpen(false);
+                      onDeleteEvent(activeEventId, eventData?.title || 'المناسبة');
+                    }}
+                  >
+                    <Trash2 size={14} /> حذف المناسبة
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

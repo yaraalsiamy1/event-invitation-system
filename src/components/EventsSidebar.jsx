@@ -78,30 +78,10 @@ export default function EventsSidebar({ events = [], activeEventId, onSelectEven
                   <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Calendar size={13} /> {ev.date ? formatArabicDateTime(ev.date) : 'بدون تاريخ'}
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div>
                     <span className="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       <Users size={12} /> {ev.totalGuests || 0}
                     </span>
-                    {events.length > 1 && (
-                      <button
-                        title="حذف هذه المناسبة"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteEvent(ev.id, ev.title);
-                        }}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: 'var(--system-red)',
-                          cursor: 'pointer',
-                          padding: '2px',
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
