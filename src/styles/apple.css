@@ -401,12 +401,28 @@ input[type="time"].apple-input {
     box-sizing: border-box;
 }
 
+input[type="date"].apple-input::-webkit-date-and-time-value,
+input[type="time"].apple-input::-webkit-date-and-time-value {
+    text-align: right;
+}
+
 input[type="date"].apple-input::-webkit-datetime-edit,
 input[type="time"].apple-input::-webkit-datetime-edit {
+    display: inline-flex;
+    justify-content: flex-end;
     margin-left: auto;
+    text-align: right;
     padding: 0 4px;
     font-family: inherit;
     font-size: 0.95rem;
+}
+
+input[type="date"].apple-input::-webkit-datetime-edit-fields-wrapper,
+input[type="time"].apple-input::-webkit-datetime-edit-fields-wrapper {
+    margin-left: auto;
+    margin-right: 0;
+    display: inline-flex;
+    justify-content: flex-end;
 }
 
 input[type="date"].apple-input::-webkit-calendar-picker-indicator,
