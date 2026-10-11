@@ -1733,45 +1733,20 @@ export default function AdminDashboard({
 
                 {/* Row 4: Card Image Upload & Preview Flow (Phase 8) */}
                 <div className="form-group" style={{ borderTop: '1px solid rgba(64, 123, 161, 0.2)', paddingTop: '16px', marginBottom: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                    
-                    {/* Left: Action button + thumbnail */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      <label className="apple-btn apple-btn-secondary" style={{ cursor: 'pointer', fontSize: '0.84rem' }}>
-                        <Upload size={15} />
-                        {eventData?.cardImage ? 'تغيير صورة كرت الدعوة' : 'اختر صورة الكرت'}
-                        <input
-                          type="file"
-                          accept="image/png, image/jpeg, image/jpg"
-                          onChange={handleCardFileSelect}
-                          style={{ display: 'none' }}
-                        />
-                      </label>
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <label className="apple-btn apple-btn-secondary" style={{ cursor: 'pointer', fontSize: '0.84rem' }}>
+                      <Upload size={15} />
+                      {eventData?.cardImage ? 'تغيير صورة كرت الدعوة' : 'اختر صورة الكرت'}
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg"
+                        onChange={handleCardFileSelect}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
 
-                      {eventData?.cardImage ? (
-                        /* Thumbnail of saved card */
-                        <img
-                          src={eventData.cardImage}
-                          alt="مصغرة كرت الدعوة"
-                          style={{
-                            width: '38px',
-                            height: '38px',
-                            borderRadius: '8px',
-                            objectFit: 'cover',
-                            border: '1.5px solid rgba(64, 123, 161, 0.25)',
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
-                          }}
-                          onClick={() => setFullViewImage(eventData.cardImage)}
-                          title="انقر لعرض الصورة بالحجم الكامل"
-                        />
-                      ) : (
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>لم يتم رفع كرت دعوة بعد</span>
-                      )}
-                    </div>
-
-                    {/* Right: View Image Button (Icon Only) */}
-                    {eventData?.cardImage && (
+                    {eventData?.cardImage ? (
+                      /* View Image Button: Eye icon only in place of thumbnail */
                       <button
                         type="button"
                         className="apple-btn apple-btn-secondary"
@@ -1790,6 +1765,8 @@ export default function AdminDashboard({
                       >
                         <Eye size={17} />
                       </button>
+                    ) : (
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>لم يتم رفع كرت دعوة بعد</span>
                     )}
                   </div>
 
