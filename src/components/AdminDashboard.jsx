@@ -2008,26 +2008,8 @@ export default function AdminDashboard({
         </div>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
-            {/* Right side: Add Guest button + Search Box & Filter Icon Group */}
+            {/* Right side: Search Box & Filter Icon Group + Add Guest button */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="apple-btn apple-btn-pink"
-                onClick={() => setIsAddGuestModalOpen(true)}
-                style={{
-                  height: '36px',
-                  padding: '7px 14px',
-                  fontSize: '0.84rem',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                <UserPlus size={16} /> إضافة جديد
-              </button>
-
               <div style={{ position: 'relative', width: '230px', maxWidth: '100%' }}>
                 <Search size={15} style={{ position: 'absolute', right: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                 <input
@@ -2193,6 +2175,24 @@ export default function AdminDashboard({
                   </>
                 )}
               </div>
+
+              <button
+                type="button"
+                className="apple-btn apple-btn-pink"
+                onClick={() => setIsAddGuestModalOpen(true)}
+                style={{
+                  height: '36px',
+                  padding: '7px 14px',
+                  fontSize: '0.84rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <UserPlus size={16} /> إضافة جديد
+              </button>
             </div>
 
             {/* Left side: Selection Badge, Reminder, Unsent & Send Buttons */}
