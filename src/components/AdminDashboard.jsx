@@ -4,7 +4,7 @@ import {
   Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download,
   Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon,
   Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles,
-  HelpCircle, Filter, ChevronDown, Search, Edit, UserPlus, Smartphone,
+  HelpCircle, Filter, ChevronDown, ChevronRight, ChevronLeft, Search, Edit, UserPlus, Smartphone,
   AlertTriangle, RefreshCw, Copy
 } from 'lucide-react';
 import ExcelValidationModal from './ExcelValidationModal';
@@ -139,12 +139,9 @@ export default function AdminDashboard({
   const [statusFilter, setStatusFilter] = useState('all');
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
 
-  // Pagination State (customizable records per page: 10, 20, 50, 100)
+  // Pagination State (10 records per page)
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(() => {
-    const saved = localStorage.getItem('guest_page_size');
-    return saved ? parseInt(saved) : 10;
-  });
+  const pageSize = 10;
 
   // Modal states for Quick-Add Companion & Edit Guest (Phase 2 Requirements 3 & 4)
   const [addCompanionModal, setAddCompanionModal] = useState(null); // { ownerId, ownerName, companionName }
@@ -152,7 +149,7 @@ export default function AdminDashboard({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeEventId, statusFilter, pageSize, searchQuery]);
+  }, [activeEventId, statusFilter, searchQuery]);
 
   // Render single unified status badge per guest
   // Rule (Phase 2 Req 5): Dependents do not show "لم يُرسل بعد". Show "عبر دعوة [owner name]" instead.
@@ -2311,72 +2308,36 @@ export default function AdminDashboard({
               {/* Pagination Controls */}
               {filteredUnits.length > 0 && totalPages > 1 && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(64, 123, 161, 0.2)' }}>
-                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {/* Previous Page Arrow Button */}
                     <button
+                      type="button"
                       className="apple-btn apple-btn-secondary"
-                      style={{ padding: '5px 10px', fontSize: '0.78rem' }}
-                      onClick={() => setCurrentPage(1)}
-                      disabled={safePage === 1}
-                      title="الصفحة الأولى"
-                    >
-                      الأولى
-                    </button>
-
-                    <button
-                      className="apple-btn apple-btn-secondary"
-                      style={{ padding: '5px 12px', fontSize: '0.78rem' }}
+                      style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={safePage === 1}
+                      title="الصفحة السابقة"
+                      aria-label="الصفحة السابقة"
                     >
-                      السابقة
+                      <ChevronRight size={18} />
                     </button>
 
-                    {/* Page Number Pills */}
-                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .filter(page => page === 1 || page === totalPages || Math.abs(page - safePage) <= 1)
-                        .reduce((acc, page, idx, arr) => {
-                          if (idx > 0 && page - arr[idx - 1] > 1) {
-                            acc.push(-1 * page);
-                          }
-                          acc.push(page);
-                          return acc;
-                        }, [])
-                        .map((p, idx) => {
-                          if (p < 0) {
-                            return <span key={`ellipsis-${idx}`} style={{ padding: '0 4px', color: 'var(--text-tertiary)' }}>...</span>;
-                          }
-                          return (
-                            <button
-                              key={p}
-                              className={`apple-btn ${p === safePage ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
-                              style={{ minWidth: '32px', height: '32px', padding: 0, fontSize: '0.8rem', justifyContent: 'center' }}
-                              onClick={() => setCurrentPage(p)}
-                            >
-                              {p}
-                            </button>
-                          );
-                        })
-                      }
-                    </div>
+                    {/* Page Count Display */}
+                    <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-primary)', padding: '0 12px', background: 'rgba(64, 123, 161, 0.08)', borderRadius: '10px', height: '36px', display: 'inline-flex', alignItems: 'center' }}>
+                      صفحة {safePage} من {totalPages}
+                    </span>
 
+                    {/* Next Page Arrow Button */}
                     <button
+                      type="button"
                       className="apple-btn apple-btn-secondary"
-                      style={{ padding: '5px 12px', fontSize: '0.78rem' }}
+                      style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={safePage === totalPages}
+                      title="الصفحة التالية"
+                      aria-label="الصفحة التالية"
                     >
-                      التالية
-                    </button>
-
-                    <button
-                      className="apple-btn apple-btn-secondary"
-                      style={{ padding: '5px 10px', fontSize: '0.78rem' }}
-                      onClick={() => setCurrentPage(totalPages)}
-                      disabled={safePage === totalPages}
-                      title="الصفحة الأخيرة"
-                    >
-                      الأخيرة
+                      <ChevronLeft size={18} />
                     </button>
                   </div>
                 </div>
