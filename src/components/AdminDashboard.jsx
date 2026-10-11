@@ -2307,36 +2307,102 @@ export default function AdminDashboard({
               {/* Pagination Controls */}
               {filteredUnits.length > 0 && totalPages > 1 && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(64, 123, 161, 0.2)' }}>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {/* Previous Page Arrow Button */}
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {/* Previous Page Arrow (Frameless, No Circle) */}
                     <button
                       type="button"
-                      className="apple-btn apple-btn-secondary"
-                      style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '6px',
+                        cursor: safePage === 1 ? 'default' : 'pointer',
+                        color: safePage === 1 ? 'rgba(0,0,0,0.2)' : 'var(--text-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'opacity 0.2s'
+                      }}
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={safePage === 1}
                       title="الصفحة السابقة"
                       aria-label="الصفحة السابقة"
                     >
-                      <ChevronRight size={18} />
+                      <ChevronRight size={20} />
                     </button>
 
-                    {/* Page Count Display */}
-                    <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-primary)', padding: '0 12px', background: 'rgba(64, 123, 161, 0.08)', borderRadius: '10px', height: '36px', display: 'inline-flex', alignItems: 'center' }}>
-                      صفحة {safePage} من {totalPages}
-                    </span>
+                    {/* Page Numbers: 1 2 3 ... 6 */}
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      {(() => {
+                        const pages = [];
+                        if (totalPages <= 7) {
+                          for (let i = 1; i <= totalPages; i++) pages.push(i);
+                        } else {
+                          if (safePage <= 3) {
+                            pages.push(1, 2, 3, 4, '...', totalPages);
+                          } else if (safePage >= totalPages - 2) {
+                            pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                          } else {
+                            pages.push(1, '...', safePage - 1, safePage, safePage + 1, '...', totalPages);
+                          }
+                        }
 
-                    {/* Next Page Arrow Button */}
+                        return pages.map((item, idx) => {
+                          if (item === '...') {
+                            return (
+                              <span key={`ellipsis-${idx}`} style={{ padding: '0 4px', color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>
+                                ...
+                              </span>
+                            );
+                          }
+                          const isActive = item === safePage;
+                          return (
+                            <button
+                              key={`page-${item}`}
+                              type="button"
+                              onClick={() => setCurrentPage(item)}
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: isActive ? 'var(--pink-primary)' : 'transparent',
+                                color: isActive ? '#ffffff' : 'var(--text-primary)',
+                                fontWeight: isActive ? 800 : 600,
+                                fontSize: '0.86rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              {item}
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+
+                    {/* Next Page Arrow (Frameless, No Circle) */}
                     <button
                       type="button"
-                      className="apple-btn apple-btn-secondary"
-                      style={{ width: '36px', height: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '6px',
+                        cursor: safePage === totalPages ? 'default' : 'pointer',
+                        color: safePage === totalPages ? 'rgba(0,0,0,0.2)' : 'var(--text-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'opacity 0.2s'
+                      }}
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={safePage === totalPages}
                       title="الصفحة التالية"
                       aria-label="الصفحة التالية"
                     >
-                      <ChevronLeft size={18} />
+                      <ChevronLeft size={20} />
                     </button>
                   </div>
                 </div>
