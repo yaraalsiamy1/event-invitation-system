@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import {
   Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download,
-  Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon,
+  Plus, MessageCircle, Eye, EyeOff, FileSpreadsheet, Send, Image as ImageIcon,
   Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles,
   HelpCircle, Filter, ChevronDown, ChevronRight, ChevronLeft, Search, Edit, UserPlus, Smartphone,
   AlertTriangle, RefreshCw, Copy, Settings
@@ -53,6 +53,7 @@ export default function AdminDashboard({
   const [pendingExcelRows, setPendingExcelRows] = useState(null);
   const [isNewEventModalOpen, setIsNewEventModalOpen] = useState(false);
   const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
+  const [isMessagePreviewOpen, setIsMessagePreviewOpen] = useState(false);
 
   // Sync preview card image whenever active eventData changes
   useEffect(() => {
@@ -1853,64 +1854,100 @@ export default function AdminDashboard({
                 ></textarea>
               </div>
 
-              {/* Live Message Preview Box with Real Guest Selector */}
-              <div style={{ background: '#f0f5f9', border: '1px solid rgba(64, 123, 161, 0.25)', borderRadius: '14px', padding: '14px 18px', marginBottom: '14px', fontSize: '0.86rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
-                  <div style={{ fontWeight: 800, color: 'var(--pink-dark)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Sparkles size={16} /> معاينة حية لشكل رسالة الواتساب الجاهزة بكافة التفاصيل:
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    {/* Real Guest Selector */}
-                    {ownerGuests.length > 0 && (
-                      <select
-                        className="apple-input"
-                        style={{ padding: '4px 10px', fontSize: '0.78rem', height: '32px', minWidth: '160px' }}
-                        value={previewGuestId || (selectedPreviewGuest?.id || '')}
-                        onChange={(e) => setPreviewGuestId(e.target.value)}
-                        title="اختر ضيفاً لمعاينة شكل الرسالة الموجهة إليه"
-                      >
-                        {ownerGuests.map(o => {
-                          const depCount = (guests || []).filter(d => d.parent_guest_id === o.id).length;
-                          return (
-                            <option key={o.id} value={o.id}>
-                              معاينة لـ: {o.name} {depCount > 0 ? `(${depCount} مرافقين)` : ''}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    )}
-
-                    {/* Test Send Button (Phase 5 Req 3) */}
-                    <button
-                      type="button"
-                      className="apple-btn apple-btn-secondary"
-                      style={{ padding: '4px 12px', fontSize: '0.78rem', height: '32px', color: 'var(--pink-dark)', borderColor: 'var(--pink-primary)' }}
-                      onClick={() => {
-                        setTestFeedback(null);
-                        setIsTestModalOpen(true);
-                      }}
-                      title="إرسال تجريبي لرقم هاتفك الخاص للتحقق من المظهر في تطبيق واتساب"
-                    >
-                      <Smartphone size={14} /> إرسال تجريبي لرقمي أولاً
-                    </button>
-                  </div>
-                </div>
-
-                {/* Companion info badge if guest has dependents */}
-                {selectedPreviewGuest && previewDependents.length > 0 && (
-                  <div style={{ marginBottom: '8px' }}>
-                    <span className="ios-badge" style={{ background: 'rgba(99, 102, 241, 0.12)', color: '#4f46e5', fontSize: '0.75rem', padding: '3px 10px' }}>
-                      👥 مرافقو {selectedPreviewGuest.name}: {previewDependents.map(d => d.name).join(' و ')}
-                    </span>
-                  </div>
+              {/* Action row: Toggle Message Preview */}
+              <div style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+                {!isMessagePreviewOpen ? (
+                  <button
+                    type="button"
+                    className="apple-btn apple-btn-secondary"
+                    onClick={() => setIsMessagePreviewOpen(true)}
+                    style={{ fontSize: '0.84rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Eye size={15} /> معاينة الرسالة
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="apple-btn apple-btn-secondary"
+                    onClick={() => setIsMessagePreviewOpen(false)}
+                    style={{ fontSize: '0.84rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <EyeOff size={15} /> إخفاء
+                  </button>
                 )}
-
-                {/* Rendered Text Box */}
-                <div style={{ color: 'var(--text-primary)', whiteSpace: 'pre-line', background: '#ffffff', padding: '14px 18px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', lineHeight: '1.65', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                  {renderedLivePreview}
-                </div>
               </div>
+
+              {/* Live Message Preview Box with Real Guest Selector */}
+              {isMessagePreviewOpen && (
+                <div style={{ background: '#f0f5f9', border: '1px solid rgba(64, 123, 161, 0.25)', borderRadius: '14px', padding: '14px 18px', marginBottom: '14px', fontSize: '0.86rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                    <div style={{ fontWeight: 800, color: 'var(--pink-dark)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Sparkles size={16} /> معاينة حية لشكل رسالة الواتساب الجاهزة بكافة التفاصيل:
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      {/* Real Guest Selector */}
+                      {ownerGuests.length > 0 && (
+                        <select
+                          className="apple-input"
+                          style={{ padding: '4px 10px', fontSize: '0.78rem', height: '32px', minWidth: '160px' }}
+                          value={previewGuestId || (selectedPreviewGuest?.id || '')}
+                          onChange={(e) => setPreviewGuestId(e.target.value)}
+                          title="اختر ضيفاً لمعاينة شكل الرسالة الموجهة إليه"
+                        >
+                          {ownerGuests.map(o => {
+                            const depCount = (guests || []).filter(d => d.parent_guest_id === o.id).length;
+                            return (
+                              <option key={o.id} value={o.id}>
+                                معاينة لـ: {o.name} {depCount > 0 ? `(${depCount} مرافقين)` : ''}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      )}
+
+                      {/* Test Send Button (Phase 5 Req 3) */}
+                      <button
+                        type="button"
+                        className="apple-btn apple-btn-secondary"
+                        style={{ padding: '4px 12px', fontSize: '0.78rem', height: '32px', color: 'var(--pink-dark)', borderColor: 'var(--pink-primary)' }}
+                        onClick={() => {
+                          setTestFeedback(null);
+                          setIsTestModalOpen(true);
+                        }}
+                        title="إرسال تجريبي لرقم هاتفك الخاص للتحقق من المظهر في تطبيق واتساب"
+                      >
+                        <Smartphone size={14} /> إرسال تجريبي لرقمي أولاً
+                      </button>
+
+                      {/* Hide Preview Button */}
+                      <button
+                        type="button"
+                        className="apple-btn apple-btn-secondary"
+                        style={{ padding: '4px 12px', fontSize: '0.78rem', height: '32px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        onClick={() => setIsMessagePreviewOpen(false)}
+                        title="إخفاء معاينة الرسالة"
+                      >
+                        <EyeOff size={14} /> إخفاء
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Companion info badge if guest has dependents */}
+                  {selectedPreviewGuest && previewDependents.length > 0 && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span className="ios-badge" style={{ background: 'rgba(99, 102, 241, 0.12)', color: '#4f46e5', fontSize: '0.75rem', padding: '3px 10px' }}>
+                        👥 مرافقو {selectedPreviewGuest.name}: {previewDependents.map(d => d.name).join(' و ')}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Rendered Text Box */}
+                  <div style={{ color: 'var(--text-primary)', whiteSpace: 'pre-line', background: '#ffffff', padding: '14px 18px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', lineHeight: '1.65', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                    {renderedLivePreview}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
