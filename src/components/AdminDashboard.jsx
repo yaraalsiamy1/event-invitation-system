@@ -2014,7 +2014,7 @@ export default function AdminDashboard({
               </button>
             </div>
 
-            {/* Left side: Rocket Auto Dispatch Button */}
+            {/* Left side: Send Button */}
             <div>
               <button
                 type="button"
@@ -2025,11 +2025,11 @@ export default function AdminDashboard({
               >
                 {isSendingAuto ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> جاري الإرسال الآلي...
+                    <Loader2 size={16} className="animate-spin" /> جاري الإرسال...
                   </>
                 ) : (
                   <>
-                    <Rocket size={16} /> بدء الإرسال التلقائي ({selectedGuestIds.length})
+                    <Send size={15} /> إرسال
                   </>
                 )}
               </button>
