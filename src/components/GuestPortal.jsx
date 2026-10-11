@@ -125,7 +125,7 @@ export function formatArabicTimeOnly(timeStr) {
   return `${h12}:${min} ${period}`;
 }
 
-export const DEFAULT_TEMPLATE_SINGLE = `مرحباً {guest_name} 👋
+export const DEFAULT_TEMPLATE_SINGLE = `المكرمة/ {guest_name}
 
 يسرنا ويسعدنا دعوتك لحضور حفلنا وتكتمل فرحتنا بمشاركتك.
 
@@ -137,7 +137,7 @@ export const DEFAULT_TEMPLATE_SINGLE = `مرحباً {guest_name} 👋
 يرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:
 {invite_link}`;
 
-export const DEFAULT_TEMPLATE_WITH_COMPANIONS = `مرحباً {guest_name} 👋
+export const DEFAULT_TEMPLATE_WITH_COMPANIONS = `المكرمة/ {guest_name}
 
 الدعوة لك {companions}، يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.
 
@@ -149,7 +149,7 @@ export const DEFAULT_TEMPLATE_WITH_COMPANIONS = `مرحباً {guest_name} 👋
 يرجى تأكيد حضوركم واستلام تذاكر الدخول الإلكترونية عبر الرابط التالي:
 {invite_link}`;
 
-export const DEFAULT_REMINDER_TEMPLATE = `مرحباً {guest_name} 👋
+export const DEFAULT_REMINDER_TEMPLATE = `المكرمة/ {guest_name}
 
 نود تذكيركم بموعد حفل {event_name} يوم {date} الساعة {time} في {venue}.
 ويسعدنا تأكيد حضوركم واستلام تذاكركم عبر الرابط التالي:
@@ -185,8 +185,8 @@ export function renderWhatsAppMessage(template, { guest, dependents = [], event 
   if (!raw.includes('{invite_link}') && !raw.includes('{link}') && !raw.includes('{event_name}')) {
     const userIntro = raw || 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
     const greeting = hasDependents
-      ? `مرحباً ${guestName} 👋\nالدعوة لك ${companionsText}، ${userIntro}`
-      : `مرحباً ${guestName} 👋\n\n${userIntro}`;
+      ? `المكرمة/ ${guestName}\nالدعوة لك ${companionsText}، ${userIntro}`
+      : `المكرمة/ ${guestName}\n\n${userIntro}`;
 
     let detailsBlock = `المناسبة: ${eventName}`;
     if (dateStr) detailsBlock += `\nالتاريخ: ${dateStr}`;
