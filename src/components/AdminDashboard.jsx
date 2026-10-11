@@ -1419,7 +1419,7 @@ export default function AdminDashboard({
 
             {/* 4 Widgets Grid (2x2) */}
             <div className="widgets-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
-              {/* Widget 1: Total invitees with breakdown */}
+              {/* Widget 1: Total invitees */}
               <div className="apple-widget">
                 <div className="widget-icon pink"><Users size={24} /></div>
                 <div>
@@ -1427,10 +1427,6 @@ export default function AdminDashboard({
                     {total} <small style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>شخص</small>
                   </div>
                   <div className="widget-lbl">إجمالي المدعوين</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    <span style={{ background: '#f1f5f9', padding: '1px 6px', borderRadius: '6px' }}>{ownersCount} صاحب دعوة</span>
-                    <span style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', padding: '1px 6px', borderRadius: '6px' }}>{dependentsCount} مرافق</span>
-                  </div>
                 </div>
               </div>
 
@@ -1442,9 +1438,6 @@ export default function AdminDashboard({
                     {accepted}
                   </div>
                   <div className="widget-lbl">حضور مؤكد</div>
-                  <div style={{ fontSize: '0.72rem', color: '#15803d', marginTop: '4px' }}>
-                    {acceptedOwners} صاحب دعوة + {acceptedDeps} مرافق
-                  </div>
                 </div>
               </div>
 
@@ -1456,9 +1449,6 @@ export default function AdminDashboard({
                     {declined}
                   </div>
                   <div className="widget-lbl">معتذرون</div>
-                  <div style={{ fontSize: '0.72rem', color: '#b91c1c', marginTop: '4px' }}>
-                    {declinedOwners} صاحب دعوة + {declinedDeps} مرافق
-                  </div>
                 </div>
               </div>
 
@@ -1470,9 +1460,6 @@ export default function AdminDashboard({
                     {pending}
                   </div>
                   <div className="widget-lbl">بانتظار الرد</div>
-                  <div style={{ fontSize: '0.72rem', color: '#b45309', marginTop: '4px' }}>
-                    {pendingOwners} صاحب دعوة + {pendingDeps} مرافق
-                  </div>
                 </div>
               </div>
             </div>
@@ -1856,24 +1843,24 @@ export default function AdminDashboard({
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', width: '100%', justifyContent: 'space-between', marginTop: '6px' }}>
             {/* Search Box (Phase 2 Req 6) */}
-            <div style={{ position: 'relative', minWidth: '220px', flex: '1 1 260px' }}>
-              <Search size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <div style={{ position: 'relative', width: '180px', maxWidth: '100%' }}>
+              <Search size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
               <input
                 type="text"
                 className="apple-input"
-                placeholder="بحث بالاسم أو رقم الجوال..."
+                placeholder="بحث..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ paddingRight: '36px', paddingLeft: '32px', height: '38px', fontSize: '0.85rem' }}
+                style={{ paddingRight: '30px', paddingLeft: '26px', height: '32px', fontSize: '0.8rem' }}
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 0 }}
+                  style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 0 }}
                   title="مسح البحث"
                 >
-                  <X size={15} />
+                  <X size={13} />
                 </button>
               )}
             </div>
