@@ -1421,42 +1421,29 @@ export default function AdminDashboard({
               </div>
             </div>
 
-            {/* WhatsApp Gateway Settings Modal Trigger */}
+            {/* WhatsApp Gateway Settings Modal Trigger (Icon Only) */}
             <button
               type="button"
               className="apple-btn apple-btn-secondary"
               onClick={() => setIsGatewayModalOpen(true)}
               style={{
+                width: '38px',
+                height: '38px',
+                padding: 0,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                fontSize: '0.86rem',
-                fontWeight: 700,
+                justifyContent: 'center',
                 background: '#ffffff',
-                borderColor: 'var(--pink-primary)',
-                color: 'var(--pink-dark)',
-                borderRadius: '12px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                borderColor: 'rgba(64, 123, 161, 0.25)',
+                color: 'var(--pink-primary)',
+                borderRadius: '50%',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                 cursor: 'pointer'
               }}
-              title="إعدادات بوابة الواتساب السحابية (Green-API / UltraMsg)"
+              title="إعدادات بوابة الواتساب"
+              aria-label="إعدادات بوابة الواتساب"
             >
-              <Settings size={18} style={{ color: 'var(--pink-primary)' }} />
-              <span>إعدادات البوابة</span>
-              {hasServerWhatsAppConfig && (
-                <span
-                  style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    background: '#22c55e',
-                    display: 'inline-block',
-                    boxShadow: '0 0 6px rgba(34, 197, 94, 0.6)'
-                  }}
-                  title="البوابة مفعلة ومؤمنة في الخادم"
-                />
-              )}
+              <Settings size={18} />
             </button>
           </div>
 
