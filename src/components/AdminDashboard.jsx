@@ -5,7 +5,7 @@ import {
   Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon,
   Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles,
   HelpCircle, Filter, ChevronDown, ChevronRight, ChevronLeft, Search, Edit, UserPlus, Smartphone,
-  AlertTriangle, RefreshCw, Copy
+  AlertTriangle, RefreshCw, Copy, Settings
 } from 'lucide-react';
 import ExcelValidationModal from './ExcelValidationModal';
 import EventsSidebar from './EventsSidebar';
@@ -67,6 +67,7 @@ export default function AdminDashboard({
   const [autoProgress, setAutoProgress] = useState(null);
   // Checkbox selection state for batch sending
   const [selectedGuestIds, setSelectedGuestIds] = useState([]);
+  const [isGatewayModalOpen, setIsGatewayModalOpen] = useState(false);
 
   // Phase 7 Req 1: Load server-side WhatsApp configuration (masked)
   useEffect(() => {
@@ -1411,14 +1412,52 @@ export default function AdminDashboard({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
           {/* Active Event Indicator Banner */}
-          <div className="apple-card" style={{ padding: '18px 24px', background: 'var(--pink-light)', border: '1.5px solid var(--pink-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: 0 }}>
+          <div className="apple-card" style={{ padding: '16px 22px', background: 'var(--pink-light)', border: '1.5px solid var(--pink-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <Layers size={26} style={{ color: 'var(--pink-primary)' }} />
               <div>
                 <span style={{ fontSize: '0.8rem', color: 'var(--pink-dark)', fontWeight: 700 }}>المناسبة النشطة حالياً لإدارة المدعوين:</span>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{eventData?.title || 'مناسبة بدون عنوان'}</h2>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{eventData?.title || 'مناسبة بدون عنوان'}</h2>
               </div>
             </div>
+
+            {/* WhatsApp Gateway Settings Modal Trigger */}
+            <button
+              type="button"
+              className="apple-btn apple-btn-secondary"
+              onClick={() => setIsGatewayModalOpen(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                fontSize: '0.86rem',
+                fontWeight: 700,
+                background: '#ffffff',
+                borderColor: 'var(--pink-primary)',
+                color: 'var(--pink-dark)',
+                borderRadius: '12px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                cursor: 'pointer'
+              }}
+              title="إعدادات بوابة الواتساب السحابية (Green-API / UltraMsg)"
+            >
+              <Settings size={18} style={{ color: 'var(--pink-primary)' }} />
+              <span>إعدادات البوابة</span>
+              {hasServerWhatsAppConfig && (
+                <span
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#22c55e',
+                    display: 'inline-block',
+                    boxShadow: '0 0 6px rgba(34, 197, 94, 0.6)'
+                  }}
+                  title="البوابة مفعلة ومؤمنة في الخادم"
+                />
+              )}
+            </button>
           </div>
 
           {/* STATISTICAL METRICS WIDGETS */}
@@ -1782,65 +1821,7 @@ export default function AdminDashboard({
                   {renderedLivePreview}
                 </div>
               </div>
-
-              {/* Gateway Credentials (Server-Side Masked Green-API / UltraMsg) */}
-              <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '14px', padding: '14px 18px', marginTop: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
-                  <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <MessageCircle size={16} style={{ color: 'var(--pink-primary)' }} />
-                    إعدادات بوابة الواتساب السحابية (Green-API / UltraMsg):
-                  </div>
-                  {hasServerWhatsAppConfig && (
-                    <span className="ios-badge ios-badge-green" style={{ fontSize: '0.74rem' }}>
-                      بيانات البوابة مؤمنة بالخادم ومخفية
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid-2col" style={{ gap: '12px', marginBottom: '10px' }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Instance ID (بوابة الواتساب الآلية):</label>
-                    <input
-                      type="text"
-                      className="apple-input"
-                      placeholder="مثال: 7103847291 أو ••••••••1234"
-                      value={instanceId}
-                      onChange={(e) => setInstanceId(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>API Token (الرمز السري):</label>
-                    <input
-                      type="password"
-                      className="apple-input"
-                      placeholder="أدخل رمز الـ API Token أو ••••••••1234"
-                      value={apiToken}
-                      onChange={(e) => setApiToken(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="button"
-                    className="apple-btn apple-btn-secondary"
-                    style={{ fontSize: '0.8rem', padding: '6px 14px' }}
-                    onClick={async () => {
-                      const ok = await handleSaveWhatsAppConfig(instanceId, apiToken);
-                      if (ok) {
-                        alert('تم حفظ وتأمين بيانات بوابة الواتساب في الخادم بنجاح!');
-                      } else {
-                        alert('تعذر حفظ إعدادات البوابة.');
-                      }
-                    }}
-                  >
-                    حفظ بيانات البوابة في الخادم
-                  </button>
-                </div>
-              </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -2956,6 +2937,173 @@ export default function AdminDashboard({
               alt="كرت الدعوة بالحجم الكامل"
               style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '16px', objectFit: 'contain', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp Gateway Settings Modal */}
+      {isGatewayModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.45)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}
+          onClick={() => setIsGatewayModalOpen(false)}
+        >
+          <div
+            className="apple-card"
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              padding: '28px',
+              borderRadius: '20px',
+              background: '#ffffff',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.08)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(64, 123, 161, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--pink-primary)'
+                }}>
+                  <Settings size={22} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                    إعدادات بوابة الواتساب السحابية
+                  </h3>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Green-API / UltraMsg</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsGatewayModalOpen(false)}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)'
+                }}
+                title="إغلاق"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Server status alert */}
+            {hasServerWhatsAppConfig && (
+              <div style={{
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '12px',
+                padding: '10px 14px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.8rem',
+                color: '#15803d',
+                fontWeight: 600
+              }}>
+                <CheckCircle2 size={16} style={{ color: '#22c55e', flexShrink: 0 }} />
+                <span>بيانات البوابة مؤمنة بالخادم ومحفوظة مسبقاً.</span>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '22px' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ fontWeight: 700, fontSize: '0.84rem', color: 'var(--text-primary)', marginBottom: '6px', display: 'block' }}>
+                  Instance ID (معرف بوابة الواتساب):
+                </label>
+                <input
+                  type="text"
+                  className="apple-input"
+                  placeholder="مثال: 7103847291 أو ••••••••1234"
+                  value={instanceId}
+                  onChange={(e) => setInstanceId(e.target.value)}
+                  style={{ width: '100%', height: '42px', fontSize: '0.88rem' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ fontWeight: 700, fontSize: '0.84rem', color: 'var(--text-primary)', marginBottom: '6px', display: 'block' }}>
+                  API Token (الرمز السري للبوابة):
+                </label>
+                <input
+                  type="password"
+                  className="apple-input"
+                  placeholder="أدخل رمز الـ API Token أو ••••••••1234"
+                  value={apiToken}
+                  onChange={(e) => setApiToken(e.target.value)}
+                  style={{ width: '100%', height: '42px', fontSize: '0.88rem' }}
+                />
+              </div>
+
+              <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                يتم حفظ هذه البيانات بأمان واستخدامها لإرسال كروت الدعوة والرسائل التلقائية عبر الواتساب للمدعوين.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                className="apple-btn apple-btn-secondary"
+                onClick={() => setIsGatewayModalOpen(false)}
+                style={{ padding: '8px 16px', fontSize: '0.84rem' }}
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                className="apple-btn apple-btn-pink"
+                style={{ padding: '8px 20px', fontSize: '0.84rem', fontWeight: 700 }}
+                onClick={async () => {
+                  const ok = await handleSaveWhatsAppConfig(instanceId, apiToken);
+                  if (ok) {
+                    if (showConfirmation) {
+                      showConfirmation('تم الحفظ', 'تم حفظ وتأمين بيانات بوابة الواتساب في الخادم بنجاح!', 'success');
+                    } else {
+                      alert('تم حفظ وتأمين بيانات بوابة الواتساب في الخادم بنجاح!');
+                    }
+                    setIsGatewayModalOpen(false);
+                  } else {
+                    if (showConfirmation) {
+                      showConfirmation('خطأ', 'تعذر حفظ إعدادات البوابة. يرجى التحقق من المدخلات.', 'danger');
+                    } else {
+                      alert('تعذر حفظ إعدادات البوابة.');
+                    }
+                  }
+                }}
+              >
+                حفظ الإعدادات
+              </button>
+            </div>
           </div>
         </div>
       )}
