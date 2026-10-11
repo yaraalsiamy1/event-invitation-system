@@ -382,6 +382,37 @@ select.apple-input {
     background-color: #ffffff;
 }
 
+input[type="date"].apple-input,
+input[type="time"].apple-input {
+    height: 44px;
+    padding: 10px 20px;
+    direction: ltr;
+    text-align: right;
+    box-sizing: border-box;
+}
+
+input[type="date"].apple-input::-webkit-datetime-edit,
+input[type="time"].apple-input::-webkit-datetime-edit {
+    margin-left: auto;
+    padding: 0 4px;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+input[type="date"].apple-input::-webkit-calendar-picker-indicator,
+input[type="time"].apple-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    margin-left: 8px;
+    margin-right: 0;
+    opacity: 0.75;
+    transition: opacity 0.2s ease;
+}
+
+input[type="date"].apple-input::-webkit-calendar-picker-indicator:hover,
+input[type="time"].apple-input::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
 .single-guest-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.4fr) minmax(75px, 95px) auto;
