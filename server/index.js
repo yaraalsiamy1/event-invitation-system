@@ -3,7 +3,15 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { db } from './db.js';
+import {
+  db,
+  renderWhatsAppMessage,
+  formatArabicDateOnly,
+  formatArabicTimeOnly,
+  DEFAULT_TEMPLATE_SINGLE,
+  DEFAULT_TEMPLATE_WITH_COMPANIONS,
+  DEFAULT_REMINDER_TEMPLATE
+} from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -229,28 +237,223 @@ app.put('/api/guests/:id', async (req, res) => {
   }
 });
 
-// AUTOMATED WHATSAPP BATCH DISPATCHER ENDPOINT
-app.post('/api/send-whatsapp-batch', async (req, res) => {
+// Active in-memory background dispatch queues (Phase 5 Req 5)
+const activeQueues = new Map();
+
+/**
+ * Single WhatsApp message sender helper
+ */
+async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, messageText, cardImageUrl, dryRun = false }) {
+  if (dryRun || process.env.NODE_ENV === 'test') {
+    const cleanPhone = (phone || '').toString().replace(/\D/g, '');
+    if (cleanPhone.length >= 9) {
+      return { success: true };
+    }
+    return { success: false, error: 'رقم جوال غير صالح' };
+  }
+
+  if (!instanceId || !apiToken) {
+    return { success: false, error: 'يرجى إدخال Instance ID و API Token لبوابة الواتساب' };
+  }
+
+  const cleanPhone = phone.toString().replace(/\D/g, '');
+  let errorMsg = null;
+
+  // 1. Send card image with text caption if card image exists
+  if (cardImageUrl) {
+    try {
+      const fileApiUrl = `https://api.green-api.com/waInstance${instanceId}/sendFileByUrl/${apiToken}`;
+      const fileRes = await fetch(fileApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: `${cleanPhone}@c.us`,
+          urlFile: cardImageUrl,
+          fileName: 'invitation_card.png',
+          caption: messageText
+        })
+      });
+
+      if (fileRes.ok) {
+        const fileData = await fileRes.json();
+        if (fileData && (fileData.idMessage || fileData.id)) {
+          return { success: true };
+        }
+      }
+    } catch (e) {
+      console.warn('Card image dispatch error, falling back to text:', e.message);
+    }
+  }
+
+  // 2. Standard text message dispatch
   try {
-    const { instanceId, apiToken, hostUrl, eventId, guestIds, customMessage } = req.body;
+    const gatewayUrl = `https://api.green-api.com/waInstance${instanceId}/sendMessage/${apiToken}`;
+    const apiRes = await fetch(gatewayUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: `${cleanPhone}@c.us`,
+        message: messageText
+      })
+    });
+
+    if (apiRes.ok) {
+      const resData = await apiRes.json();
+      if (resData && (resData.idMessage || resData.id)) {
+        return { success: true };
+      }
+      errorMsg = 'لم يتم تأكيد استلام الرسالة من البوابة';
+    } else {
+      const errText = await apiRes.text();
+      errorMsg = `خطأ في بوابة الإرسال (${apiRes.status}): ${errText || 'بيانات الاعتماد غير صحيحة'}`;
+    }
+  } catch (e) {
+    errorMsg = e.message;
+  }
+
+  return { success: false, error: errorMsg };
+}
+
+// 1. Send Test Message To Admin Number (Phase 5 Req 5)
+app.post('/api/whatsapp/send-test', async (req, res) => {
+  try {
+    const { testPhone, instanceId, apiToken, hostUrl, eventId, customMessage, previewGuestId, dryRun } = req.body;
+    if (!testPhone) {
+      return res.status(400).json({ error: 'يرجى إدخال رقم الجوال التجريبي' });
+    }
+
     let event = await db.getEvent(eventId);
     if (!event) {
       const allEvs = await db.getAllEvents();
       event = allEvs[0] || { title: "المناسبة" };
     }
-    let allGuests = await db.getGuests(eventId);
 
-    let targetGuests = allGuests;
+    const allGuests = await db.getGuests(eventId);
+    const sampleGuest = previewGuestId 
+      ? allGuests.find(g => g.id === previewGuestId) 
+      : (allGuests.find(g => !g.parent_guest_id) || { id: 'sample', name: 'ضيف تجريبي', invite_token: 'sample_token' });
+
+    const dependents = allGuests.filter(d => d.parent_guest_id === sampleGuest.id);
+    const baseUrl = hostUrl || 'http://localhost:3000';
+
+    const messageText = renderWhatsAppMessage(customMessage, {
+      guest: sampleGuest,
+      dependents,
+      event,
+      baseUrl
+    });
+
+    let cardImageUrl = null;
+    if (event.cardImage) {
+      if (event.cardImage.startsWith('http://') || event.cardImage.startsWith('https://')) {
+        cardImageUrl = event.cardImage;
+      } else if (!event.cardImage.startsWith('data:image')) {
+        cardImageUrl = `${baseUrl}${event.cardImage.startsWith('/') ? '' : '/'}${event.cardImage}`;
+      }
+    }
+
+    const sendRes = await sendSingleWhatsAppMessageHelper({
+      instanceId,
+      apiToken,
+      phone: testPhone,
+      messageText,
+      cardImageUrl,
+      dryRun
+    });
+
+    if (sendRes.success) {
+      res.json({ success: true, message: 'تم إرسال الرسالة التجريبية بنجاح!', previewText: messageText });
+    } else {
+      res.status(400).json({ success: false, error: sendRes.error });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Send Single Message / Retry Failed Guest (Phase 5 Req 5)
+app.post('/api/whatsapp/send-single', async (req, res) => {
+  try {
+    const { guestId, instanceId, apiToken, hostUrl, eventId, customMessage, dryRun } = req.body;
+    let event = await db.getEvent(eventId);
+    if (!event) {
+      const allEvs = await db.getAllEvents();
+      event = allEvs[0] || { title: "المناسبة" };
+    }
+
+    const allGuests = await db.getGuests(eventId);
+    const guest = allGuests.find(g => g.id === guestId);
+    if (!guest) {
+      return res.status(404).json({ error: 'المدعو غير موجود' });
+    }
+
+    const dependents = allGuests.filter(d => d.parent_guest_id === guest.id);
+    const baseUrl = hostUrl || 'http://localhost:3000';
+
+    const messageText = renderWhatsAppMessage(customMessage, {
+      guest,
+      dependents,
+      event,
+      baseUrl
+    });
+
+    let cardImageUrl = null;
+    if (event.cardImage) {
+      if (event.cardImage.startsWith('http://') || event.cardImage.startsWith('https://')) {
+        cardImageUrl = event.cardImage;
+      } else if (!event.cardImage.startsWith('data:image')) {
+        cardImageUrl = `${baseUrl}${event.cardImage.startsWith('/') ? '' : '/'}${event.cardImage}`;
+      }
+    }
+
+    const sendRes = await sendSingleWhatsAppMessageHelper({
+      instanceId,
+      apiToken,
+      phone: guest.phone,
+      messageText,
+      cardImageUrl,
+      dryRun
+    });
+
+    if (sendRes.success) {
+      await db.markGuestsSent(eventId, [guest.id]);
+      res.json({ success: true, guestId: guest.id, name: guest.name });
+    } else {
+      res.status(400).json({ success: false, error: sendRes.error });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Batch Dispatcher with Variables, Random Delay (3-8s), and Re-send Filter (Phase 5 Req 1, 2, 5)
+app.post('/api/send-whatsapp-batch', async (req, res) => {
+  try {
+    const { instanceId, apiToken, hostUrl, eventId, guestIds, customMessage, allowResend = false, dryRun = false } = req.body;
+    let event = await db.getEvent(eventId);
+    if (!event) {
+      const allEvs = await db.getAllEvents();
+      event = allEvs[0] || { title: "المناسبة" };
+    }
+    const allGuests = await db.getGuests(eventId);
+
+    // Target ONLY owner guests (dependents don't have phones and don't receive independent messages)
+    let targetGuests = allGuests.filter(g => !g.parent_guest_id);
     if (Array.isArray(guestIds) && guestIds.length > 0) {
       const setIds = new Set(guestIds);
-      targetGuests = allGuests.filter(g => setIds.has(g.id));
+      targetGuests = targetGuests.filter(g => setIds.has(g.id));
+    }
+
+    // Filter out already sent if allowResend is not explicitly confirmed (Phase 5 Req 5)
+    if (!allowResend) {
+      targetGuests = targetGuests.filter(g => !g.sent);
     }
 
     if (!targetGuests || targetGuests.length === 0) {
-      return res.status(400).json({ error: 'لا يوجد مدعوين محددين للإرسال' });
+      return res.status(400).json({ error: 'لا يوجد مدعوين للإرسال إليهم (ربما تم الإرسال للجميع مسبقاً)' });
     }
 
-    if (!instanceId || !apiToken) {
+    if (!dryRun && process.env.NODE_ENV !== 'test' && (!instanceId || !apiToken)) {
       return res.status(400).json({
         success: false,
         requiresGateway: true,
@@ -262,6 +465,7 @@ app.post('/api/send-whatsapp-batch', async (req, res) => {
     let sentCount = 0;
     const results = [];
     const successfullySentIds = [];
+    const failedList = [];
 
     // Image URL resolution
     let cardImageUrl = null;
@@ -273,86 +477,55 @@ app.post('/api/send-whatsapp-batch', async (req, res) => {
       }
     }
 
-    const userMessage = (customMessage && customMessage.trim()) ? customMessage.trim() : 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
+    for (let i = 0; i < targetGuests.length; i++) {
+      const guest = targetGuests[i];
+      const dependents = allGuests.filter(d => d.parent_guest_id === guest.id);
 
-    for (const guest of targetGuests) {
-      const guestLink = `${baseUrl}/?token=${guest.invite_token || guest.id}`;
-      const messageText = `مرحباً ${guest.name}\n\n${userMessage}\n\nالمناسبة: ${event.title}\nالتاريخ: ${event.date || ''}\nالمكان: ${event.location || ''}\n\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
-      
-      let success = false;
-      let errorMsg = null;
+      // Render message with dynamic variables support (Phase 5 Req 1 & 2)
+      const messageText = renderWhatsAppMessage(customMessage, {
+        guest,
+        dependents,
+        event,
+        baseUrl
+      });
 
-      // 1. Send card image with text caption if card image URL exists
-      if (cardImageUrl) {
-        try {
-          const fileApiUrl = `https://api.green-api.com/waInstance${instanceId}/sendFileByUrl/${apiToken}`;
-          const fileRes = await fetch(fileApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chatId: `${guest.phone}@c.us`,
-              urlFile: cardImageUrl,
-              fileName: 'invitation_card.png',
-              caption: messageText
-            })
-          });
+      const sendRes = await sendSingleWhatsAppMessageHelper({
+        instanceId,
+        apiToken,
+        phone: guest.phone,
+        messageText,
+        cardImageUrl,
+        dryRun
+      });
 
-          if (fileRes.ok) {
-            const fileData = await fileRes.json();
-            if (fileData && (fileData.idMessage || fileData.id)) {
-              success = true;
-            }
-          }
-        } catch (fileErr) {
-          console.error('File send error, falling back to text:', fileErr.message);
-        }
-      }
-
-      // 2. Fallback to standard text message if image send didn't succeed or cardImage wasn't remote URL
-      if (!success) {
-        try {
-          const gatewayUrl = `https://api.green-api.com/waInstance${instanceId}/sendMessage/${apiToken}`;
-          const apiRes = await fetch(gatewayUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chatId: `${guest.phone}@c.us`,
-              message: messageText
-            })
-          });
-
-          if (apiRes.ok) {
-            const resData = await apiRes.json();
-            if (resData && (resData.idMessage || resData.id)) {
-              success = true;
-            } else {
-              errorMsg = 'لم يتم تأكيد استلام الرسالة من البوابة';
-            }
-          } else {
-            const errText = await apiRes.text();
-            errorMsg = `خطأ في بوابة الإرسال (${apiRes.status}): ${errText || 'بيانات الاعتماد غير صحيحة'}`;
-          }
-        } catch (e) {
-          errorMsg = e.message;
-        }
-      }
-
-      if (success) {
+      if (sendRes.success) {
         sentCount++;
         successfullySentIds.push(guest.id);
+        results.push({ guestId: guest.id, name: guest.name, phone: guest.phone, success: true });
+      } else {
+        const errorReason = sendRes.error || 'تعذر الإرسال للرقم';
+        failedList.push({ guestId: guest.id, name: guest.name, phone: guest.phone, errorReason });
+        results.push({ guestId: guest.id, name: guest.name, phone: guest.phone, success: false, errorMsg: errorReason });
       }
-      results.push({ guestId: guest.id, name: guest.name, phone: guest.phone, success, errorMsg });
-      
-      await new Promise(r => setTimeout(r, 800));
+
+      // Random delay between 3 to 8 seconds to prevent WhatsApp ban (Phase 5 Req 5)
+      if (i < targetGuests.length - 1) {
+        const delayMs = dryRun ? 20 : (Math.floor(Math.random() * (8000 - 3000 + 1)) + 3000);
+        await new Promise(r => setTimeout(r, delayMs));
+      }
     }
 
-    // Mark sent status in DB
-    await db.markGuestsSent(eventId, successfullySentIds);
+    // Persist sent status and sentAt timestamp in DB
+    if (successfullySentIds.length > 0) {
+      await db.markGuestsSent(eventId, successfullySentIds);
+    }
 
     res.json({
       success: true,
       total: targetGuests.length,
       sentCount,
+      failedCount: failedList.length,
+      failed: failedList,
       results
     });
   } catch (err) {

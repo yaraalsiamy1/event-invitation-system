@@ -1,9 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download, Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon, Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles, HelpCircle, Filter, ChevronDown, Search, Edit, UserPlus } from 'lucide-react';
+import {
+  Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download,
+  Plus, MessageCircle, Eye, FileSpreadsheet, Send, Image as ImageIcon,
+  Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles,
+  HelpCircle, Filter, ChevronDown, Search, Edit, UserPlus, Smartphone,
+  AlertTriangle, RefreshCw, Copy
+} from 'lucide-react';
 import ExcelValidationModal from './ExcelValidationModal';
 import EventsSidebar from './EventsSidebar';
 import NewEventModal from './NewEventModal';
+import {
+  renderWhatsAppMessage,
+  DEFAULT_TEMPLATE_SINGLE,
+  DEFAULT_TEMPLATE_WITH_COMPANIONS,
+  DEFAULT_REMINDER_TEMPLATE,
+  formatArabicDateOnly,
+  formatArabicTimeOnly
+} from './GuestPortal';
 
 export default function AdminDashboard({
   events = [],
@@ -37,17 +51,43 @@ export default function AdminDashboard({
     setPreviewCardImg(eventData?.cardImage || null);
   }, [eventData]);
 
-  // WhatsApp Auto Gateway Credentials & Custom Text
+  // WhatsApp Auto Gateway Credentials & Custom Text (Phase 5)
   const [instanceId, setInstanceId] = useState(localStorage.getItem('wa_instance_id') || '');
   const [apiToken, setApiToken] = useState(localStorage.getItem('wa_api_token') || '');
   const [customMessage, setCustomMessage] = useState(
-    localStorage.getItem('wa_custom_message') ||
-    'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.'
+    localStorage.getItem('wa_custom_message') || DEFAULT_TEMPLATE_WITH_COMPANIONS
   );
   const [isSendingAuto, setIsSendingAuto] = useState(false);
   const [autoProgress, setAutoProgress] = useState(null);
   // Checkbox selection state for batch sending
   const [selectedGuestIds, setSelectedGuestIds] = useState([]);
+
+  // Phase 5 States: WhatsApp message templates, preview guest, test send, and failed log
+  const [previewGuestId, setPreviewGuestId] = useState('');
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [testPhone, setTestPhone] = useState(localStorage.getItem('wa_test_phone') || '');
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [testFeedback, setTestFeedback] = useState(null);
+  const [failedSends, setFailedSends] = useState([]);
+
+  // Template Variables (Phase 5 Req 1)
+  const TEMPLATE_VARIABLES = [
+    { key: '{guest_name}', label: 'اسم الضيف' },
+    { key: '{companions}', label: 'المرافقين' },
+    { key: '{event_name}', label: 'اسم المناسبة' },
+    { key: '{date}', label: 'التاريخ' },
+    { key: '{time}', label: 'الوقت' },
+    { key: '{venue}', label: 'المكان' },
+    { key: '{invite_link}', label: 'رابط الدعوة' }
+  ];
+
+  const insertVariableTag = (tag) => {
+    setCustomMessage(prev => {
+      const updated = prev ? `${prev} ${tag}` : tag;
+      localStorage.setItem('wa_custom_message', updated);
+      return updated;
+    });
+  };
 
   // Search by Name or Phone (Phase 2 Requirement 6)
   const [searchQuery, setSearchQuery] = useState('');
@@ -113,6 +153,32 @@ export default function AdminDashboard({
   // Rule (Phase 2 Req 5): Only owners are selected for sending (dependents never receive messages directly)
   const ownerGuests = useMemo(() => (guests || []).filter(g => !g.parent_guest_id), [guests]);
 
+  // Live Message Preview calculations (Phase 5 Req 2)
+  const selectedPreviewGuest = useMemo(() => {
+    if (previewGuestId) {
+      const found = ownerGuests.find(g => g.id === previewGuestId);
+      if (found) return found;
+    }
+    return ownerGuests[0] || null;
+  }, [ownerGuests, previewGuestId]);
+
+  const previewDependents = useMemo(() => {
+    if (!selectedPreviewGuest) return [];
+    return (guests || []).filter(d => d.parent_guest_id === selectedPreviewGuest.id);
+  }, [guests, selectedPreviewGuest]);
+
+  const renderedLivePreview = useMemo(() => {
+    if (!selectedPreviewGuest) {
+      return 'لا يوجد مدعوين في هذه المناسبة بعد لمعاينة الرسالة الحية.';
+    }
+    return renderWhatsAppMessage(customMessage, {
+      guest: selectedPreviewGuest,
+      dependents: previewDependents,
+      event: eventData,
+      baseUrl: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
+    });
+  }, [customMessage, selectedPreviewGuest, previewDependents, eventData]);
+
   // Auto-sync selection state when owners change
   useEffect(() => {
     if (ownerGuests.length > 0) {
@@ -139,6 +205,20 @@ export default function AdminDashboard({
   const handleSelectUnsentOnly = () => {
     const unsentOwners = ownerGuests.filter(g => !g.sent).map(g => g.id);
     setSelectedGuestIds(unsentOwners);
+  };
+
+  // Select non-responders for reminder sending (Phase 5 Req 4)
+  const handleSelectPendingReminderOnly = () => {
+    const pendingOwners = ownerGuests.filter(g => g.sent && (!g.status || g.status === 'pending')).map(g => g.id);
+    if (pendingOwners.length === 0) {
+      alert('لا يوجد مدعوين بانتظار الرد ممن تم إرسال الدعوة لهم مسبقاً في هذه المناسبة.');
+      return;
+    }
+    setSelectedGuestIds(pendingOwners);
+    if (window.confirm(`تم تحديد (${pendingOwners.length}) مدعو بانتظار الرد.\nهل ترغب في تبديل نص الرسالة إلى قالب "التذكير" تلقائياً؟`)) {
+      setCustomMessage(DEFAULT_REMINDER_TEMPLATE);
+      localStorage.setItem('wa_custom_message', DEFAULT_REMINDER_TEMPLATE);
+    }
   };
 
   const handleToggleSelectGuest = (id) => {
@@ -619,17 +699,148 @@ export default function AdminDashboard({
     }
   };
 
-  // Trigger Automatic Batch Dispatcher for SELECTED guests
+  // Retry single failed recipient (Phase 5 Req 5)
+  const handleRetryFailedSingle = async (failedItem) => {
+    const cleanInstance = instanceId.trim();
+    const cleanToken = apiToken.trim();
+
+    if (cleanInstance && cleanToken) {
+      try {
+        const res = await fetch('/api/whatsapp/send-single', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            guestId: failedItem.guestId,
+            instanceId: cleanInstance,
+            apiToken: cleanToken,
+            hostUrl: window.location.origin,
+            eventId: activeEventId,
+            customMessage
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setFailedSends(prev => prev.filter(f => f.guestId !== failedItem.guestId));
+          alert(`تمت إعادة الإرسال للمدعو "${failedItem.name}" بنجاح!`);
+          if (refreshData) refreshData();
+          return;
+        }
+        alert(data.error || 'فشلت إعادة الإرسال عبر البوابة');
+      } catch (err) {
+        alert('خطأ في الاتصال: ' + err.message);
+      }
+    } else {
+      const g = (guests || []).find(item => item.id === failedItem.guestId);
+      if (g) {
+        const depList = (guests || []).filter(d => d.parent_guest_id === g.id);
+        const fullText = renderWhatsAppMessage(customMessage, {
+          guest: g,
+          dependents: depList,
+          event: eventData,
+          baseUrl: window.location.origin
+        });
+        window.open(`https://api.whatsapp.com/send?phone=${g.phone}&text=${encodeURIComponent(fullText)}`, '_blank');
+        setFailedSends(prev => prev.filter(f => f.guestId !== failedItem.guestId));
+        if (refreshData) refreshData();
+      }
+    }
+  };
+
+  // Test Message Sender to Admin Number (Phase 5 Req 3)
+  const handleSendTestMessage = async () => {
+    if (!testPhone || !testPhone.trim()) {
+      alert('يرجى إدخال رقم الجوال التجريبي أولاً');
+      return;
+    }
+
+    const cleanTestPhone = testPhone.trim();
+    localStorage.setItem('wa_test_phone', cleanTestPhone);
+
+    const cleanInstance = instanceId.trim();
+    const cleanToken = apiToken.trim();
+    setIsSendingTest(true);
+    setTestFeedback(null);
+
+    const testGuest = selectedPreviewGuest || { name: 'ضيف تجريبي', id: 'test_sample', invite_token: 'test' };
+    const testDeps = previewDependents || [];
+
+    if (cleanInstance && cleanToken) {
+      try {
+        const res = await fetch('/api/whatsapp/send-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            testPhone: cleanTestPhone,
+            instanceId: cleanInstance,
+            apiToken: cleanToken,
+            hostUrl: window.location.origin,
+            eventId: activeEventId,
+            customMessage,
+            previewGuestId: testGuest.id
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setTestFeedback({ success: true, message: 'تم إرسال الرسالة التجريبية لرقمك بنجاح عبر البوابة!' });
+        } else {
+          setTestFeedback({ success: false, message: data.error || 'فشل إرسال الرسالة التجريبية عبر البوابة' });
+        }
+      } catch (err) {
+        setTestFeedback({ success: false, message: 'تعذر الاتصال بالخادم: ' + err.message });
+      } finally {
+        setIsSendingTest(false);
+      }
+    } else {
+      const renderedMsg = renderWhatsAppMessage(customMessage, {
+        guest: testGuest,
+        dependents: testDeps,
+        event: eventData,
+        baseUrl: window.location.origin
+      });
+      const waUrl = `https://api.whatsapp.com/send?phone=${cleanTestPhone}&text=${encodeURIComponent(renderedMsg)}`;
+      window.open(waUrl, '_blank');
+      setIsSendingTest(false);
+      setTestFeedback({ success: true, message: 'تم فتح تطبيق واتساب لإرسال الرسالة التجريبية لرقمك بنجاح!' });
+    }
+  };
+
+  // Trigger Automatic Batch Dispatcher for SELECTED guests (Phase 5 Requirements)
   const handleStartAutoDispatch = async () => {
     if (guests.length === 0) {
       alert('يرجى رفع ملف تمبلت الدعوات وإضافة أرقام المدعوين لهذه المناسبة أولاً.');
       return;
     }
 
-    if (selectedGuestIds.length === 0) {
-      alert('يرجى تحديد مدعو واحد على الأقل من القائمة أدناه لإرسال الدعوات إليهم.');
+    const selectedGuestsList = guests.filter(g => selectedGuestIds.includes(g.id) && !g.parent_guest_id);
+
+    if (selectedGuestsList.length === 0) {
+      alert('يرجى تحديد صاحب دعوة واحد على الأقل من القائمة أدناه لإرسال الدعوات إليهم.');
       return;
     }
+
+    // Protection against accidental re-sending (Phase 5 Req 5)
+    const alreadySentGuests = selectedGuestsList.filter(g => g.sent);
+    let allowResend = false;
+    if (alreadySentGuests.length > 0) {
+      const confirmResend = window.confirm(
+        `تنبيه:\nيوجد (${alreadySentGuests.length}) مدعو من أصل (${selectedGuestsList.length}) محدد تم إرسال الدعوة لهم مسبقاً.\n\nهل ترغب في إعادة الإرسال لهم بالتأكيد؟\n(اضغط "موافق" لإعادة الإرسال للجميع، أو "إلغاء" لاستبعادهم وإرسال الدعوة لمن لم يُرسل لهم فقط)`
+      );
+      if (confirmResend) {
+        allowResend = true;
+      }
+    }
+
+    const finalTargets = allowResend ? selectedGuestsList : selectedGuestsList.filter(g => !g.sent);
+    if (finalTargets.length === 0) {
+      alert('تم استبعاد جميع المحددين لأن الدعوة أُرسلت لهم مسبقاً، ولم يتم تأكيد خيار إعادة الإرسال.');
+      return;
+    }
+
+    // Mandatory confirmation showing exact count (Phase 5 Req 5)
+    const proceedConfirm = window.confirm(
+      `سيتم إرسال (${finalTargets.length}) رسالة واتساب لمناسبة "${eventData?.title || ''}".\nهل أنت متأكد من المتابعة؟`
+    );
+    if (!proceedConfirm) return;
 
     const cleanInstance = instanceId.trim();
     const cleanToken = apiToken.trim();
@@ -638,12 +849,12 @@ export default function AdminDashboard({
     localStorage.setItem('wa_api_token', cleanToken);
     localStorage.setItem('wa_custom_message', customMessage);
 
-    const selectedGuestsList = guests.filter(g => selectedGuestIds.includes(g.id));
+    setFailedSends([]);
 
     // Mode A: Server-Side API Gateway Dispatch (If credentials exist)
     if (cleanInstance && cleanToken) {
       setIsSendingAuto(true);
-      setAutoProgress({ sent: 0, total: selectedGuestsList.length, currentName: selectedGuestsList[0]?.name || '' });
+      setAutoProgress({ sent: 0, total: finalTargets.length, currentName: finalTargets[0]?.name || '' });
 
       try {
         const res = await fetch('/api/send-whatsapp-batch', {
@@ -654,15 +865,21 @@ export default function AdminDashboard({
             apiToken: cleanToken,
             hostUrl: window.location.origin,
             eventId: activeEventId,
-            guestIds: selectedGuestIds,
-            customMessage: customMessage
+            guestIds: finalTargets.map(g => g.id),
+            customMessage: customMessage,
+            allowResend: true
           })
         });
 
         const data = await res.json();
         if (res.ok && data.success) {
           setAutoProgress({ sent: data.sentCount, total: data.total, currentName: 'مكتمل' });
-          alert(`تم الانتهاء من الإرسال الآلي بنجاح لـ ${data.sentCount} من أصل ${data.total} مدعو في مناسبة "${eventData.title}" عبر البوابة!`);
+          if (data.failed && data.failed.length > 0) {
+            setFailedSends(data.failed);
+          }
+          const successNotice = `تم الانتهاء من الإرسال بنجاح لـ ${data.sentCount} من أصل ${data.total} مدعو في مناسبة "${eventData?.title || ''}"!`;
+          const failedNotice = data.failed?.length > 0 ? `\n(تعذر الإرسال لـ ${data.failed.length} مدعو، يمكنك مراجعة سجل الإرسال المتعثر وإعادة المحاولة أدناه)` : '';
+          alert(successNotice + failedNotice);
           if (refreshData) refreshData();
         } else {
           alert(data.error || 'حدث خطأ في استجابة بوابة الواتساب. تأكد من صحة Instance ID و API Token وشحن الرصيد.');
@@ -677,46 +894,60 @@ export default function AdminDashboard({
 
     // Mode B: Direct Browser Sequential Dispatch (If no paid API credentials)
     const proceedDirect = window.confirm(
-      `لم تقم بإدخال Instance ID و API Token لبوابة الواتساب الآلية.\n\nهل ترغب في البدء بالإرسال المباشر لـ (${selectedGuestsList.length}) مدعو عبر فتح الواتساب بالتتابع وتوجيه الرسالة والصورة؟`
+      `لم تقم بإدخال Instance ID و API Token لبوابة الواتساب الآلية.\n\nهل ترغب في البدء بالإرسال المباشر لـ (${finalTargets.length}) مدعو عبر فتح تطبيق الواتساب بالتتابع؟`
     );
 
     if (!proceedDirect) return;
 
     setIsSendingAuto(true);
     let sentSuccess = 0;
-    const userMsgText = customMessage.trim() || 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
+    const failedList = [];
 
-    let cardImgUrl = '';
-    if (eventData?.cardImage) {
-      if (eventData.cardImage.startsWith('http://') || eventData.cardImage.startsWith('https://')) {
-        cardImgUrl = eventData.cardImage;
-      } else if (eventData.cardImage.startsWith('/')) {
-        cardImgUrl = `${window.location.origin}${eventData.cardImage}`;
+    for (let i = 0; i < finalTargets.length; i++) {
+      const g = finalTargets[i];
+      setAutoProgress({ sent: i + 1, total: finalTargets.length, currentName: g.name });
+
+      try {
+        const depList = (guests || []).filter(d => d.parent_guest_id === g.id);
+        const fullText = renderWhatsAppMessage(customMessage, {
+          guest: g,
+          dependents: depList,
+          event: eventData,
+          baseUrl: window.location.origin
+        });
+
+        const waMsg = encodeURIComponent(fullText);
+        const waUrl = `https://api.whatsapp.com/send?phone=${g.phone}&text=${waMsg}`;
+
+        window.open(waUrl, '_blank');
+        g.sent = true;
+        sentSuccess++;
+
+        try {
+          await fetch('/api/guests/sent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventId: activeEventId, guestIds: [g.id] })
+          });
+        } catch (err) {
+          console.warn('Failed to sync sent state:', err);
+        }
+
+        // Random delay between 3-8 seconds to protect sending (Phase 5 Req 5)
+        if (i < finalTargets.length - 1) {
+          const delay = Math.floor(Math.random() * (4500 - 2500 + 1)) + 2500;
+          await new Promise(r => setTimeout(r, delay));
+        }
+      } catch (err) {
+        failedList.push({ guestId: g.id, name: g.name, phone: g.phone, errorReason: err.message });
       }
-    }
-    const cardImgNotice = cardImgUrl ? `\n\n📷 صورة كرت الدعوة المرفقة:\n${cardImgUrl}` : '';
-
-    for (let i = 0; i < selectedGuestsList.length; i++) {
-      const g = selectedGuestsList[i];
-      setAutoProgress({ sent: i + 1, total: selectedGuestsList.length, currentName: g.name });
-
-      const guestLink = `${window.location.origin}/?guest=${g.id}`;
-      const guestSeats = g.count || g.companions || 1;
-      const countNotice = guestSeats > 1 ? `\nعدد المقاعد المخصصة: ${guestSeats} أشخاص` : '';
-      const fullText = `مرحباً ${g.name} 👋\n\n${userMsgText}\n\nالمناسبة: ${eventData?.title || ''}\nالتاريخ: ${eventData?.date || ''}\nالمكان: ${eventData?.location || ''}${countNotice}${cardImgNotice}\n\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\n${guestLink}`;
-      
-      const waMsg = encodeURIComponent(fullText);
-      const waUrl = `https://api.whatsapp.com/send?phone=${g.phone}&text=${waMsg}`;
-
-      window.open(waUrl, '_blank');
-      g.sent = true;
-      sentSuccess++;
-
-      await new Promise(r => setTimeout(r, 1000));
     }
 
     setIsSendingAuto(false);
-    alert(`تم فتح الواتساب وتحديث حالة ${sentSuccess} مدعو محدد بنجاح!`);
+    if (failedList.length > 0) {
+      setFailedSends(failedList);
+    }
+    alert(`تم فتح الواتساب وإتمام الإرسال لـ ${sentSuccess} مدعو بنجاح!`);
     if (refreshData) refreshData();
   };
 
@@ -819,6 +1050,7 @@ export default function AdminDashboard({
           : statusFilter === 'declined' ? unit.status === 'declined'
           : statusFilter === 'pending' ? unit.status === 'pending'
           : statusFilter === 'unsent' ? !unit.sent
+          : statusFilter === 'sent' ? unit.sent
           : true;
 
         const depMatches = unit.dependents.some(d => {
@@ -826,6 +1058,7 @@ export default function AdminDashboard({
           if (statusFilter === 'declined') return d.status === 'declined';
           if (statusFilter === 'pending') return d.status === 'pending';
           if (statusFilter === 'unsent') return !unit.sent;
+          if (statusFilter === 'sent') return unit.sent;
           return true;
         });
 
@@ -865,6 +1098,8 @@ export default function AdminDashboard({
         return `بانتظار الرد (${pending})`;
       case 'unsent':
         return `لم يُرسل بعد (${unsentCount})`;
+      case 'sent':
+        return `تم الإرسال (${sentCount})`;
       case 'all':
       default:
         return `الكل (${guests.length})`;
@@ -1320,33 +1555,145 @@ export default function AdminDashboard({
               </form>
             </div>
 
-            {/* Form 3: WhatsApp Customization & Gateway Credentials */}
+            {/* Form 3: WhatsApp Customization & Gateway Credentials (Phase 5) */}
             <div className="apple-card" style={{ marginBottom: 0 }}>
-              <div className="card-title-row">
-                <h2><MessageCircle className="system-gold" size={20} /> 3. تخصيص نص رسالة الواتساب وبوابة الإرسال وصورة الدعوة</h2>
+              <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '10px', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h2><MessageCircle className="system-gold" size={20} /> 3. تخصيص رسالة الواتساب وبوابة الإرسال</h2>
+                
+                {/* Template Preset Switchers (Phase 5 Req 1) */}
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="apple-btn apple-btn-secondary"
+                    style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                    onClick={() => {
+                      setCustomMessage(DEFAULT_TEMPLATE_SINGLE);
+                      localStorage.setItem('wa_custom_message', DEFAULT_TEMPLATE_SINGLE);
+                    }}
+                    title="تحميل قالب الدعوة الفردية"
+                  >
+                    دعوة فردية
+                  </button>
+                  <button
+                    type="button"
+                    className="apple-btn apple-btn-secondary"
+                    style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                    onClick={() => {
+                      setCustomMessage(DEFAULT_TEMPLATE_WITH_COMPANIONS);
+                      localStorage.setItem('wa_custom_message', DEFAULT_TEMPLATE_WITH_COMPANIONS);
+                    }}
+                    title="تحميل قالب الدعوة العائلية ومع المرافقين"
+                  >
+                    دعوة عائلية / مرافقين
+                  </button>
+                  <button
+                    type="button"
+                    className="apple-btn apple-btn-secondary"
+                    style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                    onClick={() => {
+                      setCustomMessage(DEFAULT_REMINDER_TEMPLATE);
+                      localStorage.setItem('wa_custom_message', DEFAULT_REMINDER_TEMPLATE);
+                    }}
+                    title="تحميل قالب تذكير لمن لم يؤكد الحضور"
+                  >
+                    تذكير لمن لم يرد
+                  </button>
+                </div>
               </div>
 
-              <div className="form-group">
-                <label>نص رسالة الدعوة المخصصة (يتم دمج اسم الضيف وتفاصيل المناسبة ورابط التذكرة وصورة الكرت تلقائياً):</label>
+              {/* Variable Insertion Chips (Phase 5 Req 1) */}
+              <div style={{ marginBottom: '10px' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                  المتغيرات المتاحة (انقر على أي متغير لإدراجه في نص الرسالة):
+                </span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {TEMPLATE_VARIABLES.map(v => (
+                    <button
+                      key={v.key}
+                      type="button"
+                      className="apple-btn apple-btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#f8fafc', borderColor: '#cbd5e1' }}
+                      onClick={() => insertVariableTag(v.key)}
+                    >
+                      <Plus size={12} style={{ color: 'var(--pink-primary)' }} />
+                      <code>{v.key}</code>
+                      <span style={{ color: 'var(--text-secondary)' }}>({v.label})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label>نص رسالة الدعوة المخصصة (يتم استبدال المتغيرات تلقائياً عند الإرسال لكل ضيف):</label>
                 <textarea
                   className="apple-input"
-                  rows="3"
+                  rows="4"
                   value={customMessage}
                   onChange={(e) => {
                     setCustomMessage(e.target.value);
                     localStorage.setItem('wa_custom_message', e.target.value);
                   }}
-                  placeholder="أدخل نص الدعوة هنا... مثال: يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم."
+                  placeholder="أدخل نص الدعوة هنا مستخدماً المتغيرات أعلاه..."
+                  style={{ lineHeight: '1.6', fontFamily: 'inherit' }}
                 ></textarea>
               </div>
 
-              {/* Live Message Preview Box */}
+              {/* Live Message Preview Box with Real Guest Selector (Phase 5 Req 2 & 3) */}
               <div style={{ background: '#f0f5f9', border: '1px solid rgba(64, 123, 161, 0.25)', borderRadius: '14px', padding: '14px 18px', marginBottom: '14px', fontSize: '0.86rem' }}>
-                <div style={{ fontWeight: 800, color: 'var(--pink-dark)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Sparkles size={16} /> معاينة حية لشكل رسالة الواتساب المرسلة للضيف:
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                  <div style={{ fontWeight: 800, color: 'var(--pink-dark)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sparkles size={16} /> معاينة حية لشكل رسالة الواتساب مع بيانات حقيقية:
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    {/* Real Guest Selector */}
+                    {ownerGuests.length > 0 && (
+                      <select
+                        className="apple-input"
+                        style={{ padding: '4px 10px', fontSize: '0.78rem', height: '32px', minWidth: '160px' }}
+                        value={previewGuestId || (selectedPreviewGuest?.id || '')}
+                        onChange={(e) => setPreviewGuestId(e.target.value)}
+                        title="اختر ضيفاً لمعاينة شكل الرسالة الموجهة إليه"
+                      >
+                        {ownerGuests.map(o => {
+                          const depCount = (guests || []).filter(d => d.parent_guest_id === o.id).length;
+                          return (
+                            <option key={o.id} value={o.id}>
+                              معاينة لـ: {o.name} {depCount > 0 ? `(${depCount} مرافقين)` : '(مستقل)'}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    )}
+
+                    {/* Test Send Button (Phase 5 Req 3) */}
+                    <button
+                      type="button"
+                      className="apple-btn apple-btn-secondary"
+                      style={{ padding: '4px 12px', fontSize: '0.78rem', height: '32px', color: 'var(--pink-dark)', borderColor: 'var(--pink-primary)' }}
+                      onClick={() => {
+                        setTestFeedback(null);
+                        setIsTestModalOpen(true);
+                      }}
+                      title="إرسال تجريبي لرقم هاتفك الخاص للتحقق من المظهر في تطبيق واتساب"
+                    >
+                      <Smartphone size={14} /> إرسال تجريبي لرقمي أولاً
+                    </button>
+                  </div>
                 </div>
-                <div style={{ color: 'var(--text-primary)', whiteSpace: 'pre-line', background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)', lineHeight: '1.6' }}>
-                  {`مرحباً [اسم الضيف] 👋\n\n${customMessage || 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.'}\n\nالمناسبة: ${eventData?.title || 'عنوان المناسبة'}\nالتاريخ: ${eventData?.date || ''}\nالمكان: ${eventData?.location || ''}\n\n[📷 يتم إرفاق صورة كرت الدعوة المرفوعة تلقائياً مع هذه الرسالة]\n\nيرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:\nhttps://invitation.app/?guest=xxx`}
+
+                {/* Companion info badge if guest has dependents */}
+                {selectedPreviewGuest && previewDependents.length > 0 && (
+                  <div style={{ marginBottom: '8px' }}>
+                    <span className="ios-badge" style={{ background: 'rgba(99, 102, 241, 0.12)', color: '#4f46e5', fontSize: '0.75rem', padding: '3px 10px' }}>
+                      👥 مرافقو {selectedPreviewGuest.name}: {previewDependents.map(d => d.name).join(' و ')}
+                    </span>
+                  </div>
+                )}
+
+                {/* Rendered Text Box */}
+                <div style={{ color: 'var(--text-primary)', whiteSpace: 'pre-line', background: '#ffffff', padding: '14px 18px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', lineHeight: '1.65', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                  {renderedLivePreview}
                 </div>
               </div>
 
@@ -1549,6 +1896,18 @@ export default function AdminDashboard({
                         </span>
                         <span className="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{unsentCount}</span>
                       </button>
+                      <button
+                        type="button"
+                        className={`apple-btn ${statusFilter === 'sent' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
+                        style={{ width: '100%', justifyContent: 'space-between', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '10px' }}
+                        onClick={() => { setStatusFilter('sent'); setIsFilterMenuOpen(false); }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0284c7' }}></span>
+                          تم الإرسال
+                        </span>
+                        <span className="ios-badge" style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.72rem', padding: '2px 8px' }}>{sentCount}</span>
+                      </button>
                     </div>
                   </>
                 )}
@@ -1556,6 +1915,10 @@ export default function AdminDashboard({
 
               <button className="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
                 تحديد غير المرسل لهم فقط
+              </button>
+
+              <button className="apple-btn apple-btn-secondary" onClick={handleSelectPendingReminderOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }} title="تحديد من وصلتهم الدعوة ولم يؤكدوا الحضور بعد لإرسال تذكير">
+                تحديد بانتظار الرد (تذكير)
               </button>
             </div>
 
@@ -1594,6 +1957,56 @@ export default function AdminDashboard({
             </div>
             <div style={{ width: '100%', height: '10px', background: 'rgba(64, 123, 161, 0.15)', borderRadius: '10px', overflow: 'hidden' }}>
               <div style={{ width: `${(autoProgress.sent / autoProgress.total) * 100}%`, height: '100%', background: 'var(--pink-gradient)', transition: 'width 0.4s ease' }}></div>
+            </div>
+          </div>
+        )}
+
+        {/* Failed Sends Log & Retry Table (Phase 5 Req 5) */}
+        {failedSends.length > 0 && (
+          <div style={{ background: '#fff1f2', border: '1.5px solid #fca5a5', borderRadius: '14px', padding: '16px 20px', marginTop: '14px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ fontWeight: 800, color: '#b91c1c', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.92rem' }}>
+                <AlertTriangle size={18} /> سجل الإرسال المتعثر ({failedSends.length} مدعو لم يتم وصول الرسالة إليهم):
+              </div>
+              <button
+                type="button"
+                className="apple-btn apple-btn-secondary"
+                style={{ fontSize: '0.76rem', padding: '4px 10px', color: '#b91c1c', borderColor: '#fca5a5' }}
+                onClick={() => setFailedSends([])}
+              >
+                إغلاق التنبيه
+              </button>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="apple-table" style={{ fontSize: '0.82rem', background: '#ffffff', borderRadius: '10px' }}>
+                <thead>
+                  <tr>
+                    <th>اسم الضيف</th>
+                    <th>رقم الجوال</th>
+                    <th>سبب التعثر</th>
+                    <th style={{ width: '130px' }}>إجراء</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {failedSends.map(item => (
+                    <tr key={item.guestId}>
+                      <td style={{ fontWeight: 700 }}>{item.name}</td>
+                      <td dir="ltr" style={{ textAlign: 'right' }}>{item.phone}</td>
+                      <td style={{ color: '#dc2626' }}>{item.errorReason || 'تعذر الإرسال'}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="apple-btn apple-btn-pink"
+                          style={{ padding: '4px 10px', fontSize: '0.75rem', gap: '4px' }}
+                          onClick={() => handleRetryFailedSingle(item)}
+                        >
+                          <RefreshCw size={12} /> إعادة المحاولة
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -2244,6 +2657,134 @@ export default function AdminDashboard({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Test Send Modal (Phase 5 Req 3) */}
+      {isTestModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => setIsTestModalOpen(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              padding: '28px 24px',
+              maxWidth: '480px',
+              width: '100%',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
+              direction: 'rtl'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(64, 123, 161, 0.1)', color: 'var(--pink-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Smartphone size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                    إرسال تجريبي لرقمي أولاً
+                  </h3>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    اختبار ظهور الرسالة والكرت والتذكرة على رقمك الشخصي
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTestModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem' }}>رقم الجوال التجريبي:</label>
+                <input
+                  type="tel"
+                  className="apple-input"
+                  placeholder="مثال: 0501234567 أو 966501234567"
+                  value={testPhone}
+                  autoFocus
+                  required
+                  onChange={(e) => setTestPhone(e.target.value)}
+                />
+              </div>
+
+              {ownerGuests.length > 0 && (
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label style={{ fontWeight: 700, fontSize: '0.88rem' }}>محاكاة بيانات دعوة الضيف:</label>
+                  <select
+                    className="apple-input"
+                    value={previewGuestId || (selectedPreviewGuest?.id || '')}
+                    onChange={(e) => setPreviewGuestId(e.target.value)}
+                  >
+                    {ownerGuests.map(o => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Message preview snippet */}
+              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', marginBottom: '16px', fontSize: '0.8rem', color: 'var(--text-secondary)', maxHeight: '140px', overflowY: 'auto', border: '1px solid #e2e8f0', whiteSpace: 'pre-line' }}>
+                {renderedLivePreview}
+              </div>
+
+              {testFeedback && (
+                <div style={{ padding: '10px 14px', borderRadius: '12px', marginBottom: '16px', fontSize: '0.82rem', background: testFeedback.success ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: testFeedback.success ? '#15803d' : '#b91c1c', border: `1px solid ${testFeedback.success ? '#86efac' : '#fca5a5'}` }}>
+                  {testFeedback.message}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="apple-btn apple-btn-pink"
+                  style={{ flex: 1, justifyContent: 'center', padding: '11px', fontWeight: 700 }}
+                  onClick={handleSendTestMessage}
+                  disabled={isSendingTest || !testPhone.trim()}
+                >
+                  {isSendingTest ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" /> جاري الإرسال...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} /> إرسال الرسالة التجريبية الآن
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="apple-btn apple-btn-secondary"
+                  style={{ padding: '11px 18px' }}
+                  onClick={() => setIsTestModalOpen(false)}
+                >
+                  إغلاق
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

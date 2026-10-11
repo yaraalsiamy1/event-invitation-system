@@ -184,6 +184,100 @@ export function getGreetingText(dependents = []) {
   return `الدعوة لك ولـ ${names.join(' و')}`;
 }
 
+export function formatArabicDateOnly(dateStr) {
+  if (!dateStr) return '';
+  const ARABIC_WEEKDAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const ARABIC_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const clean = dateStr.toString().trim();
+  const ymd = clean.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  const dmy = clean.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  let y, m, d;
+  if (ymd) { y = parseInt(ymd[1], 10); m = parseInt(ymd[2], 10); d = parseInt(ymd[3], 10); }
+  else if (dmy) { d = parseInt(dmy[1], 10); m = parseInt(dmy[2], 10); y = parseInt(dmy[3], 10); }
+  else { const dt = new Date(clean); if (isNaN(dt.getTime())) return clean; y = dt.getFullYear(); m = dt.getMonth() + 1; d = dt.getDate(); }
+  const dtObj = new Date(y, m - 1, d);
+  return `${ARABIC_WEEKDAYS[dtObj.getDay()]} ${d} ${ARABIC_MONTHS[m - 1]} ${y}`;
+}
+
+export function formatArabicTimeOnly(timeStr) {
+  if (!timeStr) return '';
+  const clean = timeStr.toString().trim();
+  const m = clean.match(/(\d{1,2}):(\d{2})(?:\s*(AM|PM|am|pm|ص|م))?/i);
+  if (!m) return clean;
+  let h = parseInt(m[1], 10);
+  const min = m[2];
+  const marker = (m[3] || '').toUpperCase();
+  if (marker === 'PM' || marker === 'م') { if (h < 12) h += 12; }
+  else if (marker === 'AM' || marker === 'ص') { if (h === 12) h = 0; }
+  const period = h >= 12 ? 'م' : 'ص';
+  const h12 = h % 12 || 12;
+  return `${h12}:${min} ${period}`;
+}
+
+export const DEFAULT_TEMPLATE_SINGLE = `مرحباً {guest_name} 👋
+
+يسرنا ويسعدنا دعوتك لحضور حفلنا وتكتمل فرحتنا بمشاركتك.
+
+المناسبة: {event_name}
+التاريخ: {date}
+الوقت: {time}
+المكان: {venue}
+
+يرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:
+{invite_link}`;
+
+export const DEFAULT_TEMPLATE_WITH_COMPANIONS = `مرحباً {guest_name} 👋
+
+الدعوة لك {companions}، يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.
+
+المناسبة: {event_name}
+التاريخ: {date}
+الوقت: {time}
+المكان: {venue}
+
+يرجى تأكيد حضوركم واستلام تذاكر الدخول الإلكترونية عبر الرابط التالي:
+{invite_link}`;
+
+export const DEFAULT_REMINDER_TEMPLATE = `مرحباً {guest_name} 👋
+
+نود تذكيركم بموعد حفل {event_name} يوم {date} الساعة {time} في {venue}.
+ويسعدنا تأكيد حضوركم عبر الرابط التالي:
+{invite_link}`;
+
+/**
+ * Renders WhatsApp message template with variables (Phase 5 Req 1 & 2)
+ */
+export function renderWhatsAppMessage(template, { guest, dependents = [], event = {}, baseUrl = 'http://localhost:3000' }) {
+  if (!guest) return '';
+
+  const depNames = dependents.map(d => (d && d.name) ? d.name.trim() : '').filter(Boolean);
+  const hasDependents = depNames.length > 0;
+
+  // If no template is provided, pick automatic template based on dependents
+  let tpl = template;
+  if (!tpl || !tpl.trim()) {
+    tpl = hasDependents ? DEFAULT_TEMPLATE_WITH_COMPANIONS : DEFAULT_TEMPLATE_SINGLE;
+  }
+
+  const guestName = guest.name || '';
+  const companionsText = hasDependents ? `ولـ ${depNames.join(' و')}` : '';
+  const eventName = event.title || 'المناسبة';
+  const dateStr = formatArabicDateOnly(event.date) || event.date || '';
+  const timeStr = formatArabicTimeOnly(event.time) || event.time || '';
+  const venueStr = event.location || '';
+  const inviteLink = `${baseUrl}/?guest=${guest.invite_token || guest.id}`;
+
+  return tpl
+    .replace(/\{guest_name\}|\{name\}/g, guestName)
+    .replace(/\{companions\}/g, companionsText)
+    .replace(/\{event_name\}|\{event\}/g, eventName)
+    .replace(/\{date\}/g, dateStr)
+    .replace(/\{time\}/g, timeStr)
+    .replace(/\{venue\}|\{location\}/g, venueStr)
+    .replace(/\{invite_link\}|\{link\}/g, inviteLink);
+}
+
+
 /**
  * Validates a guest against Phase 1 business rules
  * @param {Object} guest - The guest record to validate
