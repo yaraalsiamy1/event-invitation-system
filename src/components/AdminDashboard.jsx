@@ -1790,7 +1790,7 @@ export default function AdminDashboard({
                       />
                     </label>
 
-                    {eventData?.cardImage ? (
+                    {eventData?.cardImage && (
                       /* View Image Button: Eye icon only in place of thumbnail */
                       <button
                         type="button"
@@ -1810,8 +1810,6 @@ export default function AdminDashboard({
                       >
                         <Eye size={17} />
                       </button>
-                    ) : (
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>لم يتم رفع كرت دعوة بعد</span>
                     )}
                   </div>
 
