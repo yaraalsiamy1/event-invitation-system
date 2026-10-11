@@ -41,6 +41,13 @@ export default function AdminDashboard({
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(null);
   const [previewCardImg, setPreviewCardImg] = useState(eventData?.cardImage || null);
   const [fullViewImage, setFullViewImage] = useState(null);
+
+  // Phase 8: Card Upload & Replacement State
+  const [pendingCardFile, setPendingCardFile] = useState(null);
+  const [pendingCardPreview, setPendingCardPreview] = useState(null);
+  const [pendingCardCompressed, setPendingCardCompressed] = useState(null);
+  const [cardUploadError, setCardUploadError] = useState(null);
+  const [isSavingCard, setIsSavingCard] = useState(false);
   
   // Validation & New Event Modals state
   const [pendingExcelRows, setPendingExcelRows] = useState(null);
@@ -49,6 +56,10 @@ export default function AdminDashboard({
   // Sync preview card image whenever active eventData changes
   useEffect(() => {
     setPreviewCardImg(eventData?.cardImage || null);
+    setPendingCardPreview(null);
+    setPendingCardCompressed(null);
+    setPendingCardFile(null);
+    setCardUploadError(null);
   }, [eventData]);
 
   // WhatsApp Auto Gateway Credentials & Custom Text (Phase 5 & 7)
@@ -289,28 +300,173 @@ export default function AdminDashboard({
       }
     }
 
-    const updatedEv = { ...(eventData || {}), mapLink: cleanMap, cardImage: previewCardImg };
+    const updatedEv = { ...(eventData || {}), mapLink: cleanMap };
     if (!activeEventId || (events || []).length === 0) {
       await onCreateEvent(updatedEv);
     } else {
       await setEventData(updatedEv);
       if (showConfirmation) {
-        showConfirmation('تم حفظ التعديلات بنجاح!', `تم حفظ تفاصيل المناسبة "${updatedEv.title || 'جديدة'}" وكرت الدعوة بنجاح.`);
+        showConfirmation('تم حفظ التعديلات بنجاح!', `تم حفظ تفاصيل المناسبة "${updatedEv.title || 'جديدة'}" بنجاح.`);
       } else {
-        alert(`تم حفظ تفاصيل المناسبة "${updatedEv.title || 'جديدة'}" وكرت الدعوة بنجاح!`);
+        alert(`تم حفظ تفاصيل المناسبة "${updatedEv.title || 'جديدة'}" بنجاح!`);
       }
     }
   };
 
-  // Image Upload
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+  // Phase 8 Helper: Generate lightweight compressed image for WhatsApp sending via HTML5 Canvas
+  const compressImageForWhatsApp = (file) => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setPreviewCardImg(event.target.result);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.70));
+        };
+        img.onerror = () => resolve(e.target.result);
+        img.src = e.target.result;
       };
+      reader.onerror = () => resolve(null);
       reader.readAsDataURL(file);
+    });
+  };
+
+  // Phase 8: Handle Card File Selection & Strict Validation
+  const handleCardFileSelect = (e) => {
+    setCardUploadError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input value so user can re-pick same filename if desired
+    e.target.value = '';
+
+    // Requirement 3: PNG or JPG only
+    const validExtensions = /\.(png|jpe?g)$/i;
+    const validMimes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!validMimes.includes(file.type) && !validExtensions.test(file.name)) {
+      setCardUploadError('عذراً، يسمح فقط برفع صور بصيغة PNG أو JPG.');
+      return;
+    }
+
+    // Requirement 3: max 5 MB
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      setCardUploadError('حجم الصورة يتجاوز الحد المسموح به (5 ميجابايت كحد أقصى).');
+      return;
+    }
+
+    // Read original base64 & generate compressed version
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const origBase64 = ev.target.result;
+      setPendingCardPreview(origBase64);
+      setPendingCardFile(file);
+
+      try {
+        const compressedBase64 = await compressImageForWhatsApp(file);
+        setPendingCardCompressed(compressedBase64 || origBase64);
+      } catch (err) {
+        setPendingCardCompressed(origBase64);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Phase 8: Cancel pending card selection
+  const handleCancelPendingCard = () => {
+    setPendingCardPreview(null);
+    setPendingCardCompressed(null);
+    setPendingCardFile(null);
+    setCardUploadError(null);
+  };
+
+  // Phase 8: Confirm and Save Card to Server (Per Event)
+  const handleConfirmSaveCard = async () => {
+    if (!pendingCardPreview) return;
+    if (!activeEventId) {
+      alert('يرجى تحديد مناسبة نشطة أولاً.');
+      return;
+    }
+
+    // Requirement 6: Check DB count of sent invitees for this event
+    const isReplacing = Boolean(eventData?.cardImage);
+    if (isReplacing) {
+      try {
+        const res = await fetch(`/api/guests?eventId=${activeEventId}`);
+        if (res.ok) {
+          const dbGuests = await res.json();
+          const sentCount = (dbGuests || []).filter(g => !g.parent_guest_id && g.sent).length;
+          if (sentCount > 0) {
+            const confirmed = window.confirm(`تم إرسال الدعوة لـ ${sentCount} ضيف. الصورة الجديدة ستظهر لكل من يفتح رابطه. متأكد؟`);
+            if (!confirmed) {
+              return;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Could not check sent guests count from DB:', e);
+      }
+    }
+
+    setIsSavingCard(true);
+    setCardUploadError(null);
+
+    try {
+      const res = await fetch(`/api/events/${activeEventId}/card`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cardImage: pendingCardPreview,
+          cardImageCompressed: pendingCardCompressed || pendingCardPreview
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'فشل حفظ كرت الدعوة في الخادم');
+      }
+
+      const updatedEv = await res.json();
+
+      setEventData(updatedEv);
+      setPreviewCardImg(updatedEv.cardImage);
+      handleCancelPendingCard();
+
+      if (refreshData) {
+        await refreshData(activeEventId);
+      }
+
+      if (showConfirmation) {
+        showConfirmation('تم حفظ الكرت بنجاح!', 'تم رفع كرت الدعوة وحفظه لهذه المناسبة بنجاح.', 'success');
+      }
+    } catch (err) {
+      console.error('Failed to save card:', err);
+      setCardUploadError(err.message || 'تعذر حفظ الكرت، يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsSavingCard(false);
     }
   };
 
@@ -1573,39 +1729,150 @@ export default function AdminDashboard({
                   />
                 </div>
 
-                {/* Row 4: Card Image Upload & Preview & Save Button */}
-                <div className="form-group" style={{ borderTop: '1px solid rgba(64, 123, 161, 0.2)', paddingTop: '14px', marginBottom: 0 }}>
+                {/* Row 4: Card Image Upload & Preview Flow (Phase 8) */}
+                <div className="form-group" style={{ borderTop: '1px solid rgba(64, 123, 161, 0.2)', paddingTop: '16px', marginBottom: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                    
+                    {/* Left: Action button + status badge + thumbnail (Requirement 1 & 4) */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      <label className="apple-btn apple-btn-secondary" style={{ cursor: 'pointer', fontSize: '0.85rem' }}>
-                        <Upload size={16} /> تغيير صورة كرت الدعوة
-                        <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                      <label className="apple-btn apple-btn-secondary" style={{ cursor: 'pointer', fontSize: '0.84rem' }}>
+                        <Upload size={15} />
+                        {eventData?.cardImage ? 'تغيير صورة كرت الدعوة' : 'اختر صورة الكرت'}
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/jpg"
+                          onChange={handleCardFileSelect}
+                          style={{ display: 'none' }}
+                        />
                       </label>
-                      {previewCardImg ? (
-                        <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <Check size={14} /> تم رفع الكرت
-                        </span>
+
+                      {eventData?.cardImage ? (
+                        <>
+                          <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Check size={14} /> تم رفع الكرت
+                          </span>
+
+                          {/* Thumbnail of saved card (Requirement 4) */}
+                          <img
+                            src={eventData.cardImage}
+                            alt="مصغرة كرت الدعوة"
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              borderRadius: '8px',
+                              objectFit: 'cover',
+                              border: '1.5px solid rgba(64, 123, 161, 0.25)',
+                              cursor: 'pointer',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+                            }}
+                            onClick={() => setFullViewImage(eventData.cardImage)}
+                            title="انقر لعرض الصورة بالحجم الكامل"
+                          />
+                        </>
                       ) : (
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>لم يتم رفع كرت دعوة بعد</span>
                       )}
                     </div>
 
-                    {previewCardImg && (
+                    {/* Right: "عرض الصورة" button (Requirement 4 & 5) */}
+                    {eventData?.cardImage && (
                       <button
                         type="button"
                         className="apple-btn apple-btn-secondary"
                         style={{ fontSize: '0.82rem', padding: '6px 14px' }}
-                        onClick={() => setFullViewImage(previewCardImg)}
+                        onClick={() => setFullViewImage(eventData.cardImage)}
+                        title="عرض كرت الدعوة بالحجم الكامل"
                       >
                         <Eye size={14} /> عرض الصورة
                       </button>
                     )}
                   </div>
 
-                  {/* Save Button placed UNDER the image preview/upload section */}
+                  {/* Validation Error Message (Requirement 3) */}
+                  {cardUploadError && (
+                    <div style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <AlertTriangle size={14} /> {cardUploadError}
+                    </div>
+                  )}
+
+                  {/* Immediate Preview Section for newly chosen file (Requirement 2) */}
+                  {pendingCardPreview && (
+                    <div style={{ marginTop: '14px', background: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1.5px solid rgba(64, 123, 161, 0.25)' }}>
+                      {eventData?.cardImage ? (
+                        /* Side-by-side comparison when replacing (Requirement 2) */
+                        <div>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '10px' }}>
+                            مقارنة الكرت الحالي والكرت الجديد المختار:
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+                            <div style={{ textAlign: 'center', background: '#ffffff', padding: '10px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.08)' }}>
+                              <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>الكرت الحالي المحفوظ</div>
+                              <img
+                                src={eventData.cardImage}
+                                alt="الكرت الحالي"
+                                style={{ width: '100%', maxHeight: '160px', objectFit: 'contain', borderRadius: '8px' }}
+                              />
+                            </div>
+                            <div style={{ textAlign: 'center', background: '#ffffff', padding: '10px', borderRadius: '10px', border: '2px solid var(--pink-primary)' }}>
+                              <div style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--pink-dark)', marginBottom: '6px' }}>الكرت الجديد (المعاينة)</div>
+                              <img
+                                src={pendingCardPreview}
+                                alt="الكرت الجديد"
+                                style={{ width: '100%', maxHeight: '160px', objectFit: 'contain', borderRadius: '8px' }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* First time upload preview */
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--pink-dark)', marginBottom: '8px' }}>
+                            معاينة كرت الدعوة المختار:
+                          </div>
+                          <img
+                            src={pendingCardPreview}
+                            alt="معاينة الكرت الجديد"
+                            style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '10px', border: '2px solid var(--pink-primary)', background: '#ffffff', padding: '8px' }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Confirm & Cancel buttons (Requirement 2) */}
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          className="apple-btn apple-btn-secondary"
+                          onClick={handleCancelPendingCard}
+                          disabled={isSavingCard}
+                          style={{ padding: '7px 16px', fontSize: '0.82rem' }}
+                        >
+                          إلغاء
+                        </button>
+                        <button
+                          type="button"
+                          className="apple-btn apple-btn-pink"
+                          onClick={handleConfirmSaveCard}
+                          disabled={isSavingCard}
+                          style={{ padding: '7px 20px', fontSize: '0.82rem', fontWeight: 700 }}
+                        >
+                          {isSavingCard ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin" /> جاري الحفظ...
+                            </>
+                          ) : (
+                            <>
+                              <Check size={14} /> تأكيد وحفظ
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Save Details Button placed under the card section */}
                   <div style={{ marginTop: '16px' }}>
                     <button type="button" onClick={handleEventSubmit} className="apple-btn apple-btn-pink btn-block" style={{ padding: '10px 24px', fontSize: '0.92rem', cursor: 'pointer' }}>
-                      حفظ تفاصيل المناسبة والكرت
+                      حفظ تفاصيل المناسبة
                     </button>
                   </div>
                 </div>

@@ -155,6 +155,54 @@ app.post('/api/event', async (req, res) => {
   }
 });
 
+// Upload & replace event card image with automatic compression & old file cleanup (Phase 8)
+app.post('/api/events/:id/card', async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const { cardImage, cardImageCompressed } = req.body;
+
+    if (!cardImage) {
+      return res.status(400).json({ error: 'صورة الكرت مطلوبة' });
+    }
+
+    const currentEvent = await db.getEvent(eventId);
+    if (!currentEvent) {
+      return res.status(404).json({ error: 'المناسبة غير موجودة' });
+    }
+
+    // Delete old card files if they exist on server disk (Requirement 8)
+    if (currentEvent.cardImage && currentEvent.cardImage.startsWith('/uploads/')) {
+      const oldFilename = path.basename(currentEvent.cardImage);
+      const oldPath = path.join(uploadsDir, oldFilename);
+      if (fs.existsSync(oldPath)) {
+        try { fs.unlinkSync(oldPath); } catch (e) { console.warn('Could not delete old card file:', e); }
+      }
+    }
+    if (currentEvent.cardImageCompressed && currentEvent.cardImageCompressed.startsWith('/uploads/')) {
+      const oldCompFilename = path.basename(currentEvent.cardImageCompressed);
+      const oldCompPath = path.join(uploadsDir, oldCompFilename);
+      if (fs.existsSync(oldCompPath)) {
+        try { fs.unlinkSync(oldCompPath); } catch (e) { console.warn('Could not delete old compressed card file:', e); }
+      }
+    }
+
+    // Save new original image
+    const origUrl = saveBase64Image(cardImage, `${eventId}_orig`);
+    // Save new compressed version
+    const compUrl = cardImageCompressed ? saveBase64Image(cardImageCompressed, `${eventId}_wa`) : origUrl;
+
+    const updated = await db.updateEvent(eventId, {
+      cardImage: origUrl,
+      cardImageCompressed: compUrl
+    });
+
+    res.json(updated);
+  } catch (err) {
+    console.error('Card upload error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GUEST ROUTES FOR ACTIVE OR SPECIFIC EVENT
 app.get('/api/guests', async (req, res) => {
   try {
@@ -446,11 +494,12 @@ app.post('/api/whatsapp/send-test', sendingRateLimiter, async (req, res) => {
     });
 
     let cardImageUrl = null;
-    if (event.cardImage) {
-      if (event.cardImage.startsWith('http://') || event.cardImage.startsWith('https://')) {
-        cardImageUrl = event.cardImage;
-      } else if (!event.cardImage.startsWith('data:image')) {
-        cardImageUrl = `${baseUrl}${event.cardImage.startsWith('/') ? '' : '/'}${event.cardImage}`;
+    const cardImg = event.cardImageCompressed || event.cardImage;
+    if (cardImg) {
+      if (cardImg.startsWith('http://') || cardImg.startsWith('https://')) {
+        cardImageUrl = cardImg;
+      } else if (!cardImg.startsWith('data:image')) {
+        cardImageUrl = `${baseUrl}${cardImg.startsWith('/') ? '' : '/'}${cardImg}`;
       }
     }
 
@@ -503,11 +552,12 @@ app.post('/api/whatsapp/send-single', sendingRateLimiter, async (req, res) => {
     });
 
     let cardImageUrl = null;
-    if (event.cardImage) {
-      if (event.cardImage.startsWith('http://') || event.cardImage.startsWith('https://')) {
-        cardImageUrl = event.cardImage;
-      } else if (!event.cardImage.startsWith('data:image')) {
-        cardImageUrl = `${baseUrl}${event.cardImage.startsWith('/') ? '' : '/'}${event.cardImage}`;
+    const cardImg = event.cardImageCompressed || event.cardImage;
+    if (cardImg) {
+      if (cardImg.startsWith('http://') || cardImg.startsWith('https://')) {
+        cardImageUrl = cardImg;
+      } else if (!cardImg.startsWith('data:image')) {
+        cardImageUrl = `${baseUrl}${cardImg.startsWith('/') ? '' : '/'}${cardImg}`;
       }
     }
 
@@ -577,11 +627,12 @@ app.post('/api/send-whatsapp-batch', sendingRateLimiter, async (req, res) => {
 
     // Image URL resolution
     let cardImageUrl = null;
-    if (event.cardImage) {
-      if (event.cardImage.startsWith('http://') || event.cardImage.startsWith('https://')) {
-        cardImageUrl = event.cardImage;
-      } else if (!event.cardImage.startsWith('data:image')) {
-        cardImageUrl = `${baseUrl}${event.cardImage.startsWith('/') ? '' : '/'}${event.cardImage}`;
+    const cardImg = event.cardImageCompressed || event.cardImage;
+    if (cardImg) {
+      if (cardImg.startsWith('http://') || cardImg.startsWith('https://')) {
+        cardImageUrl = cardImg;
+      } else if (!cardImg.startsWith('data:image')) {
+        cardImageUrl = `${baseUrl}${cardImg.startsWith('/') ? '' : '/'}${cardImg}`;
       }
     }
 
