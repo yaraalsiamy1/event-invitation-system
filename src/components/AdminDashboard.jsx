@@ -219,14 +219,11 @@ export default function AdminDashboard({
     });
   }, [customMessage, selectedPreviewGuest, previewDependents, eventData]);
 
-  // Auto-sync selection state when owners change
+  // Auto-sync selection state when owners change (keep user selection, clean up deleted ones)
   useEffect(() => {
     if (ownerGuests.length > 0) {
       const validOwnerIds = new Set(ownerGuests.map(g => g.id));
-      setSelectedGuestIds(prev => {
-        const filtered = prev.filter(id => validOwnerIds.has(id));
-        return filtered.length > 0 ? filtered : ownerGuests.map(g => g.id);
-      });
+      setSelectedGuestIds(prev => prev.filter(id => validOwnerIds.has(id)));
     } else {
       setSelectedGuestIds([]);
     }
@@ -1998,9 +1995,11 @@ export default function AdminDashboard({
 
             {/* Quick Action Badges & Selection Shortcuts */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.82rem', padding: '6px 12px', fontWeight: 800 }}>
-                المحدد: {selectedGuestIds.length} من {ownerGuests.length}
-              </span>
+              {selectedGuestIds.length > 0 && (
+                <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.82rem', padding: '6px 12px', fontWeight: 800 }}>
+                  المحدد: {selectedGuestIds.length} من {ownerGuests.length}
+                </span>
+              )}
 
               <button className="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
                 غير المرسل لهم

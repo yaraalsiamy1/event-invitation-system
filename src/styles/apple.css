@@ -714,7 +714,7 @@ body.apple-theme {
 }
 
 .apple-table th, .apple-table td {
-    padding: 14px 18px;
+    padding: 8px 12px;
     border-bottom: 1px solid rgba(64, 123, 161, 0.12);
 }
 
@@ -722,6 +722,7 @@ body.apple-theme {
     color: var(--text-secondary);
     font-weight: 700;
     background: rgba(240, 245, 249, 0.85);
+    padding: 9px 12px;
 }
 
 .apple-table tr:hover {
