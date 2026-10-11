@@ -1128,6 +1128,28 @@ export default function AdminDashboard({
     return filteredUnits.reduce((acc, u) => acc + 1 + (u.dependents?.length || 0), 0);
   }, [filteredUnits]);
 
+  // Flat list of all table rows (owners + companions), preserving parent-dependent grouping
+  const allTableRows = useMemo(() => {
+    const rows = [];
+    filteredUnits.forEach(owner => {
+      rows.push({
+        type: 'owner',
+        guest: owner,
+        owner: owner
+      });
+      if (owner.dependents && owner.dependents.length > 0) {
+        owner.dependents.forEach(dep => {
+          rows.push({
+            type: 'dependent',
+            guest: dep,
+            owner: owner
+          });
+        });
+      }
+    });
+    return rows;
+  }, [filteredUnits]);
+
   // Phase 6: Overall Live Statistics (Counting actual people, not invitations)
   const total = (guests || []).length;
   const ownersCount = (guests || []).filter(g => !g.parent_guest_id).length;
@@ -2101,10 +2123,10 @@ export default function AdminDashboard({
 
         {/* Paginated Calculations */}
         {(() => {
-          const totalPages = Math.max(1, Math.ceil(filteredUnits.length / pageSize));
+          const totalPages = Math.max(1, Math.ceil(allTableRows.length / pageSize));
           const safePage = Math.min(currentPage, totalPages);
           const startIndex = (safePage - 1) * pageSize;
-          const paginatedUnits = filteredUnits.slice(startIndex, startIndex + pageSize);
+          const paginatedRows = allTableRows.slice(startIndex, startIndex + pageSize);
 
           return (
             <>
@@ -2131,7 +2153,7 @@ export default function AdminDashboard({
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUnits.length === 0 ? (
+                    {allTableRows.length === 0 ? (
                       <tr>
                         <td colSpan="8" style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--text-secondary)' }}>
                           {guests.length === 0 ? (
@@ -2152,14 +2174,15 @@ export default function AdminDashboard({
                         </td>
                       </tr>
                     ) : (
-                      paginatedUnits.map((owner, idx) => {
-                        const isChecked = selectedGuestIds.includes(owner.id);
+                      paginatedRows.map((rowItem, idx) => {
                         const displayIndex = startIndex + idx + 1;
 
-                        return (
-                          <React.Fragment key={owner.id}>
-                            {/* Primary Owner Row */}
-                            <tr style={{ background: isChecked ? 'rgba(253, 242, 245, 0.4)' : 'transparent' }}>
+                        if (rowItem.type === 'owner') {
+                          const owner = rowItem.guest;
+                          const isChecked = selectedGuestIds.includes(owner.id);
+
+                          return (
+                            <tr key={owner.id} style={{ background: isChecked ? 'rgba(253, 242, 245, 0.4)' : 'transparent' }}>
                               <td style={{ textAlign: 'center' }}>
                                 <input
                                   type="checkbox"
@@ -2169,7 +2192,7 @@ export default function AdminDashboard({
                                   title="تحديد لإرسال الواتساب"
                                 />
                               </td>
-                              <td>{displayIndex}</td>
+                              <td style={{ fontWeight: 600 }}>{displayIndex}</td>
                               <td>
                                 <strong>{owner.name}</strong>
                               </td>
@@ -2232,72 +2255,74 @@ export default function AdminDashboard({
                                 </div>
                               </td>
                             </tr>
+                          );
+                        } else {
+                          const dep = rowItem.guest;
+                          const owner = rowItem.owner;
 
-                            {/* Indented Dependent Rows (Phase 2 Req 2) */}
-                            {owner.dependents && owner.dependents.map((dep) => (
-                              <tr
-                                key={dep.id}
-                                style={{
-                                  background: 'rgba(240, 245, 249, 0.55)',
-                                  borderTop: '1px dashed rgba(64, 123, 161, 0.15)'
-                                }}
-                              >
-                                <td style={{ textAlign: 'center', color: 'var(--text-secondary)' }} title="تصل الدعوة عبر صاحبها">
-                                  <span style={{ fontSize: '0.82rem' }}>-</span>
-                                </td>
-                                <td style={{ color: 'var(--pink-primary)', fontWeight: 800 }}>↳</td>
-                                <td>
-                                  <div style={{ paddingRight: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ color: 'var(--pink-primary)', fontWeight: 800 }}>↳</span>
-                                    <strong>{dep.name}</strong>
-                                    <span style={{ fontSize: '0.7rem', padding: '1px 6px', background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', borderRadius: '10px' }}>مرافق</span>
-                                  </div>
-                                </td>
-                                <td style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>بدون جوال</td>
-                                <td>
-                                  <span style={{ fontSize: '0.8rem', color: '#4f46e5', fontWeight: 600 }}>
-                                    ↳ مرافق لـ {owner.name}
-                                  </span>
-                                </td>
-                                <td>
-                                  {renderSingleStatus(dep)}
-                                </td>
-                                <td>
+                          return (
+                            <tr
+                              key={dep.id}
+                              style={{
+                                background: 'rgba(240, 245, 249, 0.55)',
+                                borderTop: '1px dashed rgba(64, 123, 161, 0.15)'
+                              }}
+                            >
+                              <td style={{ textAlign: 'center', color: 'var(--text-secondary)' }} title="تصل الدعوة عبر صاحبها">
+                                <span style={{ fontSize: '0.82rem' }}>-</span>
+                              </td>
+                              <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{displayIndex}</td>
+                              <td>
+                                <div style={{ paddingRight: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ color: 'var(--pink-primary)', fontWeight: 800 }}>↳</span>
+                                  <strong>{dep.name}</strong>
+                                  <span style={{ fontSize: '0.7rem', padding: '1px 6px', background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', borderRadius: '10px' }}>مرافق</span>
+                                </div>
+                              </td>
+                              <td style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>بدون جوال</td>
+                              <td>
+                                <span style={{ fontSize: '0.8rem', color: '#4f46e5', fontWeight: 600 }}>
+                                  ↳ مرافق لـ {owner.name}
+                                </span>
+                              </td>
+                              <td>
+                                {renderSingleStatus(dep)}
+                              </td>
+                              <td>
+                                <button
+                                  className="apple-btn apple-btn-secondary"
+                                  style={{ padding: '4px 8px', fontSize: '0.74rem' }}
+                                  onClick={() => {
+                                    setActiveGuestId(dep.id);
+                                    setActiveTab('guest');
+                                  }}
+                                >
+                                  <Eye size={12} /> كرت المرافق
+                                </button>
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <button
                                     className="apple-btn apple-btn-secondary"
-                                    style={{ padding: '4px 8px', fontSize: '0.74rem' }}
-                                    onClick={() => {
-                                      setActiveGuestId(dep.id);
-                                      setActiveTab('guest');
-                                    }}
+                                    style={{ padding: '5px 8px' }}
+                                    title="تعديل بيانات المرافق"
+                                    onClick={() => handleOpenEdit(dep)}
                                   >
-                                    <Eye size={12} /> كرت المرافق
+                                    <Edit size={13} />
                                   </button>
-                                </td>
-                                <td>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <button
-                                      className="apple-btn apple-btn-secondary"
-                                      style={{ padding: '5px 8px' }}
-                                      title="تعديل بيانات المرافق"
-                                      onClick={() => handleOpenEdit(dep)}
-                                    >
-                                      <Edit size={13} />
-                                    </button>
-                                    <button
-                                      className="apple-btn apple-btn-danger"
-                                      style={{ padding: '5px 8px' }}
-                                      title="حذف هذا المرافق"
-                                      onClick={() => handleDeleteGuest(dep.id)}
-                                    >
-                                      <Trash2 size={13} />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </React.Fragment>
-                        );
+                                  <button
+                                    className="apple-btn apple-btn-danger"
+                                    style={{ padding: '5px 8px' }}
+                                    title="حذف هذا المرافق"
+                                    onClick={() => handleDeleteGuest(dep.id)}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        }
                       })
                     )}
                   </tbody>
@@ -2305,7 +2330,7 @@ export default function AdminDashboard({
               </div>
 
               {/* Pagination Controls */}
-              {filteredUnits.length > 0 && totalPages > 1 && (
+              {allTableRows.length > 0 && totalPages > 1 && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(64, 123, 161, 0.2)' }}>
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     {/* Previous Page Arrow (Frameless, No Circle) */}
