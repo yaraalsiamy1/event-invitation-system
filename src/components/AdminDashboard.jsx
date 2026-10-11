@@ -3500,7 +3500,7 @@ export default function AdminDashboard({
             <form onSubmit={handleSingleGuestSubmit} style={{ marginBottom: '20px' }}>
               <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Plus size={16} style={{ color: 'var(--pink-primary)' }} />
-                إضافة ضيف سريع (مباشر):
+                إضافة يدوية:
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -3530,7 +3530,16 @@ export default function AdminDashboard({
                       setSingleParentId(e.target.value);
                       if (e.target.value) setSinglePhone('');
                     }}
-                    style={{ width: '100%', height: '40px', fontSize: '0.88rem' }}
+                    style={{
+                      width: '100%',
+                      height: '44px',
+                      padding: '8px 18px',
+                      fontSize: '0.9rem',
+                      lineHeight: '1.4',
+                      color: 'var(--text-primary)',
+                      background: '#ffffff',
+                      cursor: 'pointer'
+                    }}
                   >
                     <option value="">ضيف مستقل (صاحب دعوة)</option>
                     {(guests || [])
@@ -3565,7 +3574,7 @@ export default function AdminDashboard({
                     className="apple-btn apple-btn-pink"
                     style={{ padding: '9px 24px', fontSize: '0.86rem', fontWeight: 700 }}
                   >
-                    <Plus size={16} /> إضافة الضيف الآن
+                    <Plus size={16} /> إضافة
                   </button>
                 </div>
               </div>
@@ -3614,18 +3623,6 @@ export default function AdminDashboard({
                   />
                 </label>
               </div>
-            </div>
-
-            {/* Footer */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '18px' }}>
-              <button
-                type="button"
-                className="apple-btn apple-btn-secondary"
-                onClick={() => setIsAddGuestModalOpen(false)}
-                style={{ padding: '7px 18px', fontSize: '0.82rem' }}
-              >
-                إغلاق
-              </button>
             </div>
           </div>
         </div>

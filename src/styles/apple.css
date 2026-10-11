@@ -375,6 +375,13 @@ body.apple-theme {
     box-shadow: 0 0 0 4px rgba(64, 123, 161, 0.18);
 }
 
+select.apple-input {
+    height: 44px;
+    padding: 8px 18px;
+    line-height: normal;
+    background-color: #ffffff;
+}
+
 .single-guest-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.4fr) minmax(75px, 95px) auto;
