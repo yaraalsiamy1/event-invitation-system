@@ -1842,47 +1842,31 @@ export default function AdminDashboard({
           </div>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', width: '100%', justifyContent: 'space-between', marginTop: '6px' }}>
-            {/* Search Box (Phase 2 Req 6) */}
-            <div style={{ position: 'relative', width: '180px', maxWidth: '100%' }}>
-              <Search size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input
-                type="text"
-                className="apple-input"
-                placeholder="بحث..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ paddingRight: '30px', paddingLeft: '26px', height: '32px', fontSize: '0.8rem' }}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 0 }}
-                  title="مسح البحث"
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
+            {/* Search Box & Filter Icon Group */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ position: 'relative', width: '230px', maxWidth: '100%' }}>
+                <Search size={15} style={{ position: 'absolute', right: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                <input
+                  type="text"
+                  className="apple-input"
+                  placeholder="بحث بالاسم أو رقم الجوال..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ paddingRight: '34px', paddingLeft: '28px', height: '36px', fontSize: '0.84rem' }}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 0 }}
+                    title="مسح البحث"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
 
-            {/* Quick Action Badges & Filter & Export */}
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', position: 'relative' }}>
-              <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.82rem', padding: '6px 12px', fontWeight: 800 }}>
-                المحدد: {selectedGuestIds.length} من {ownerGuests.length}
-              </span>
-
-              {/* Export to Excel */}
-              <button
-                type="button"
-                className="apple-btn apple-btn-secondary"
-                onClick={handleExportToExcel}
-                style={{ fontSize: '0.82rem', padding: '7px 12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-                title="تصدير النتائج الحالية إلى ملف إكسل"
-              >
-                <Download size={15} /> تصدير
-              </button>
-
-              {/* Inline Filter Dropdown Button (Icon Only) */}
+              {/* Inline Filter Dropdown Button (Icon Only) directly next to search */}
               <div style={{ position: 'relative' }}>
                 <button
                   type="button"
@@ -1890,6 +1874,7 @@ export default function AdminDashboard({
                   onClick={() => setIsFilterMenuOpen(prev => !prev)}
                   style={{
                     padding: '7px 11px',
+                    height: '36px',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -2012,6 +1997,13 @@ export default function AdminDashboard({
                   </>
                 )}
               </div>
+            </div>
+
+            {/* Quick Action Badges & Selection Shortcuts */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.82rem', padding: '6px 12px', fontWeight: 800 }}>
+                المحدد: {selectedGuestIds.length} من {ownerGuests.length}
+              </span>
 
               <button className="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
                 غير المرسل لهم
