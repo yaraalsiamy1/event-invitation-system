@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import {
   Calendar, Users, CheckCircle2, XCircle, Clock, Upload, Download,
@@ -54,6 +54,36 @@ export default function AdminDashboard({
   const [isNewEventModalOpen, setIsNewEventModalOpen] = useState(false);
   const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
   const [isMessagePreviewOpen, setIsMessagePreviewOpen] = useState(false);
+
+  // Track saved state of event fields to only show save button when fields are modified
+  const lastSyncedEventIdRef = useRef(null);
+  const [savedEventFields, setSavedEventFields] = useState(null);
+
+  useEffect(() => {
+    if (eventData) {
+      if (!savedEventFields || lastSyncedEventIdRef.current !== (eventData.id || activeEventId)) {
+        lastSyncedEventIdRef.current = eventData.id || activeEventId;
+        setSavedEventFields({
+          title: eventData.title || '',
+          location: eventData.location || '',
+          date: eventData.date || '',
+          time: eventData.time || '20:00',
+          mapLink: eventData.mapLink || ''
+        });
+      }
+    }
+  }, [eventData?.id, activeEventId]);
+
+  const hasEventChanges = useMemo(() => {
+    if (!eventData || !savedEventFields) return false;
+    return (
+      (eventData.title || '') !== savedEventFields.title ||
+      (eventData.location || '') !== savedEventFields.location ||
+      (eventData.date || '') !== savedEventFields.date ||
+      (eventData.time || '20:00') !== savedEventFields.time ||
+      (eventData.mapLink || '') !== savedEventFields.mapLink
+    );
+  }, [eventData, savedEventFields]);
 
   // Sync preview card image whenever active eventData changes
   useEffect(() => {
@@ -305,8 +335,22 @@ export default function AdminDashboard({
     const updatedEv = { ...(eventData || {}), mapLink: cleanMap };
     if (!activeEventId || (events || []).length === 0) {
       await onCreateEvent(updatedEv);
+      setSavedEventFields({
+        title: updatedEv.title || '',
+        location: updatedEv.location || '',
+        date: updatedEv.date || '',
+        time: updatedEv.time || '20:00',
+        mapLink: updatedEv.mapLink || ''
+      });
     } else {
       await setEventData(updatedEv);
+      setSavedEventFields({
+        title: updatedEv.title || '',
+        location: updatedEv.location || '',
+        date: updatedEv.date || '',
+        time: updatedEv.time || '20:00',
+        mapLink: updatedEv.mapLink || ''
+      });
       if (showConfirmation) {
         showConfirmation('تم حفظ التعديلات بنجاح!', `تم حفظ تفاصيل المناسبة "${updatedEv.title || 'جديدة'}" بنجاح.`);
       } else {
@@ -1778,12 +1822,14 @@ export default function AdminDashboard({
                     </div>
                   )}
 
-                  {/* Save Details Button placed under the card section */}
-                  <div style={{ marginTop: '16px' }}>
-                    <button type="button" onClick={handleEventSubmit} className="apple-btn apple-btn-pink btn-block" style={{ padding: '10px 24px', fontSize: '0.92rem', cursor: 'pointer' }}>
-                      حفظ تفاصيل المناسبة
-                    </button>
-                  </div>
+                  {/* Save Details Button: only shown when user types/changes something in the fields */}
+                  {hasEventChanges && (
+                    <div style={{ marginTop: '16px' }}>
+                      <button type="button" onClick={handleEventSubmit} className="apple-btn apple-btn-pink btn-block" style={{ padding: '10px 24px', fontSize: '0.92rem', cursor: 'pointer' }}>
+                        حفظ تفاصيل المناسبة
+                      </button>
+                    </div>
+                  )}
                 </div>
               </form>
             </div>
