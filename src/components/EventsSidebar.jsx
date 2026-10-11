@@ -79,7 +79,17 @@ export default function EventsSidebar({ events = [], activeEventId, onSelectEven
                     <Calendar size={13} /> {ev.date ? formatArabicDateTime(ev.date) : 'بدون تاريخ'}
                   </span>
                   <div>
-                    <span className="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <span
+                      className="ios-badge ios-badge-gold"
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '0.74rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        lineHeight: 1.3
+                      }}
+                    >
                       <Users size={12} /> {ev.totalGuests || 0}
                     </span>
                   </div>
