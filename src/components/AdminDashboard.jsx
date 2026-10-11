@@ -2008,7 +2008,7 @@ export default function AdminDashboard({
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               {selectedGuestIds.length > 0 && (
                 <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.82rem', padding: '6px 12px', fontWeight: 800 }}>
-                  المحدد: {selectedGuestIds.length} من {ownerGuests.length}
+                  تم تحديد {selectedGuestIds.length} ضيف
                 </span>
               )}
 
