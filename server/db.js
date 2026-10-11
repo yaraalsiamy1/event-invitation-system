@@ -491,6 +491,15 @@ class MultiEventJSONDatabase {
     const data = this.read();
     return (data.events || []).map(ev => {
       const guests = ev.guests || [];
+      const total = guests.length;
+      const owners = guests.filter(g => !g.parent_guest_id);
+      const dependents = guests.filter(g => g.parent_guest_id);
+      const accepted = guests.filter(g => g.status === 'accepted').length;
+      const declined = guests.filter(g => g.status === 'declined').length;
+      const pending = guests.filter(g => !g.status || g.status === 'pending').length;
+      const responded = accepted + declined;
+      const responseRate = total > 0 ? Math.round((responded / total) * 100) : 0;
+
       return {
         id: ev.id,
         title: ev.title,
@@ -501,12 +510,68 @@ class MultiEventJSONDatabase {
         mapLink: ev.mapLink,
         cardImage: ev.cardImage,
         isActive: ev.id === data.activeEventId,
-        totalGuests: guests.length,
-        acceptedCount: guests.filter(g => g.status === 'accepted').length,
-        declinedCount: guests.filter(g => g.status === 'declined').length,
-        pendingCount: guests.filter(g => g.status === 'pending').length
+        totalGuests: total,
+        totalPeople: total,
+        ownersCount: owners.length,
+        dependentsCount: dependents.length,
+        acceptedCount: accepted,
+        declinedCount: declined,
+        pendingCount: pending,
+        responseRate
       };
     });
+  }
+
+  /**
+   * Phase 6: Live Event Statistics (Per Event, counting actual people, not invitations)
+   */
+  async getEventStats(eventId) {
+    const ev = await this.getEvent(eventId);
+    if (!ev) return null;
+    const guests = ev.guests || [];
+    const total = guests.length;
+    const owners = guests.filter(g => !g.parent_guest_id);
+    const dependents = guests.filter(g => g.parent_guest_id);
+
+    const accepted = guests.filter(g => g.status === 'accepted').length;
+    const acceptedOwners = owners.filter(g => g.status === 'accepted').length;
+    const acceptedDeps = dependents.filter(g => g.status === 'accepted').length;
+
+    const declined = guests.filter(g => g.status === 'declined').length;
+    const declinedOwners = owners.filter(g => g.status === 'declined').length;
+    const declinedDeps = dependents.filter(g => g.status === 'declined').length;
+
+    const pending = guests.filter(g => !g.status || g.status === 'pending').length;
+    const pendingOwners = owners.filter(g => !g.status || g.status === 'pending').length;
+    const pendingDeps = dependents.filter(g => g.status === 'pending').length;
+
+    const responded = accepted + declined;
+    const responseRate = total > 0 ? Math.round((responded / total) * 100) : 0;
+    const acceptanceRate = total > 0 ? Math.round((accepted / total) * 100) : 0;
+    const declineRate = total > 0 ? Math.round((declined / total) * 100) : 0;
+    const pendingRate = total > 0 ? Math.round((pending / total) * 100) : 0;
+
+    return {
+      eventId: ev.id,
+      eventTitle: ev.title,
+      total,
+      ownersCount: owners.length,
+      dependentsCount: dependents.length,
+      accepted,
+      acceptedOwners,
+      acceptedDeps,
+      declined,
+      declinedOwners,
+      declinedDeps,
+      pending,
+      pendingOwners,
+      pendingDeps,
+      responded,
+      responseRate,
+      acceptanceRate,
+      declineRate,
+      pendingRate
+    };
   }
 
   async getActiveEventId() {

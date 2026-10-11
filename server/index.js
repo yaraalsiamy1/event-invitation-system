@@ -108,6 +108,28 @@ app.delete('/api/events/:id', async (req, res) => {
   }
 });
 
+// Phase 6: Live Event Statistics Endpoint (Per Event, counting actual people)
+app.get('/api/events/:id/stats', async (req, res) => {
+  try {
+    const stats = await db.getEventStats(req.params.id);
+    if (!stats) return res.status(404).json({ error: 'المناسبة غير موجودة' });
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/event/stats', async (req, res) => {
+  try {
+    const eventId = req.query.eventId || (await db.getActiveEventId());
+    const stats = await db.getEventStats(eventId);
+    if (!stats) return res.status(404).json({ error: 'المناسبة غير موجودة' });
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ACTIVE EVENT ROUTES
 app.get('/api/event', async (req, res) => {
   try {

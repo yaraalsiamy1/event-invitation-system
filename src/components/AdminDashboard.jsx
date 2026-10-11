@@ -1074,15 +1074,33 @@ export default function AdminDashboard({
     return filteredUnits.reduce((acc, u) => acc + 1 + (u.dependents?.length || 0), 0);
   }, [filteredUnits]);
 
-  // Overall Statistics
+  // Phase 6: Overall Live Statistics (Counting actual people, not invitations)
   const total = (guests || []).length;
   const ownersCount = (guests || []).filter(g => !g.parent_guest_id).length;
   const dependentsCount = (guests || []).filter(g => g.parent_guest_id).length;
+
   const accepted = (guests || []).filter(g => g.status === 'accepted').length;
+  const acceptedOwners = (guests || []).filter(g => !g.parent_guest_id && g.status === 'accepted').length;
+  const acceptedDeps = (guests || []).filter(g => g.parent_guest_id && g.status === 'accepted').length;
+
   const declined = (guests || []).filter(g => g.status === 'declined').length;
-  const pending = (guests || []).filter(g => g.status === 'pending').length;
+  const declinedOwners = (guests || []).filter(g => !g.parent_guest_id && g.status === 'declined').length;
+  const declinedDeps = (guests || []).filter(g => g.parent_guest_id && g.status === 'declined').length;
+
+  const pending = (guests || []).filter(g => !g.status || g.status === 'pending').length;
+  const pendingOwners = (guests || []).filter(g => !g.parent_guest_id && (!g.status || g.status === 'pending')).length;
+  const pendingDeps = (guests || []).filter(g => g.parent_guest_id && (!g.status || g.status === 'pending')).length;
+
   const sentCount = (guests || []).filter(g => !g.parent_guest_id && g.sent).length;
   const unsentCount = (guests || []).filter(g => !g.parent_guest_id && !g.sent).length;
+
+  // Phase 6 Requirement: Response Rate (Percentage who replied out of actual people)
+  const responded = accepted + declined;
+  const responseRate = total > 0 ? Math.round((responded / total) * 100) : 0;
+  const acceptanceRate = total > 0 ? Math.round((accepted / total) * 100) : 0;
+  const declineRate = total > 0 ? Math.round((declined / total) * 100) : 0;
+  const pendingRate = total > 0 ? Math.round((pending / total) * 100) : 0;
+
   // Aliases for backward compatibility
   const totalSeats = total;
   const acceptedSeats = accepted;
@@ -1331,51 +1349,140 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          {/* LIVE STATISTICAL METRICS WIDGETS */}
+          {/* LIVE STATISTICAL METRICS WIDGETS (Phase 6: Live Statistics per event counting actual people) */}
           <div className="apple-card" style={{ background: '#ffffff', border: '1.5px solid rgba(64, 123, 161, 0.25)', marginBottom: 0 }}>
-            <div className="card-title-row" style={{ marginBottom: '16px' }}>
+            <div className="card-title-row" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px', justifyContent: 'space-between' }}>
               <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <BarChart3 size={20} style={{ color: 'var(--pink-primary)' }} /> المؤشرات الإحصائية الحية لمناسبة ({eventData?.title || 'المناسبة الحالية'})
               </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="ios-badge" style={{ background: 'rgba(64, 123, 161, 0.1)', color: 'var(--pink-dark)', fontSize: '0.78rem', fontWeight: 700 }}>
+                  إحصائيات فعلية لكل شخص (أصحاب دعوات ومرافقين)
+                </span>
+              </div>
             </div>
-            <div className="widgets-grid">
+
+            {/* 5 Widgets Grid */}
+            <div className="widgets-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
+              {/* Widget 1: Total invitees with breakdown */}
               <div className="apple-widget">
                 <div className="widget-icon pink"><Users size={24} /></div>
                 <div>
                   <div className="widget-val">
-                    {total} <small style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({ownersCount} صاحب دعوة{dependentsCount > 0 ? ` + ${dependentsCount} مرافق` : ''})</small>
+                    {total} <small style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>شخص</small>
                   </div>
                   <div className="widget-lbl">إجمالي المدعوين</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ background: '#f1f5f9', padding: '1px 6px', borderRadius: '6px' }}>{ownersCount} صاحب دعوة</span>
+                    <span style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', padding: '1px 6px', borderRadius: '6px' }}>{dependentsCount} مرافق</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Widget 2: Confirmed attendance */}
               <div className="apple-widget">
                 <div className="widget-icon green"><CheckCircle2 size={24} /></div>
                 <div>
                   <div className="widget-val">
-                    {accepted} {total > 0 && <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({Math.round((accepted / total) * 100)}%)</small>}
+                    {accepted} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({acceptanceRate}%)</small>
                   </div>
                   <div className="widget-lbl">حضور مؤكد</div>
+                  <div style={{ fontSize: '0.72rem', color: '#15803d', marginTop: '4px' }}>
+                    {acceptedOwners} صاحب دعوة + {acceptedDeps} مرافق
+                  </div>
                 </div>
               </div>
+
+              {/* Widget 3: Declined */}
               <div className="apple-widget">
                 <div className="widget-icon red"><XCircle size={24} /></div>
                 <div>
                   <div className="widget-val">
-                    {declined} {total > 0 && <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({Math.round((declined / total) * 100)}%)</small>}
+                    {declined} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({declineRate}%)</small>
                   </div>
                   <div className="widget-lbl">معتذرون</div>
+                  <div style={{ fontSize: '0.72rem', color: '#b91c1c', marginTop: '4px' }}>
+                    {declinedOwners} صاحب دعوة + {declinedDeps} مرافق
+                  </div>
                 </div>
               </div>
+
+              {/* Widget 4: Awaiting response */}
               <div className="apple-widget">
                 <div className="widget-icon amber"><Clock size={24} /></div>
                 <div>
                   <div className="widget-val">
-                    {pending} {total > 0 && <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({Math.round((pending / total) * 100)}%)</small>}
+                    {pending} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({pendingRate}%)</small>
                   </div>
                   <div className="widget-lbl">بانتظار الرد</div>
+                  <div style={{ fontSize: '0.72rem', color: '#b45309', marginTop: '4px' }}>
+                    {pendingOwners} صاحب دعوة + {pendingDeps} مرافق
+                  </div>
+                </div>
+              </div>
+
+              {/* Widget 5: Overall Response Rate (Phase 6 Req) */}
+              <div className="apple-widget">
+                <div className="widget-icon blue" style={{ background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7' }}><Sparkles size={24} /></div>
+                <div>
+                  <div className="widget-val">
+                    {responseRate}%
+                  </div>
+                  <div className="widget-lbl">معدل الاستجابة الكلي</div>
+                  <div style={{ fontSize: '0.72rem', color: '#0369a1', marginTop: '4px' }}>
+                    {responded} من {total} شخص ردوا
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Visual Response & Attendance Distribution Bar (Phase 6) */}
+            {total > 0 && (
+              <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid rgba(64, 123, 161, 0.15)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  <span>توزيع استجابة المدعوين لمناسبة "{eventData?.title || ''}":</span>
+                  <span style={{ color: 'var(--pink-dark)' }}>{responded} ردوا ({responseRate}%) • {pending} لم يردوا بعد ({pendingRate}%)</span>
+                </div>
+
+                {/* Multi-Segment Horizontal Bar */}
+                <div style={{ width: '100%', height: '14px', borderRadius: '10px', background: '#e2e8f0', display: 'flex', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)' }}>
+                  {accepted > 0 && (
+                    <div
+                      style={{ width: `${(accepted / total) * 100}%`, background: '#22c55e', transition: 'width 0.4s ease' }}
+                      title={`حضور مؤكد: ${accepted} (${acceptanceRate}%)`}
+                    />
+                  )}
+                  {declined > 0 && (
+                    <div
+                      style={{ width: `${(declined / total) * 100}%`, background: '#ef4444', transition: 'width 0.4s ease' }}
+                      title={`معتذرون: ${declined} (${declineRate}%)`}
+                    />
+                  )}
+                  {pending > 0 && (
+                    <div
+                      style={{ width: `${(pending / total) * 100}%`, background: '#f59e0b', transition: 'width 0.4s ease' }}
+                      title={`بانتظار الرد: ${pending} (${pendingRate}%)`}
+                    />
+                  )}
+                </div>
+
+                {/* Legend */}
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#22c55e' }}></span>
+                    حضور مؤكد ({accepted} - {acceptanceRate}%)
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#ef4444' }}></span>
+                    معتذرون ({declined} - {declineRate}%)
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#f59e0b' }}></span>
+                    بانتظار الرد ({pending} - {pendingRate}%)
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* STEP 1 & 2: SETUP EVENT & EXCEL UPLOAD STACK */}
