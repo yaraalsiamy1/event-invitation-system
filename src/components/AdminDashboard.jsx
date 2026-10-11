@@ -1745,9 +1745,6 @@ export default function AdminDashboard({
                   placeholder="اكتب نص المقدمة الترحيبية هنا (مثال: يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم)..."
                   style={{ lineHeight: '1.6', fontFamily: 'inherit' }}
                 ></textarea>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginTop: '6px' }}>
-                  ✨ الرسالة مجهزة تلقائياً بكامل تفاصيل المناسبة (الاسم، التاريخ، الوقت، المكان، ورابط تذكرة الدخول)، وأنت تقوم فقط بتعديل المقدمة الترحيبية أعلاه.
-                </span>
               </div>
 
               {/* Live Message Preview Box with Real Guest Selector */}
@@ -1817,8 +1814,7 @@ export default function AdminDashboard({
       <div className="apple-card" style={{ marginBottom: '28px' }}>
         <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
           <div>
-            <h2><Users className="system-gold" size={20} /> 4. قائمة المدعوين</h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>تصفية المدعوين حسب الحالة والتحكم في إرسال الدعوات وحفظ التغييرات</p>
+            <h2 style={{ margin: 0 }}><Users className="system-gold" size={20} /> 4. قائمة المدعوين</h2>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', width: '100%', justifyContent: 'space-between', marginTop: '6px' }}>
@@ -1999,17 +1995,29 @@ export default function AdminDashboard({
                 </span>
               )}
 
-              <button className="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
-                غير المرسل لهم
-              </button>
-
-              <button className="apple-btn apple-btn-secondary" onClick={handleSelectPendingReminderOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }} title="تحديد من وصلتهم الدعوة ولم يؤكدوا الحضور بعد لإرسال تذكير">
-                بانتظار الرد (تذكير)
+              <button
+                type="button"
+                className="apple-btn apple-btn-secondary"
+                onClick={handleSelectPendingReminderOnly}
+                style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+                title="تحديد من وصلتهم الدعوة ولم يؤكدوا الحضور بعد لإرسال تذكير قبل المناسبة بيوم"
+              >
+                تذكير قبل المناسبة بيوم
               </button>
             </div>
 
-            {/* Left side: Send Button */}
-            <div>
+            {/* Left side: Action & Send Buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                className="apple-btn apple-btn-secondary"
+                onClick={handleSelectUnsentOnly}
+                style={{ fontSize: '0.82rem', padding: '8px 14px' }}
+                title="تحديد من لم تُرسل لهم الدعوة بعد"
+              >
+                غير المرسل لهم
+              </button>
+
               <button
                 type="button"
                 className="apple-btn apple-btn-pink"
