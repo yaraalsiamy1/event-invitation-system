@@ -2001,23 +2001,33 @@ export default function AdminDashboard({
 
       {/* STREAMLINED GUESTS TABLE CARD */}
       <div className="apple-card" style={{ marginBottom: '28px' }}>
-        <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '14px', alignItems: 'center', justifyContent: 'space-between', display: 'flex' }}>
+        <div className="card-title-row" style={{ marginBottom: '14px' }}>
           <div>
             <h2 style={{ margin: 0 }}><Users className="system-gold" size={20} /> 3. قائمة المدعوين</h2>
           </div>
-          <button
-            type="button"
-            className="apple-btn apple-btn-pink"
-            onClick={() => setIsAddGuestModalOpen(true)}
-            style={{ padding: '8px 16px', fontSize: '0.86rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-          >
-            <UserPlus size={16} /> إضافة جديد
-          </button>
         </div>
 
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', width: '100%', justifyContent: 'space-between', marginTop: '6px' }}>
-            {/* Search Box & Filter Icon Group */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
+            {/* Right side: Add Guest button + Search Box & Filter Icon Group */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="apple-btn apple-btn-pink"
+                onClick={() => setIsAddGuestModalOpen(true)}
+                style={{
+                  height: '36px',
+                  padding: '7px 14px',
+                  fontSize: '0.84rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <UserPlus size={16} /> إضافة جديد
+              </button>
+
               <div style={{ position: 'relative', width: '230px', maxWidth: '100%' }}>
                 <Search size={15} style={{ position: 'absolute', right: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                 <input
