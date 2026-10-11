@@ -56,9 +56,13 @@ export default function AdminDashboard({
   const [apiToken, setApiToken] = useState(localStorage.getItem('wa_api_token') || '');
   const [hasServerWhatsAppConfig, setHasServerWhatsAppConfig] = useState(false);
   const [isCardVerified, setIsCardVerified] = useState(false);
-  const [customMessage, setCustomMessage] = useState(
-    localStorage.getItem('wa_custom_message') || DEFAULT_TEMPLATE_WITH_COMPANIONS
-  );
+  const [customMessage, setCustomMessage] = useState(() => {
+    const saved = localStorage.getItem('wa_custom_message');
+    if (!saved || saved.includes('{guest_name}') || saved.includes('{event_name}')) {
+      return 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
+    }
+    return saved;
+  });
   const [isSendingAuto, setIsSendingAuto] = useState(false);
   const [autoProgress, setAutoProgress] = useState(null);
   // Checkbox selection state for batch sending
@@ -254,9 +258,10 @@ export default function AdminDashboard({
       return;
     }
     setSelectedGuestIds(pendingOwners);
-    if (window.confirm(`تم تحديد (${pendingOwners.length}) مدعو بانتظار الرد.\nهل ترغب في تبديل نص الرسالة إلى قالب "التذكير" تلقائياً؟`)) {
-      setCustomMessage(DEFAULT_REMINDER_TEMPLATE);
-      localStorage.setItem('wa_custom_message', DEFAULT_REMINDER_TEMPLATE);
+    if (window.confirm(`تم تحديد (${pendingOwners.length}) مدعو بانتظار الرد.\nهل ترغب في تبديل مقدمة الرسالة إلى صيغة "التذكير" تلقائياً؟`)) {
+      const reminderIntro = 'نود تذكيركم بموعد حفلنا القريب، ويسعدنا ويشرفنا تأكيد حضوركم لمشاركتنا هذه الفرحة.';
+      setCustomMessage(reminderIntro);
+      localStorage.setItem('wa_custom_message', reminderIntro);
     }
   };
 
@@ -1662,94 +1667,80 @@ export default function AdminDashboard({
               </form>
             </div>
 
-            {/* Form 3: WhatsApp Customization & Gateway Credentials (Phase 5) */}
+            {/* Form 3: WhatsApp Customization & Gateway Credentials */}
             <div className="apple-card" style={{ marginBottom: 0 }}>
               <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '10px', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h2><MessageCircle className="system-gold" size={20} /> 3. تخصيص رسالة الواتساب وبوابة الإرسال</h2>
+                <h2><MessageCircle className="system-gold" size={20} /> 3. تخصيص مقدمة رسالة الواتساب وبوابة الإرسال</h2>
                 
-                {/* Template Preset Switchers (Phase 5 Req 1) */}
+                {/* Intro Preset Switchers */}
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     className="apple-btn apple-btn-secondary"
                     style={{ fontSize: '0.78rem', padding: '5px 10px' }}
                     onClick={() => {
-                      setCustomMessage(DEFAULT_TEMPLATE_SINGLE);
-                      localStorage.setItem('wa_custom_message', DEFAULT_TEMPLATE_SINGLE);
+                      const msg = 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
+                      setCustomMessage(msg);
+                      localStorage.setItem('wa_custom_message', msg);
                     }}
-                    title="تحميل قالب الدعوة الفردية"
+                    title="مقدمة ترحيبية أساسية"
                   >
-                    دعوة فردية
+                    مقدمة ترحيبية
                   </button>
                   <button
                     type="button"
                     className="apple-btn apple-btn-secondary"
                     style={{ fontSize: '0.78rem', padding: '5px 10px' }}
                     onClick={() => {
-                      setCustomMessage(DEFAULT_TEMPLATE_WITH_COMPANIONS);
-                      localStorage.setItem('wa_custom_message', DEFAULT_TEMPLATE_WITH_COMPANIONS);
+                      const msg = 'يسرنا ويسعدنا دعوتكم لحضور حفلنا، ويسعدنا حضوركم مع مرافقينكم الكرام وتكتمل فرحتنا بكم.';
+                      setCustomMessage(msg);
+                      localStorage.setItem('wa_custom_message', msg);
                     }}
-                    title="تحميل قالب الدعوة العائلية ومع المرافقين"
+                    title="مقدمة دعوة عائلية ومع المرافقين"
                   >
-                    دعوة عائلية / مرافقين
+                    مقدمة عائلية
                   </button>
                   <button
                     type="button"
                     className="apple-btn apple-btn-secondary"
                     style={{ fontSize: '0.78rem', padding: '5px 10px' }}
                     onClick={() => {
-                      setCustomMessage(DEFAULT_REMINDER_TEMPLATE);
-                      localStorage.setItem('wa_custom_message', DEFAULT_REMINDER_TEMPLATE);
+                      const msg = 'نود تذكيركم بموعد حفلنا القريب، ويسعدنا ويشرفنا تأكيد حضوركم لمشاركتنا هذه الفرحة.';
+                      setCustomMessage(msg);
+                      localStorage.setItem('wa_custom_message', msg);
                     }}
-                    title="تحميل قالب تذكير لمن لم يؤكد الحضور"
+                    title="مقدمة تذكير بموعد الحفل"
                   >
-                    تذكير لمن لم يرد
+                    مقدمة تذكير
                   </button>
-                </div>
-              </div>
-
-              {/* Variable Insertion Chips (Phase 5 Req 1) */}
-              <div style={{ marginBottom: '10px' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                  المتغيرات المتاحة (انقر على أي متغير لإدراجه في نص الرسالة):
-                </span>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {TEMPLATE_VARIABLES.map(v => (
-                    <button
-                      key={v.key}
-                      type="button"
-                      className="apple-btn apple-btn-secondary"
-                      style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#f8fafc', borderColor: '#cbd5e1' }}
-                      onClick={() => insertVariableTag(v.key)}
-                    >
-                      <Plus size={12} style={{ color: 'var(--pink-primary)' }} />
-                      <code>{v.key}</code>
-                      <span style={{ color: 'var(--text-secondary)' }}>({v.label})</span>
-                    </button>
-                  ))}
                 </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: '14px' }}>
-                <label>نص رسالة الدعوة المخصصة (يتم استبدال المتغيرات تلقائياً عند الإرسال لكل ضيف):</label>
+                <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px', display: 'block' }}>
+                  مقدمة رسالة الدعوة (تظهر في بداية الرسالة قبل تفاصيل المناسبة ورابط الدعوة):
+                </label>
                 <textarea
                   className="apple-input"
-                  rows="4"
+                  rows="3"
                   value={customMessage}
                   onChange={(e) => {
                     setCustomMessage(e.target.value);
                     localStorage.setItem('wa_custom_message', e.target.value);
                   }}
-                  placeholder="أدخل نص الدعوة هنا مستخدماً المتغيرات أعلاه..."
+                  placeholder="اكتب نص المقدمة الترحيبية هنا (مثال: يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم)..."
                   style={{ lineHeight: '1.6', fontFamily: 'inherit' }}
                 ></textarea>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginTop: '6px' }}>
+                  ✨ الرسالة مجهزة تلقائياً بكامل تفاصيل المناسبة (الاسم، التاريخ، الوقت، المكان، ورابط تذكرة الدخول)، وأنت تقوم فقط بتعديل المقدمة الترحيبية أعلاه.
+                </span>
               </div>
 
-              {/* Live Message Preview Box with Real Guest Selector (Phase 5 Req 2 & 3) */}
+              {/* Live Message Preview Box with Real Guest Selector */}
               <div style={{ background: '#f0f5f9', border: '1px solid rgba(64, 123, 161, 0.25)', borderRadius: '14px', padding: '14px 18px', marginBottom: '14px', fontSize: '0.86rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
                   <div style={{ fontWeight: 800, color: 'var(--pink-dark)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Sparkles size={16} /> معاينة حية لشكل رسالة الواتساب مع بيانات حقيقية:
+                    <Sparkles size={16} /> معاينة حية لشكل رسالة الواتساب الجاهزة بكافة التفاصيل:
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>

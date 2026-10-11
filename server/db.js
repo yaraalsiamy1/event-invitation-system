@@ -253,21 +253,45 @@ export function renderWhatsAppMessage(template, { guest, dependents = [], event 
   const depNames = dependents.map(d => (d && d.name) ? d.name.trim() : '').filter(Boolean);
   const hasDependents = depNames.length > 0;
 
-  // If no template is provided, pick automatic template based on dependents
-  let tpl = template;
-  if (!tpl || !tpl.trim()) {
-    tpl = hasDependents ? DEFAULT_TEMPLATE_WITH_COMPANIONS : DEFAULT_TEMPLATE_SINGLE;
+  const guestName = guest.name || '';
+  let companionsText = '';
+  if (depNames.length === 1) {
+    companionsText = `ولـ ${depNames[0]}`;
+  } else if (depNames.length > 1) {
+    const copy = [...depNames];
+    const last = copy.pop();
+    companionsText = `ولـ ${copy.join(' و ')} و ${last}`;
   }
 
-  const guestName = guest.name || '';
-  const companionsText = hasDependents ? `ولـ ${depNames.join(' و')}` : '';
-  const eventName = event.title || 'المناسبة';
-  const dateStr = formatArabicDateOnly(event.date) || event.date || '';
-  const timeStr = formatArabicTimeOnly(event.time) || event.time || '';
-  const venueStr = event.location || '';
+  const eventName = event?.title || 'المناسبة';
+  const dateStr = formatArabicDateOnly(event?.date) || event?.date || '';
+  const timeStr = formatArabicTimeOnly(event?.time) || event?.time || '';
+  const venueStr = event?.location || '';
   const inviteLink = `${baseUrl}/?guest=${guest.invite_token || guest.id}`;
 
-  return tpl
+  const raw = (template || '').trim();
+
+  // If the user's text does not include explicit variables (e.g. user just wrote the intro):
+  // Automatically format the full ready message with all details around this intro!
+  if (!raw.includes('{invite_link}') && !raw.includes('{link}') && !raw.includes('{event_name}')) {
+    const userIntro = raw || 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
+    const greeting = hasDependents
+      ? `مرحباً ${guestName} 👋\nالدعوة لك ${companionsText}، ${userIntro}`
+      : `مرحباً ${guestName} 👋\n\n${userIntro}`;
+
+    let detailsBlock = `المناسبة: ${eventName}`;
+    if (dateStr) detailsBlock += `\nالتاريخ: ${dateStr}`;
+    if (timeStr) detailsBlock += `\nالوقت: ${timeStr}`;
+    if (venueStr) detailsBlock += `\nالمكان: ${venueStr}`;
+
+    const cta = hasDependents
+      ? `يرجى تأكيد حضوركم واستلام تذاكر الدخول الإلكترونية عبر الرابط التالي:`
+      : `يرجى تأكيد حضورك واستلام تذكرتك الإلكترونية عبر الرابط التالي:`;
+
+    return `${greeting}\n\n${detailsBlock}\n\n${cta}\n${inviteLink}`;
+  }
+
+  return raw
     .replace(/\{guest_name\}|\{name\}/g, guestName)
     .replace(/\{companions\}/g, companionsText)
     .replace(/\{event_name\}|\{event\}/g, eventName)
