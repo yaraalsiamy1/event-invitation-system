@@ -1942,7 +1942,7 @@ export default function AdminDashboard({
             onClick={() => setIsAddGuestModalOpen(true)}
             style={{ padding: '8px 16px', fontSize: '0.86rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            <UserPlus size={16} /> إضافة ضيف جديد
+            <UserPlus size={16} /> إضافة جديد
           </button>
         </div>
 
