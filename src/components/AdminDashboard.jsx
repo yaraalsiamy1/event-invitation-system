@@ -1104,7 +1104,6 @@ export default function AdminDashboard({
           : statusFilter === 'declined' ? unit.status === 'declined'
           : statusFilter === 'pending' ? unit.status === 'pending'
           : statusFilter === 'unsent' ? !unit.sent
-          : statusFilter === 'sent' ? unit.sent
           : true;
 
         const depMatches = unit.dependents.some(d => {
@@ -1112,7 +1111,6 @@ export default function AdminDashboard({
           if (statusFilter === 'declined') return d.status === 'declined';
           if (statusFilter === 'pending') return d.status === 'pending';
           if (statusFilter === 'unsent') return !unit.sent;
-          if (statusFilter === 'sent') return unit.sent;
           return true;
         });
 
@@ -1192,8 +1190,6 @@ export default function AdminDashboard({
         return `بانتظار الرد (${pending})`;
       case 'unsent':
         return `لم يُرسل بعد (${unsentCount})`;
-      case 'sent':
-        return `تم الإرسال (${sentCount})`;
       case 'all':
       default:
         return `الكل (${guests.length})`;
@@ -1926,89 +1922,101 @@ export default function AdminDashboard({
                     <div
                       style={{
                         position: 'absolute',
-                        top: 'calc(100% + 6px)',
+                        top: 'calc(100% + 8px)',
                         right: 0,
-                        background: '#ffffff',
-                        boxShadow: '0 12px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.06)',
-                        borderRadius: '14px',
-                        border: '1px solid rgba(64, 123, 161, 0.2)',
+                        background: 'rgba(255, 255, 255, 0.98)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                        boxShadow: '0 14px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04)',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(0, 0, 0, 0.08)',
                         padding: '6px',
                         zIndex: 50,
-                        minWidth: '190px',
+                        minWidth: '210px',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '4px'
+                        gap: '2px'
                       }}
                     >
-                      <button
-                        type="button"
-                        className={`apple-btn ${statusFilter === 'all' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
-                        style={{ width: '100%', justifyContent: 'space-between', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '10px' }}
-                        onClick={() => { setStatusFilter('all'); setIsFilterMenuOpen(false); }}
+                      <div
+                        style={{
+                          padding: '6px 12px 6px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          color: '#64748b',
+                          letterSpacing: '0.3px',
+                          borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+                          marginBottom: '3px'
+                        }}
                       >
-                        <span>الكل</span>
-                        <span className="ios-badge" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{guests.length}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`apple-btn ${statusFilter === 'accepted' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
-                        style={{ width: '100%', justifyContent: 'space-between', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '10px' }}
-                        onClick={() => { setStatusFilter('accepted'); setIsFilterMenuOpen(false); }}
-                      >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e' }}></span>
-                          حضور مؤكد
-                        </span>
-                        <span className="ios-badge ios-badge-green" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{accepted}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`apple-btn ${statusFilter === 'declined' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
-                        style={{ width: '100%', justifyContent: 'space-between', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '10px' }}
-                        onClick={() => { setStatusFilter('declined'); setIsFilterMenuOpen(false); }}
-                      >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }}></span>
-                          معتذرون
-                        </span>
-                        <span className="ios-badge ios-badge-red" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{declined}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`apple-btn ${statusFilter === 'pending' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
-                        style={{ width: '100%', justifyContent: 'space-between', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '10px' }}
-                        onClick={() => { setStatusFilter('pending'); setIsFilterMenuOpen(false); }}
-                      >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></span>
-                          بانتظار الرد
-                        </span>
-                        <span className="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{pending}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`apple-btn ${statusFilter === 'unsent' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
-                        style={{ width: '100%', justifyContent: 'space-between', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '10px' }}
-                        onClick={() => { setStatusFilter('unsent'); setIsFilterMenuOpen(false); }}
-                      >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6b7280' }}></span>
-                          لم يُرسل بعد
-                        </span>
-                        <span className="ios-badge ios-badge-gold" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{unsentCount}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`apple-btn ${statusFilter === 'sent' ? 'apple-btn-pink' : 'apple-btn-secondary'}`}
-                        style={{ width: '100%', justifyContent: 'space-between', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '10px' }}
-                        onClick={() => { setStatusFilter('sent'); setIsFilterMenuOpen(false); }}
-                      >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0284c7' }}></span>
-                          تم الإرسال
-                        </span>
-                        <span className="ios-badge" style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.72rem', padding: '2px 8px' }}>{sentCount}</span>
-                      </button>
+                        تصفية حسب الحالة
+                      </div>
+
+                      {[
+                        { id: 'all', label: 'الكل', count: guests.length, dot: null, badgeBg: '#f1f5f9', badgeColor: '#334155' },
+                        { id: 'accepted', label: 'حضور مؤكد', count: accepted, dot: '#22c55e', badgeBg: '#dcfce7', badgeColor: '#15803d' },
+                        { id: 'declined', label: 'معتذرون', count: declined, dot: '#ef4444', badgeBg: '#fee2e2', badgeColor: '#b91c1c' },
+                        { id: 'pending', label: 'بانتظار الرد', count: pending, dot: '#f59e0b', badgeBg: '#fef3c7', badgeColor: '#b45309' },
+                        { id: 'unsent', label: 'لم يُرسل بعد', count: unsentCount, dot: '#64748b', badgeBg: '#f1f5f9', badgeColor: '#475569' }
+                      ].map(opt => {
+                        const isSelected = statusFilter === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              setStatusFilter(opt.id);
+                              setIsFilterMenuOpen(false);
+                            }}
+                            style={{
+                              width: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '8px 12px',
+                              fontSize: '0.82rem',
+                              fontWeight: isSelected ? 700 : 500,
+                              borderRadius: '10px',
+                              border: 'none',
+                              background: isSelected ? 'rgba(64, 123, 161, 0.1)' : 'transparent',
+                              color: isSelected ? 'var(--pink-primary)' : 'var(--text-primary)',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              textAlign: 'right'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)';
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {opt.dot ? (
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: opt.dot, flexShrink: 0 }} />
+                              ) : (
+                                <span style={{ width: '8px', height: '8px' }} />
+                              )}
+                              <span>{opt.label}</span>
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span
+                                style={{
+                                  fontSize: '0.72rem',
+                                  padding: '2px 8px',
+                                  borderRadius: '999px',
+                                  background: opt.badgeBg,
+                                  color: opt.badgeColor,
+                                  fontWeight: 700
+                                }}
+                              >
+                                {opt.count}
+                              </span>
+                              {isSelected && <Check size={14} style={{ color: 'var(--pink-primary)' }} />}
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </>
                 )}
