@@ -1423,8 +1423,8 @@ export default function AdminDashboard({
               </div>
             </div>
 
-            {/* 5 Widgets Grid */}
-            <div className="widgets-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
+            {/* 4 Widgets Grid */}
+            <div className="widgets-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
               {/* Widget 1: Total invitees with breakdown */}
               <div className="apple-widget">
                 <div className="widget-icon pink"><Users size={24} /></div>
@@ -1445,7 +1445,7 @@ export default function AdminDashboard({
                 <div className="widget-icon green"><CheckCircle2 size={24} /></div>
                 <div>
                   <div className="widget-val">
-                    {accepted} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({acceptanceRate}%)</small>
+                    {accepted}
                   </div>
                   <div className="widget-lbl">حضور مؤكد</div>
                   <div style={{ fontSize: '0.72rem', color: '#15803d', marginTop: '4px' }}>
@@ -1459,7 +1459,7 @@ export default function AdminDashboard({
                 <div className="widget-icon red"><XCircle size={24} /></div>
                 <div>
                   <div className="widget-val">
-                    {declined} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({declineRate}%)</small>
+                    {declined}
                   </div>
                   <div className="widget-lbl">معتذرون</div>
                   <div style={{ fontSize: '0.72rem', color: '#b91c1c', marginTop: '4px' }}>
@@ -1473,7 +1473,7 @@ export default function AdminDashboard({
                 <div className="widget-icon amber"><Clock size={24} /></div>
                 <div>
                   <div className="widget-val">
-                    {pending} <small style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>({pendingRate}%)</small>
+                    {pending}
                   </div>
                   <div className="widget-lbl">بانتظار الرد</div>
                   <div style={{ fontSize: '0.72rem', color: '#b45309', marginTop: '4px' }}>
@@ -1481,69 +1481,7 @@ export default function AdminDashboard({
                   </div>
                 </div>
               </div>
-
-              {/* Widget 5: Overall Response Rate (Phase 6 Req) */}
-              <div className="apple-widget">
-                <div className="widget-icon blue" style={{ background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7' }}><Sparkles size={24} /></div>
-                <div>
-                  <div className="widget-val">
-                    {responseRate}%
-                  </div>
-                  <div className="widget-lbl">معدل الاستجابة الكلي</div>
-                  <div style={{ fontSize: '0.72rem', color: '#0369a1', marginTop: '4px' }}>
-                    {responded} من {total} شخص ردوا
-                  </div>
-                </div>
-              </div>
             </div>
-
-            {/* Visual Response & Attendance Distribution Bar (Phase 6) */}
-            {total > 0 && (
-              <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid rgba(64, 123, 161, 0.15)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  <span>توزيع استجابة المدعوين لمناسبة "{eventData?.title || ''}":</span>
-                  <span style={{ color: 'var(--pink-dark)' }}>{responded} ردوا ({responseRate}%) • {pending} لم يردوا بعد ({pendingRate}%)</span>
-                </div>
-
-                {/* Multi-Segment Horizontal Bar */}
-                <div style={{ width: '100%', height: '14px', borderRadius: '10px', background: '#e2e8f0', display: 'flex', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)' }}>
-                  {accepted > 0 && (
-                    <div
-                      style={{ width: `${(accepted / total) * 100}%`, background: '#22c55e', transition: 'width 0.4s ease' }}
-                      title={`حضور مؤكد: ${accepted} (${acceptanceRate}%)`}
-                    />
-                  )}
-                  {declined > 0 && (
-                    <div
-                      style={{ width: `${(declined / total) * 100}%`, background: '#ef4444', transition: 'width 0.4s ease' }}
-                      title={`معتذرون: ${declined} (${declineRate}%)`}
-                    />
-                  )}
-                  {pending > 0 && (
-                    <div
-                      style={{ width: `${(pending / total) * 100}%`, background: '#f59e0b', transition: 'width 0.4s ease' }}
-                      title={`بانتظار الرد: ${pending} (${pendingRate}%)`}
-                    />
-                  )}
-                </div>
-
-                {/* Legend */}
-                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#22c55e' }}></span>
-                    حضور مؤكد ({accepted} - {acceptanceRate}%)
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#ef4444' }}></span>
-                    معتذرون ({declined} - {declineRate}%)
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#f59e0b' }}></span>
-                    بانتظار الرد ({pending} - {pendingRate}%)
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* STEP 1 & 2: SETUP EVENT & EXCEL UPLOAD STACK */}

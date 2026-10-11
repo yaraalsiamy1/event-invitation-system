@@ -1,5 +1,5 @@
 {
-  "activeEventId": "ev_1791744585492_29",
+  "activeEventId": "ev_1789587103668_307",
   "events": [
     {
       "id": "ev_1789587103668_307",
@@ -42,17 +42,6 @@
           "invite_token": "XH4IakVFSG5t-gSKTku28fXxsQqZeXyW"
         }
       ]
-    },
-    {
-      "id": "ev_1791744585492_29",
-      "title": "مناسبة تجريبية فحص الخرائط",
-      "type": "wedding",
-      "date": "2026-10-11",
-      "time": "20:00",
-      "location": "القاعة الرئيسية",
-      "mapLink": "",
-      "cardImage": null,
-      "guests": []
     }
   ],
   "whatsappConfig": {
