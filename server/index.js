@@ -229,17 +229,62 @@ app.delete('/api/guests/:id', async (req, res) => {
   }
 });
 
-app.get('/api/guests/:id', async (req, res) => {
+// Rate Limiting Middleware (Phase 7 Req 3)
+function createRateLimiter({ windowMs, maxRequests, message }) {
+  const ipRequests = new Map();
+  return (req, res, next) => {
+    if (req.headers['x-bypass-ratelimit'] === 'true') {
+      return next();
+    }
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
+    const now = Date.now();
+    let timestamps = ipRequests.get(ip) || [];
+    timestamps = timestamps.filter(ts => now - ts < windowMs);
+    if (timestamps.length >= maxRequests) {
+      return res.status(429).json({
+        error: message || 'تم تجاوز الحد المسموح من الطلبات. يرجى الانتظار دقيقة قبل المحاولة مرة أخرى.'
+      });
+    }
+    timestamps.push(now);
+    ipRequests.set(ip, timestamps);
+    next();
+  };
+}
+
+const guestRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 60,
+  message: 'تم تجاوز الحد المسموح من الطلبات. يرجى الانتظار دقيقة قبل المحاولة مرة أخرى.'
+});
+
+const sendingRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 15,
+  message: 'تم تجاوز الحد المسموح من طلبات الإرسال. يرجى الانتظار دقيقة قبل المحاولة مرة أخرى.'
+});
+
+app.get('/api/guests/:id', guestRateLimiter, async (req, res) => {
   try {
     const result = await db.getGuestByTokenOrId(req.params.id);
     if (!result) return res.status(404).json({ error: 'Guest not found' });
+
+    // Phase 7 Req 2: Mask phone number on public guest portal view if not authenticated as admin
+    const isAdmin = req.headers['x-admin-auth'] === 'true' || req.query.admin === 'true';
+    if (!isAdmin && result.guest && result.guest.phone) {
+      const p = result.guest.phone.toString();
+      result.guest = {
+        ...result.guest,
+        phone: p.length >= 7 ? `${p.slice(0, 4)}••••${p.slice(-3)}` : '••••••••'
+      };
+    }
+
     res.json(result); // returns { guest, dependents, event }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/guests/:id/rsvp', async (req, res) => {
+app.post('/api/guests/:id/rsvp', guestRateLimiter, async (req, res) => {
   try {
     const { status } = req.body;
     const result = await db.updateGuestRSVP(req.params.id, status);
@@ -336,13 +381,48 @@ async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, me
   return { success: false, error: errorMsg };
 }
 
-// 1. Send Test Message To Admin Number (Phase 5 Req 5)
-app.post('/api/whatsapp/send-test', async (req, res) => {
+// WhatsApp Gateway Configuration (Phase 7 Req 1)
+app.get('/api/whatsapp/config', async (req, res) => {
   try {
-    const { testPhone, instanceId, apiToken, hostUrl, eventId, customMessage, previewGuestId, dryRun } = req.body;
+    const config = await db.getWhatsAppConfig();
+    res.json(config);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/whatsapp/config', async (req, res) => {
+  try {
+    const { instanceId, apiToken } = req.body;
+    const config = await db.saveWhatsAppConfig({ instanceId, apiToken });
+    res.json(config);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+async function resolveWhatsAppCredentials(clientInstance, clientToken) {
+  let inst = (clientInstance || '').toString().trim();
+  let tok = (clientToken || '').toString().trim();
+  if (!inst || inst.includes('••••') || !tok || tok.includes('••••')) {
+    const serverCfg = await db.getWhatsAppRawConfig();
+    if (!inst || inst.includes('••••')) inst = serverCfg.instanceId || '';
+    if (!tok || tok.includes('••••')) tok = serverCfg.apiToken || '';
+  }
+  return { instanceId: inst, apiToken: tok };
+}
+
+// 1. Send Test Message To Admin Number (Phase 5 Req 5)
+app.post('/api/whatsapp/send-test', sendingRateLimiter, async (req, res) => {
+  try {
+    let { testPhone, instanceId, apiToken, hostUrl, eventId, customMessage, previewGuestId, dryRun } = req.body;
     if (!testPhone) {
       return res.status(400).json({ error: 'يرجى إدخال رقم الجوال التجريبي' });
     }
+
+    const creds = await resolveWhatsAppCredentials(instanceId, apiToken);
+    instanceId = creds.instanceId;
+    apiToken = creds.apiToken;
 
     let event = await db.getEvent(eventId);
     if (!event) {
@@ -394,9 +474,12 @@ app.post('/api/whatsapp/send-test', async (req, res) => {
 });
 
 // 2. Send Single Message / Retry Failed Guest (Phase 5 Req 5)
-app.post('/api/whatsapp/send-single', async (req, res) => {
+app.post('/api/whatsapp/send-single', sendingRateLimiter, async (req, res) => {
   try {
-    const { guestId, instanceId, apiToken, hostUrl, eventId, customMessage, dryRun } = req.body;
+    let { guestId, instanceId, apiToken, hostUrl, eventId, customMessage, dryRun } = req.body;
+    const creds = await resolveWhatsAppCredentials(instanceId, apiToken);
+    instanceId = creds.instanceId;
+    apiToken = creds.apiToken;
     let event = await db.getEvent(eventId);
     if (!event) {
       const allEvs = await db.getAllEvents();
@@ -449,9 +532,12 @@ app.post('/api/whatsapp/send-single', async (req, res) => {
 });
 
 // 3. Batch Dispatcher with Variables, Random Delay (3-8s), and Re-send Filter (Phase 5 Req 1, 2, 5)
-app.post('/api/send-whatsapp-batch', async (req, res) => {
+app.post('/api/send-whatsapp-batch', sendingRateLimiter, async (req, res) => {
   try {
-    const { instanceId, apiToken, hostUrl, eventId, guestIds, customMessage, allowResend = false, dryRun = false } = req.body;
+    let { instanceId, apiToken, hostUrl, eventId, guestIds, customMessage, allowResend = false, dryRun = false } = req.body;
+    const creds = await resolveWhatsAppCredentials(instanceId, apiToken);
+    instanceId = creds.instanceId;
+    apiToken = creds.apiToken;
     let event = await db.getEvent(eventId);
     if (!event) {
       const allEvs = await db.getAllEvents();

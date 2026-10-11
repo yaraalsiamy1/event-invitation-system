@@ -604,7 +604,7 @@ class MultiEventJSONDatabase {
       date: newEvent.date || new Date().toISOString().split('T')[0],
       time: newEvent.time || "20:00",
       location: newEvent.location || "القاعة الرئيسية",
-      mapLink: newEvent.mapLink || "https://maps.google.com",
+      mapLink: (newEvent.mapLink && newEvent.mapLink.trim()) ? newEvent.mapLink.trim() : "",
       cardImage: newEvent.cardImage || null,
       guests: newEvent.guests || []
     };
@@ -1180,6 +1180,46 @@ class MultiEventJSONDatabase {
       }
     }
     return null;
+  }
+
+  /**
+   * Phase 7 Req 1: Server-Side WhatsApp Credentials & Masking
+   */
+  async getWhatsAppConfig() {
+    const data = this.read();
+    const config = data.whatsappConfig || {};
+    const instanceId = config.instanceId || '';
+    const apiToken = config.apiToken || '';
+
+    const mask = (val) => {
+      if (!val) return '';
+      if (val.length <= 4) return val;
+      return '••••••••' + val.slice(-4);
+    };
+
+    return {
+      instanceIdMasked: mask(instanceId),
+      apiTokenMasked: mask(apiToken),
+      hasConfig: !!(instanceId && apiToken)
+    };
+  }
+
+  async getWhatsAppRawConfig() {
+    const data = this.read();
+    return data.whatsappConfig || { instanceId: '', apiToken: '' };
+  }
+
+  async saveWhatsAppConfig({ instanceId, apiToken }) {
+    const data = this.read();
+    if (!data.whatsappConfig) data.whatsappConfig = {};
+    if (instanceId && typeof instanceId === 'string' && !instanceId.includes('••••')) {
+      data.whatsappConfig.instanceId = instanceId.trim();
+    }
+    if (apiToken && typeof apiToken === 'string' && !apiToken.includes('••••')) {
+      data.whatsappConfig.apiToken = apiToken.trim();
+    }
+    this.write(data);
+    return this.getWhatsAppConfig();
   }
 }
 

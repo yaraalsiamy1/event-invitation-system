@@ -186,7 +186,7 @@ export default function App() {
       date: newEventData.date || new Date().toISOString().split('T')[0],
       time: newEventData.time || "20:00",
       location: newEventData.location || "القاعة الرئيسية",
-      mapLink: newEventData.mapLink || "https://maps.google.com",
+      mapLink: (newEventData.mapLink && newEventData.mapLink.trim()) ? newEventData.mapLink.trim() : "",
       cardImage: newEventData.cardImage || null,
       guests: []
     };

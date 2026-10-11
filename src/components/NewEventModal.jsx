@@ -7,7 +7,7 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('20:00');
   const [location, setLocation] = useState('');
-  const [mapLink, setMapLink] = useState('https://maps.google.com');
+  const [mapLink, setMapLink] = useState('');
   const [cardImage, setCardImage] = useState(null);
 
   const handleImageUpload = (e) => {
@@ -29,6 +29,20 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
       return;
     }
 
+    // Phase 7 Req 4: URL Validation
+    const cleanMap = (mapLink || '').trim();
+    if (cleanMap) {
+      try {
+        const parsed = new URL(cleanMap);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          throw new Error();
+        }
+      } catch (err) {
+        alert('يرجى إدخال رابط خرائط صحيح يبدأ بـ https:// (مثال: https://maps.app.goo.gl/...)');
+        return;
+      }
+    }
+
     try {
       onCreateEvent({
         title: title.trim(),
@@ -36,7 +50,7 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
         date: date || new Date().toISOString().split('T')[0],
         time: time || '20:00',
         location: location.trim() || 'القاعة الرئيسية',
-        mapLink: mapLink.trim() || 'https://maps.google.com',
+        mapLink: cleanMap || '',
         cardImage
       });
     } catch (err) {
@@ -152,7 +166,7 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
               type="text"
               className="apple-input"
               style={{ direction: 'ltr', textAlign: 'right' }}
-              placeholder="https://maps.google.com/..."
+              placeholder="مثال: https://maps.app.goo.gl/... أو اتركه فارغاً"
               value={mapLink}
               onChange={(e) => setMapLink(e.target.value)}
             />

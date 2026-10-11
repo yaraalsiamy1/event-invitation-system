@@ -51,9 +51,11 @@ export default function AdminDashboard({
     setPreviewCardImg(eventData?.cardImage || null);
   }, [eventData]);
 
-  // WhatsApp Auto Gateway Credentials & Custom Text (Phase 5)
+  // WhatsApp Auto Gateway Credentials & Custom Text (Phase 5 & 7)
   const [instanceId, setInstanceId] = useState(localStorage.getItem('wa_instance_id') || '');
   const [apiToken, setApiToken] = useState(localStorage.getItem('wa_api_token') || '');
+  const [hasServerWhatsAppConfig, setHasServerWhatsAppConfig] = useState(false);
+  const [isCardVerified, setIsCardVerified] = useState(false);
   const [customMessage, setCustomMessage] = useState(
     localStorage.getItem('wa_custom_message') || DEFAULT_TEMPLATE_WITH_COMPANIONS
   );
@@ -61,6 +63,43 @@ export default function AdminDashboard({
   const [autoProgress, setAutoProgress] = useState(null);
   // Checkbox selection state for batch sending
   const [selectedGuestIds, setSelectedGuestIds] = useState([]);
+
+  // Phase 7 Req 1: Load server-side WhatsApp configuration (masked)
+  useEffect(() => {
+    fetch('/api/whatsapp/config')
+      .then(res => res.ok ? res.json() : null)
+      .then(cfg => {
+        if (cfg) {
+          if (cfg.instanceIdMasked) setInstanceId(cfg.instanceIdMasked);
+          if (cfg.apiTokenMasked) setApiToken(cfg.apiTokenMasked);
+          setHasServerWhatsAppConfig(!!cfg.hasConfig);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveWhatsAppConfig = async (inst, tok) => {
+    try {
+      const res = await fetch('/api/whatsapp/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instanceId: inst, apiToken: tok })
+      });
+      if (res.ok) {
+        const cfg = await res.json();
+        if (cfg.instanceIdMasked) setInstanceId(cfg.instanceIdMasked);
+        if (cfg.apiTokenMasked) setApiToken(cfg.apiTokenMasked);
+        setHasServerWhatsAppConfig(!!cfg.hasConfig);
+        // Clear plaintext credentials from localStorage for security
+        localStorage.removeItem('wa_instance_id');
+        localStorage.removeItem('wa_api_token');
+        return true;
+      }
+    } catch (e) {
+      console.warn('Failed to save WhatsApp config:', e);
+    }
+    return false;
+  };
 
   // Phase 5 States: WhatsApp message templates, preview guest, test send, and failed log
   const [previewGuestId, setPreviewGuestId] = useState('');
@@ -235,7 +274,22 @@ export default function AdminDashboard({
   // Save Event Details
   const handleEventSubmit = async (e) => {
     e.preventDefault();
-    const updatedEv = { ...(eventData || {}), cardImage: previewCardImg };
+
+    // Phase 7 Req 4: Validate Google Maps URL before save
+    const cleanMap = (eventData?.mapLink || '').trim();
+    if (cleanMap) {
+      try {
+        const parsed = new URL(cleanMap);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          throw new Error();
+        }
+      } catch (err) {
+        alert('يرجى إدخال رابط خرائط صحيح يبدأ بـ https:// (مثال: https://maps.app.goo.gl/... أو اتركه فارغاً)');
+        return;
+      }
+    }
+
+    const updatedEv = { ...(eventData || {}), mapLink: cleanMap, cardImage: previewCardImg };
     if (!activeEventId || (events || []).length === 0) {
       await onCreateEvent(updatedEv);
     } else {
@@ -836,6 +890,12 @@ export default function AdminDashboard({
       return;
     }
 
+    // Phase 7 Req 5: Card image verification guard before sending
+    if ((previewCardImg || eventData?.cardImage) && !isCardVerified) {
+      alert('يرجى التحقق من مطابقة بيانات المناسبة (التاريخ والوقت والموقع) مع صورة الكرت المرفوعة، ثم التأشير على خانة التحقق قبل بدء الإرسال.');
+      return;
+    }
+
     // Mandatory confirmation showing exact count (Phase 5 Req 5)
     const proceedConfirm = window.confirm(
       `سيتم إرسال (${finalTargets.length}) رسالة واتساب لمناسبة "${eventData?.title || ''}".\nهل أنت متأكد من المتابعة؟`
@@ -845,14 +905,15 @@ export default function AdminDashboard({
     const cleanInstance = instanceId.trim();
     const cleanToken = apiToken.trim();
 
-    localStorage.setItem('wa_instance_id', cleanInstance);
-    localStorage.setItem('wa_api_token', cleanToken);
+    if (cleanInstance && !cleanInstance.includes('••••') && cleanToken && !cleanToken.includes('••••')) {
+      handleSaveWhatsAppConfig(cleanInstance, cleanToken);
+    }
     localStorage.setItem('wa_custom_message', customMessage);
 
     setFailedSends([]);
 
-    // Mode A: Server-Side API Gateway Dispatch (If credentials exist)
-    if (cleanInstance && cleanToken) {
+    // Mode A: Server-Side API Gateway Dispatch (If server config exists OR credentials typed)
+    if (hasServerWhatsAppConfig || (cleanInstance && cleanToken)) {
       setIsSendingAuto(true);
       setAutoProgress({ sent: 0, total: finalTargets.length, currentName: finalTargets[0]?.name || '' });
 
@@ -1549,6 +1610,7 @@ export default function AdminDashboard({
                     type="text"
                     className="apple-input"
                     style={{ direction: 'ltr', textAlign: 'right' }}
+                    placeholder="مثال: https://maps.app.goo.gl/... أو اتركه فارغاً"
                     value={eventData?.mapLink || ''}
                     onChange={(e) => setEventData({ ...(eventData || {}), mapLink: e.target.value })}
                   />
@@ -1804,34 +1866,60 @@ export default function AdminDashboard({
                 </div>
               </div>
 
-              {/* Gateway Credentials (Optional Green-API / UltraMsg) */}
-              <div className="grid-2col" style={{ gap: '12px' }}>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Instance ID (بوابة الواتساب الآلية - اختياري)</label>
-                  <input
-                    type="text"
-                    className="apple-input"
-                    placeholder="مثال: 7103847291"
-                    value={instanceId}
-                    onChange={(e) => {
-                      setInstanceId(e.target.value);
-                      localStorage.setItem('wa_instance_id', e.target.value);
-                    }}
-                  />
+              {/* Gateway Credentials (Server-Side Masked Green-API / UltraMsg) */}
+              <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '14px', padding: '14px 18px', marginTop: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <MessageCircle size={16} style={{ color: 'var(--pink-primary)' }} />
+                    إعدادات بوابة الواتساب السحابية (Green-API / UltraMsg):
+                  </div>
+                  {hasServerWhatsAppConfig && (
+                    <span className="ios-badge ios-badge-green" style={{ fontSize: '0.74rem' }}>
+                      بيانات البوابة مؤمنة بالخادم ومخفية
+                    </span>
+                  )}
                 </div>
 
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>API Token (اختياري)</label>
-                  <input
-                    type="password"
-                    className="apple-input"
-                    placeholder="أدخل رمز الـ API Token"
-                    value={apiToken}
-                    onChange={(e) => {
-                      setApiToken(e.target.value);
-                      localStorage.setItem('wa_api_token', e.target.value);
+                <div className="grid-2col" style={{ gap: '12px', marginBottom: '10px' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Instance ID (بوابة الواتساب الآلية):</label>
+                    <input
+                      type="text"
+                      className="apple-input"
+                      placeholder="مثال: 7103847291 أو ••••••••1234"
+                      value={instanceId}
+                      onChange={(e) => setInstanceId(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>API Token (الرمز السري):</label>
+                    <input
+                      type="password"
+                      className="apple-input"
+                      placeholder="أدخل رمز الـ API Token أو ••••••••1234"
+                      value={apiToken}
+                      onChange={(e) => setApiToken(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="apple-btn apple-btn-secondary"
+                    style={{ fontSize: '0.8rem', padding: '6px 14px' }}
+                    onClick={async () => {
+                      const ok = await handleSaveWhatsAppConfig(instanceId, apiToken);
+                      if (ok) {
+                        alert('تم حفظ وتأمين بيانات بوابة الواتساب في الخادم بنجاح!');
+                      } else {
+                        alert('تعذر حفظ إعدادات البوابة.');
+                      }
                     }}
-                  />
+                  >
+                    حفظ بيانات البوابة في الخادم
+                  </button>
                 </div>
               </div>
             </div>
@@ -2028,6 +2116,33 @@ export default function AdminDashboard({
                 تحديد بانتظار الرد (تذكير)
               </button>
             </div>
+
+            {/* Phase 7 Req 5: Card Verification Checkbox Guard */}
+            {(previewCardImg || eventData?.cardImage) && (
+              <div style={{
+                background: isCardVerified ? 'rgba(34, 197, 94, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                border: isCardVerified ? '1.5px solid #22c55e' : '1.5px solid #ef4444',
+                borderRadius: '12px',
+                padding: '8px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                width: '100%',
+                margin: '8px 0',
+                transition: 'all 0.2s ease'
+              }}>
+                <input
+                  type="checkbox"
+                  id="cardVerificationCheck"
+                  checked={isCardVerified}
+                  onChange={(e) => setIsCardVerified(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--pink-primary)' }}
+                />
+                <label htmlFor="cardVerificationCheck" style={{ cursor: 'pointer', fontSize: '0.84rem', fontWeight: 700, color: isCardVerified ? '#15803d' : '#b91c1c' }}>
+                  تأكدت أن بيانات الكرت صحيحة (تاريخ ووقت وموقع المناسبة مطابقة للصورة المرفوعة)
+                </label>
+              </div>
+            )}
 
             {/* Left side: Rocket Auto Dispatch Button */}
             <div>
