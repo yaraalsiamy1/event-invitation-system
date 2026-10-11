@@ -1770,16 +1770,25 @@ export default function AdminDashboard({
                       )}
                     </div>
 
-                    {/* Right: "عرض الصورة" button */}
+                    {/* Right: View Image Button (Icon Only) */}
                     {eventData?.cardImage && (
                       <button
                         type="button"
                         className="apple-btn apple-btn-secondary"
-                        style={{ fontSize: '0.82rem', padding: '6px 14px' }}
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          padding: 0,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '10px'
+                        }}
                         onClick={() => setFullViewImage(eventData.cardImage)}
                         title="عرض كرت الدعوة بالحجم الكامل"
+                        aria-label="عرض كرت الدعوة"
                       >
-                        <Eye size={14} /> عرض الصورة
+                        <Eye size={17} />
                       </button>
                     )}
                   </div>
