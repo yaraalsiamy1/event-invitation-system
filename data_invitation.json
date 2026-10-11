@@ -33,7 +33,7 @@
           "phone": null,
           "count": 2,
           "companions": 2,
-          "status": "declined",
+          "status": "accepted",
           "ticketCode": "EV-343513",
           "checkedIn": false,
           "checkInTime": null,
@@ -41,7 +41,7 @@
           "event_id": "ev_1789587103668_307",
           "parent_guest_id": "g_1791465969260_46401",
           "invite_token": null,
-          "rsvpAt": "2026-10-11T21:26:11.834Z"
+          "rsvpAt": "2026-10-11T21:27:30.918Z"
         }
       ]
     }

@@ -1143,6 +1143,9 @@ class MultiEventJSONDatabase {
         if (isEventPast(ev.date, ev.time)) {
           throw new Error('انتهت فترة الرد على الدعوة لانتهاء موعد المناسبة');
         }
+        if (targetGuest.status && targetGuest.status !== 'pending') {
+          throw new Error('تم تسجيل ردك على الدعوة مسبقاً، ولا يمكن تعديل الرد.');
+        }
         targetGuest.status = status;
         targetGuest.rsvpAt = new Date().toISOString();
         this.write(data);

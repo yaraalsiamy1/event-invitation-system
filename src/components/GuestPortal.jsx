@@ -742,41 +742,16 @@ export default function GuestPortal({
                           </div>
                         </div>
 
-                        {/* Change response button if not locked (Phase 4 Req 4) */}
-                        {!isLocked && (
-                          <div style={{ textAlign: 'center', marginTop: '10px' }}>
-                            <button
-                              type="button"
-                              className="apple-btn apple-btn-secondary"
-                              style={{ padding: '6px 14px', fontSize: '0.78rem', color: '#dc2626', borderColor: '#fca5a5' }}
-                              disabled={isMemberLoading}
-                              onClick={() => handleMemberRSVP(member.id, 'declined')}
-                            >
-                              <RotateCcw size={13} /> تعديل الرد (الاعتذار عن الحضور)
-                            </button>
-                          </div>
-                        )}
                       </div>
                     )}
 
-                    {/* State 3: Declined -> Apology message with option to change (Req 4) */}
+                    {/* State 3: Declined -> Apology message (Final, no editing) */}
                     {memberStatus === 'declined' && (
                       <div style={{ textAlign: 'center', padding: '12px 8px', marginTop: '4px' }}>
                         <HeartHandshake size={34} style={{ color: '#ef4444', margin: '0 auto 6px auto' }} />
-                        <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '0 0 10px 0' }}>
+                        <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '0' }}>
                           تم تسجيل الاعتذار. نشكرك على إبلاغنا ونتمنى لك دوام التوفيق.
                         </p>
-                        {!isLocked && (
-                          <button
-                            type="button"
-                            className="apple-btn apple-btn-secondary"
-                            style={{ padding: '6px 14px', fontSize: '0.78rem', color: '#16a34a', borderColor: '#86efac' }}
-                            disabled={isMemberLoading}
-                            onClick={() => handleMemberRSVP(member.id, 'accepted')}
-                          >
-                            <RotateCcw size={13} /> تعديل الرد (تأكيد الحضور بدلاً من ذلك)
-                          </button>
-                        )}
                       </div>
                     )}
 
