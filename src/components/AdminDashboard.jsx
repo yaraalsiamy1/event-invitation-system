@@ -49,9 +49,10 @@ export default function AdminDashboard({
   const [cardUploadError, setCardUploadError] = useState(null);
   const [isSavingCard, setIsSavingCard] = useState(false);
   
-  // Validation & New Event Modals state
+  // Validation, Add Guest & New Event Modals state
   const [pendingExcelRows, setPendingExcelRows] = useState(null);
   const [isNewEventModalOpen, setIsNewEventModalOpen] = useState(false);
+  const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
 
   // Sync preview card image whenever active eventData changes
   useEffect(() => {
@@ -836,6 +837,7 @@ export default function AdminDashboard({
       setSingleName('');
       setSinglePhone('');
       setSingleParentId('');
+      setIsAddGuestModalOpen(false);
       if (refreshData) refreshData();
 
       const ownerName = isDependent ? (guests.find(g => g.id === singleParentId)?.name || 'صاحب الدعوة') : null;
@@ -1879,79 +1881,10 @@ export default function AdminDashboard({
               </form>
             </div>
 
-            {/* Form 2: Guest List Attachment */}
-            <div className="apple-card" style={{ marginBottom: 0 }}>
-              <div className="card-title-row">
-                <h2><FileSpreadsheet className="system-gold" size={20} /> 2. إرفاق قائمة الضيوف</h2>
-              </div>
-              
-              <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-                عند اختيار الملف تظهر لك شاشة تحقق لمراجعة صحة الأسماء والأرقام وتعديل الأخطاء قبل الحفظ النهائي للمناسبة.
-              </p>
-
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                <button className="apple-btn apple-btn-secondary" style={{ flex: 1 }} onClick={downloadExcelTemplate}>
-                  <Download size={16} /> تحميل تمبلت الدعوات المحدث.xlsx
-                </button>
-
-                <label className="apple-btn apple-btn-pink" style={{ flex: 1, cursor: 'pointer' }}>
-                  <FileSpreadsheet size={16} /> رفع ومراجعة الإكسل
-                  <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ display: 'none' }} />
-                </label>
-              </div>
-
-              {/* Direct Single Guest Entry */}
-              <form onSubmit={handleSingleGuestSubmit} style={{ borderTop: '1px solid rgba(64, 123, 161, 0.2)', paddingTop: '16px', marginBottom: '16px' }}>
-                <label style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', display: 'block' }}>
-                  إضافة ضيف سريع (مباشر):
-                </label>
-                <div className="single-guest-grid" style={{ gridTemplateColumns: '1.2fr 1.2fr 1.2fr auto', gap: '8px' }}>
-                  <input
-                    type="text"
-                    className="apple-input"
-                    placeholder="اسم الضيف (إلزامي)"
-                    value={singleName}
-                    required
-                    onChange={(e) => setSingleName(e.target.value)}
-                  />
-                  <input
-                    type="tel"
-                    className="apple-input"
-                    placeholder={singleParentId ? "المرافق لا يحتاج جوال" : "رقم الجوال (0501234567)"}
-                    value={singlePhone}
-                    disabled={Boolean(singleParentId)}
-                    required={!singleParentId}
-                    onChange={(e) => setSinglePhone(e.target.value)}
-                  />
-                  <select
-                    className="apple-input"
-                    value={singleParentId}
-                    onChange={(e) => {
-                      setSingleParentId(e.target.value);
-                      if (e.target.value) setSinglePhone('');
-                    }}
-                    title="تحديد صاحب الدعوة إذا كان هذا الضيف مرافقاً"
-                  >
-                    <option value="">ضيف مستقل (صاحب دعوة)</option>
-                    {(guests || [])
-                      .filter(g => !g.parent_guest_id)
-                      .map(owner => (
-                        <option key={owner.id} value={owner.id}>
-                          مرافق لـ: {owner.name}
-                        </option>
-                      ))}
-                  </select>
-                  <button type="submit" className="apple-btn apple-btn-pink" style={{ whiteSpace: 'nowrap', padding: '12px 20px' }}>
-                    <Plus size={16} /> إضافة الضيف
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Form 3: WhatsApp Customization & Gateway Credentials */}
+            {/* Form 2: WhatsApp Customization */}
             <div className="apple-card" style={{ marginBottom: 0 }}>
               <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '10px', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h2><MessageCircle className="system-gold" size={20} /> 3. تخصيص مقدمة رسالة الواتساب وبوابة الإرسال</h2>
+                <h2><MessageCircle className="system-gold" size={20} /> 2. تخصيص مقدمة رسالة الواتساب</h2>
                 
                 {/* Intro Preset Switchers */}
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -2079,10 +2012,19 @@ export default function AdminDashboard({
 
       {/* STREAMLINED GUESTS TABLE CARD */}
       <div className="apple-card" style={{ marginBottom: '28px' }}>
-        <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+        <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '14px', alignItems: 'center', justifyContent: 'space-between', display: 'flex' }}>
           <div>
-            <h2 style={{ margin: 0 }}><Users className="system-gold" size={20} /> 4. قائمة المدعوين</h2>
+            <h2 style={{ margin: 0 }}><Users className="system-gold" size={20} /> 3. قائمة المدعوين</h2>
           </div>
+          <button
+            type="button"
+            className="apple-btn apple-btn-pink"
+            onClick={() => setIsAddGuestModalOpen(true)}
+            style={{ padding: '8px 16px', fontSize: '0.86rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <UserPlus size={16} /> إضافة ضيف جديد
+          </button>
+        </div>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', width: '100%', justifyContent: 'space-between', marginTop: '6px' }}>
             {/* Search Box & Filter Icon Group */}
@@ -2301,7 +2243,6 @@ export default function AdminDashboard({
               </button>
             </div>
           </div>
-        </div>
 
         {/* Live Auto Sending Progress Bar */}
         {isSendingAuto && autoProgress && (
@@ -3361,6 +3302,219 @@ export default function AdminDashboard({
                 }}
               >
                 حفظ الإعدادات
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add New Guest & Excel Import Modal */}
+      {isAddGuestModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.45)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}
+          onClick={() => setIsAddGuestModalOpen(false)}
+        >
+          <div
+            className="apple-card"
+            style={{
+              width: '100%',
+              maxWidth: '560px',
+              padding: '26px',
+              borderRadius: '20px',
+              background: '#ffffff',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.08)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              position: 'relative',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(64, 123, 161, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--pink-primary)'
+                }}>
+                  <UserPlus size={22} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                    إضافة مدعوين للمناسبة
+                  </h3>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    إدخال مباشر لضيف أو استيراد قائمة كاملة عبر ملف إكسل
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddGuestModalOpen(false)}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)'
+                }}
+                title="إغلاق"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Section 1: Single Direct Guest Entry */}
+            <form onSubmit={handleSingleGuestSubmit} style={{ marginBottom: '20px' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Plus size={16} style={{ color: 'var(--pink-primary)' }} />
+                إضافة ضيف سريع (مباشر):
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>
+                    اسم الضيف <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="apple-input"
+                    placeholder="اسم الضيف كاملاً"
+                    value={singleName}
+                    required
+                    onChange={(e) => setSingleName(e.target.value)}
+                    style={{ width: '100%', height: '40px', fontSize: '0.88rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>
+                    نوع الضيف
+                  </label>
+                  <select
+                    className="apple-input"
+                    value={singleParentId}
+                    onChange={(e) => {
+                      setSingleParentId(e.target.value);
+                      if (e.target.value) setSinglePhone('');
+                    }}
+                    style={{ width: '100%', height: '40px', fontSize: '0.88rem' }}
+                  >
+                    <option value="">ضيف مستقل (صاحب دعوة)</option>
+                    {(guests || [])
+                      .filter(g => !g.parent_guest_id)
+                      .map(owner => (
+                        <option key={owner.id} value={owner.id}>
+                          مرافق لـ: {owner.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>
+                    رقم الجوال {!singleParentId && <span style={{ color: '#ef4444' }}>*</span>}
+                  </label>
+                  <input
+                    type="tel"
+                    className="apple-input"
+                    placeholder={singleParentId ? "المرافق لا يحتاج جوال (يصل عبر صاحب الدعوة)" : "رقم الجوال (0501234567)"}
+                    value={singlePhone}
+                    disabled={Boolean(singleParentId)}
+                    required={!singleParentId}
+                    onChange={(e) => setSinglePhone(e.target.value)}
+                    style={{ width: '100%', height: '40px', fontSize: '0.88rem', direction: 'ltr', textAlign: 'right' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                  <button
+                    type="submit"
+                    className="apple-btn apple-btn-pink"
+                    style={{ padding: '9px 24px', fontSize: '0.86rem', fontWeight: 700 }}
+                  >
+                    <Plus size={16} /> إضافة الضيف الآن
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '18px 0' }}>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.08)' }}></div>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 700 }}>أو استيراد جماعي عبر إكسل</span>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.08)' }}></div>
+            </div>
+
+            {/* Section 2: Excel Import & Template */}
+            <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FileSpreadsheet size={16} style={{ color: 'var(--pink-primary)' }} />
+                إرفاق قائمة الضيوف (ملف إكسل):
+              </div>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: 1.5 }}>
+                عند اختيار الملف ستظهر لك شاشة تدقيق ذكية لمراجعة صحة الأسماء وأرقام الجوال وتعديل أي أخطاء قبل الحفظ النهائي.
+              </p>
+
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="apple-btn apple-btn-secondary"
+                  style={{ flex: 1, fontSize: '0.82rem', padding: '9px 12px' }}
+                  onClick={downloadExcelTemplate}
+                >
+                  <Download size={15} /> تحميل تمبلت الدعوات.xlsx
+                </button>
+
+                <label
+                  className="apple-btn apple-btn-pink"
+                  style={{ flex: 1, cursor: 'pointer', fontSize: '0.82rem', padding: '9px 12px', justifyContent: 'center' }}
+                >
+                  <FileSpreadsheet size={15} /> رفع ومراجعة الإكسل
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls, .csv"
+                    onChange={(e) => {
+                      setIsAddGuestModalOpen(false);
+                      handleFileUpload(e);
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '18px' }}>
+              <button
+                type="button"
+                className="apple-btn apple-btn-secondary"
+                onClick={() => setIsAddGuestModalOpen(false)}
+                style={{ padding: '7px 18px', fontSize: '0.82rem' }}
+              >
+                إغلاق
               </button>
             </div>
           </div>
