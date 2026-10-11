@@ -895,12 +895,6 @@ export default function AdminDashboard({
       return;
     }
 
-    // Phase 7 Req 5: Card image verification guard before sending
-    if ((previewCardImg || eventData?.cardImage) && !isCardVerified) {
-      alert('يرجى التحقق من مطابقة بيانات المناسبة (التاريخ والوقت والموقع) مع صورة الكرت المرفوعة، ثم التأشير على خانة التحقق قبل بدء الإرسال.');
-      return;
-    }
-
     // Mandatory confirmation showing exact count (Phase 5 Req 5)
     const proceedConfirm = window.confirm(
       `سيتم إرسال (${finalTargets.length}) رسالة واتساب لمناسبة "${eventData?.title || ''}".\nهل أنت متأكد من المتابعة؟`
@@ -1887,10 +1881,10 @@ export default function AdminDashboard({
             {/* Quick Action Badges & Filter & Export */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', position: 'relative' }}>
               <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.82rem', padding: '6px 12px', fontWeight: 800 }}>
-                تم تحديد ({selectedGuestIds.length}) من أصل ({ownerGuests.length}) صاحب دعوة
+                المحدد: {selectedGuestIds.length} من {ownerGuests.length}
               </span>
 
-              {/* Export to Excel (Phase 2 Req 6) */}
+              {/* Export to Excel */}
               <button
                 type="button"
                 className="apple-btn apple-btn-secondary"
@@ -1898,7 +1892,7 @@ export default function AdminDashboard({
                 style={{ fontSize: '0.82rem', padding: '7px 12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                 title="تصدير النتائج الحالية إلى ملف إكسل"
               >
-                <Download size={15} /> تصدير إكسل
+                <Download size={15} /> تصدير
               </button>
 
               {/* Inline Filter Dropdown Button (Icon Only) */}
@@ -2033,40 +2027,13 @@ export default function AdminDashboard({
               </div>
 
               <button className="apple-btn apple-btn-secondary" onClick={handleSelectUnsentOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
-                تحديد غير المرسل لهم فقط
+                غير المرسل لهم
               </button>
 
               <button className="apple-btn apple-btn-secondary" onClick={handleSelectPendingReminderOnly} style={{ fontSize: '0.78rem', padding: '6px 12px' }} title="تحديد من وصلتهم الدعوة ولم يؤكدوا الحضور بعد لإرسال تذكير">
-                تحديد بانتظار الرد (تذكير)
+                بانتظار الرد (تذكير)
               </button>
             </div>
-
-            {/* Phase 7 Req 5: Card Verification Checkbox Guard */}
-            {(previewCardImg || eventData?.cardImage) && (
-              <div style={{
-                background: isCardVerified ? 'rgba(34, 197, 94, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                border: isCardVerified ? '1.5px solid #22c55e' : '1.5px solid #ef4444',
-                borderRadius: '12px',
-                padding: '8px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                width: '100%',
-                margin: '8px 0',
-                transition: 'all 0.2s ease'
-              }}>
-                <input
-                  type="checkbox"
-                  id="cardVerificationCheck"
-                  checked={isCardVerified}
-                  onChange={(e) => setIsCardVerified(e.target.checked)}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--pink-primary)' }}
-                />
-                <label htmlFor="cardVerificationCheck" style={{ cursor: 'pointer', fontSize: '0.84rem', fontWeight: 700, color: isCardVerified ? '#15803d' : '#b91c1c' }}>
-                  تأكدت أن بيانات الكرت صحيحة (تاريخ ووقت وموقع المناسبة مطابقة للصورة المرفوعة)
-                </label>
-              </div>
-            )}
 
             {/* Left side: Rocket Auto Dispatch Button */}
             <div>
