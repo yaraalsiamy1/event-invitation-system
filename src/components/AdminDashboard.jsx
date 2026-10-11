@@ -2254,8 +2254,8 @@ export default function AdminDashboard({
               </div>
             </div>
 
-            {/* Quick Action Badges & Selection Shortcuts */}
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Left side: Selection Badge, Reminder, Unsent & Send Buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               {selectedGuestIds.length > 0 && (
                 <span className="ios-badge ios-badge-pink" style={{ fontSize: '0.82rem', padding: '6px 12px', fontWeight: 800 }}>
                   تم تحديد {selectedGuestIds.length} ضيف
@@ -2266,20 +2266,17 @@ export default function AdminDashboard({
                 type="button"
                 className="apple-btn apple-btn-secondary"
                 onClick={handleSelectPendingReminderOnly}
-                style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+                style={{ fontSize: '0.78rem', padding: '6px 12px', height: '36px' }}
                 title="تحديد من وصلتهم الدعوة ولم يؤكدوا الحضور بعد لإرسال تذكير قبل المناسبة بيوم"
               >
                 تذكير قبل المناسبة بيوم
               </button>
-            </div>
 
-            {/* Left side: Action & Send Buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button
                 type="button"
                 className="apple-btn apple-btn-secondary"
                 onClick={handleSelectUnsentOnly}
-                style={{ fontSize: '0.82rem', padding: '8px 14px' }}
+                style={{ fontSize: '0.82rem', padding: '6px 14px', height: '36px' }}
                 title="تحديد من لم تُرسل لهم الدعوة بعد"
               >
                 غير المرسل لهم
@@ -2288,7 +2285,7 @@ export default function AdminDashboard({
               <button
                 type="button"
                 className="apple-btn apple-btn-pink"
-                style={{ padding: '8px 18px', fontSize: '0.88rem', fontWeight: 800, boxShadow: '0 4px 14px rgba(64, 123, 161, 0.3)' }}
+                style={{ padding: '8px 18px', height: '36px', fontSize: '0.88rem', fontWeight: 800, boxShadow: '0 4px 14px rgba(64, 123, 161, 0.3)' }}
                 onClick={handleStartAutoDispatch}
                 disabled={isSendingAuto || selectedGuestIds.length === 0}
               >
