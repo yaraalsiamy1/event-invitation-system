@@ -1836,15 +1836,17 @@ export default function AdminDashboard({
 
             {/* Form 2: WhatsApp Customization */}
             <div className="apple-card" style={{ marginBottom: 0 }}>
-              <div className="card-title-row" style={{ flexWrap: 'wrap', gap: '10px', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h2><MessageCircle className="system-gold" size={20} /> 2. تخصيص مقدمة رسالة الواتساب</h2>
+              <div style={{ marginBottom: '16px' }}>
+                <h2 style={{ margin: 0, marginBottom: '10px' }}>
+                  <MessageCircle className="system-gold" size={20} /> 2. تخصيص مقدمة رسالة الواتساب
+                </h2>
                 
-                {/* Intro Preset Switchers */}
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {/* Intro Preset Switchers placed under the box title */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <button
                     type="button"
                     className="apple-btn apple-btn-secondary"
-                    style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                    style={{ fontSize: '0.82rem', padding: '5px 12px' }}
                     onClick={() => {
                       const msg = 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
                       setCustomMessage(msg);
@@ -1857,7 +1859,7 @@ export default function AdminDashboard({
                   <button
                     type="button"
                     className="apple-btn apple-btn-secondary"
-                    style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                    style={{ fontSize: '0.82rem', padding: '5px 12px' }}
                     onClick={() => {
                       const msg = 'يسرنا ويسعدنا دعوتكم لحضور حفلنا، ويسعدنا حضوركم مع مرافقينكم الكرام وتكتمل فرحتنا بكم.';
                       setCustomMessage(msg);
@@ -1870,7 +1872,7 @@ export default function AdminDashboard({
                   <button
                     type="button"
                     className="apple-btn apple-btn-secondary"
-                    style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                    style={{ fontSize: '0.82rem', padding: '5px 12px' }}
                     onClick={() => {
                       const msg = 'نود تذكيركم بموعد حفلنا القريب، ويسعدنا ويشرفنا تأكيد حضوركم لمشاركتنا هذه الفرحة.';
                       setCustomMessage(msg);
