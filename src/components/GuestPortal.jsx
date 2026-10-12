@@ -401,14 +401,6 @@ export default function GuestPortal({
           spread: 80,
           origin: { y: 0.6 }
         });
-        const targetPerson = allMembers.find(m => m.id === memberId);
-        if (showConfirmation) {
-          showConfirmation('تم قبول الدعوة!', `يسرنا تأكيد حضور (${targetPerson?.name || 'الضيف'})، تم إصدار باركود الدخول الخاص به.`);
-        }
-      } else if (status === 'declined') {
-        if (showConfirmation) {
-          showConfirmation('تم تسجيل الإعتذار', 'نشكرك على إبلاغنا ونتمنى لك كل التوفيق.', 'info');
-        }
       }
 
       if (refreshData) refreshData();
