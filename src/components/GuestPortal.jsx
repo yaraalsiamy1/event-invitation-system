@@ -473,99 +473,120 @@ export default function GuestPortal({
         {/* Phone Screen Body Content */}
         <div className="phone-screen-body">
 
-          {/* Invitation Header Tag */}
-          <div style={{ textAlign: 'center' }}>
-            <span
-              className={resolvedDependents.length === 0 ? "ios-badge ios-badge-gold" : "ios-badge ios-badge-pink"}
-              style={{ padding: '6px 18px', fontSize: '0.84rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Mail size={15} />
-              {resolvedDependents.length === 0
-                ? 'دعوة شخصية خاصة'
-                : `دعوة عائلية لـ (${allMembers.length}) مدعوين`}
-            </span>
-          </div>
+          {/* 1. Full Invitation Card Image (Without Any Frame/Border) */}
+          {activeEv?.cardImage && (
+            <div style={{ width: '100%', margin: '0 0 4px 0', textAlign: 'center' }}>
+              <img
+                src={activeEv.cardImage}
+                alt="كرت الدعوة"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                  borderRadius: '18px',
+                  border: 'none',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+                onClick={() => window.open(activeEv.cardImage, '_blank')}
+                title="اضغط لتكبير صورة كرت الدعوة"
+              />
+            </div>
+          )}
 
-          {/* Main Event Details Card */}
+          {/* 2. Honorific Header: المكرمة / [اسم الضيف] */}
           <div style={{
             background: '#ffffff',
-            border: '1.5px solid var(--apple-border-gold)',
-            borderRadius: '22px',
+            borderRadius: '20px',
             padding: '20px 16px',
             textAlign: 'center',
-            boxShadow: '0 8px 25px rgba(64,123,161,0.08)'
+            boxShadow: '0 4px 20px rgba(64,123,161,0.06)'
           }}>
-            <h1 style={{ fontSize: '1.35rem', color: '#407BA1', margin: '0 0 6px 0', fontWeight: 800 }}>
-              {activeEv?.title || 'مناسبة خاصة'}
-            </h1>
-            <div style={{ height: '1.5px', background: 'linear-gradient(to right, transparent, #407BA1, transparent)', margin: '10px auto', width: '60%' }}></div>
-
-            {/* Event Card Image */}
-            {activeEv?.cardImage && (
-              <div style={{ margin: '12px 0 16px 0', width: '100%', textAlign: 'center' }}>
-                <img
-                  src={activeEv.cardImage}
-                  alt="كرت الدعوة"
-                  style={{
-                    width: '100%',
-                    maxHeight: '380px',
-                    borderRadius: '16px',
-                    objectFit: 'contain',
-                    boxShadow: '0 8px 24px rgba(64,123,161,0.12)',
-                    border: '1px solid rgba(64, 123, 161, 0.3)',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => window.open(activeEv.cardImage, '_blank')}
-                  title="اضغط لتكبير صورة الكرت"
-                />
-              </div>
-            )}
-
-            {/* Dynamic Greeting Banner (Phase 4 Req 2) */}
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(253, 242, 245, 0.95), rgba(244, 165, 186, 0.2))',
-              border: '1px solid rgba(244, 165, 186, 0.4)',
-              borderRadius: '16px',
-              padding: '14px 12px',
-              margin: '12px 0 16px 0'
+            <span style={{
+              display: 'block',
+              fontSize: '0.96rem',
+              color: 'var(--text-secondary)',
+              fontWeight: 700,
+              marginBottom: '6px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: 'var(--pink-dark)', fontSize: '0.82rem', fontWeight: 700, marginBottom: '4px' }}>
-                <Sparkles size={16} /> ترحيب
-              </div>
-              <h2 style={{ fontSize: '1.25rem', color: 'var(--pink-dark)', fontWeight: 800, margin: '2px 0' }}>
-                {greetingText}
-              </h2>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-                يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم
-              </p>
+              المكرمة /
+            </span>
+            <h2 style={{
+              fontSize: '1.45rem',
+              fontWeight: 800,
+              color: 'var(--pink-dark)',
+              margin: '0 0 4px 0',
+              lineHeight: 1.4
+            }}>
+              {resolvedOwner.name}
+              {resolvedDependents.length > 0 && (
+                <span style={{ display: 'block', fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: '4px' }}>
+                  ومرافقيها الكرام
+                </span>
+              )}
+            </h2>
+            <p style={{
+              fontSize: '0.84rem',
+              color: 'var(--text-secondary)',
+              margin: '8px 0 0 0',
+              lineHeight: 1.6
+            }}>
+              يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم
+            </p>
+          </div>
+
+          {/* 3. Event Details: موعد ومكان المناسبة ونوع الدعوة */}
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '20px',
+            padding: '20px 16px',
+            boxShadow: '0 4px 20px rgba(64,123,161,0.06)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px'
+          }}>
+            {/* Invitation Type Badge & Event Title */}
+            <div style={{ textAlign: 'center' }}>
+              <span
+                className={resolvedDependents.length === 0 ? "ios-badge ios-badge-gold" : "ios-badge ios-badge-pink"}
+                style={{ padding: '6px 18px', fontSize: '0.84rem', display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}
+              >
+                <Mail size={15} />
+                {resolvedDependents.length === 0
+                  ? 'دعوة شخصية خاصة'
+                  : `دعوة عائلية لـ (${allMembers.length}) مدعوين`}
+              </span>
+              <h1 style={{ fontSize: '1.3rem', color: '#407BA1', margin: '0', fontWeight: 800 }}>
+                {activeEv?.title || 'مناسبة خاصة'}
+              </h1>
             </div>
 
-            {/* Event Time & Location Details with Unified Date Format (Phase 4 Req 6) */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', textAlign: 'right', fontSize: '0.82rem', marginBottom: '14px' }}>
-              {/* Unified Date & Time */}
+            {/* Time & Location */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', textAlign: 'right', fontSize: '0.84rem' }}>
+              {/* Event Date & Time */}
               {formattedDateTime && (
-                <div style={{ background: 'rgba(0, 0, 0, 0.03)', padding: '10px 14px', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <div style={{ background: 'rgba(0, 0, 0, 0.025)', padding: '12px 14px', borderRadius: '14px', display: 'flex', gap: '10px', alignItems: 'center' }}>
                   <Calendar size={18} style={{ color: '#407BA1', flexShrink: 0 }} />
                   <div>
-                    <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.72rem' }}>موعد المناسبة</strong>
-                    <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{formattedDateTime}</span>
+                    <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.74rem' }}>موعد المناسبة</strong>
+                    <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{formattedDateTime}</span>
                   </div>
                 </div>
               )}
 
-              {/* Location */}
+              {/* Event Location */}
               {activeEv?.location && (
-                <div style={{ background: 'rgba(0, 0, 0, 0.03)', padding: '10px 14px', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <div style={{ background: 'rgba(0, 0, 0, 0.025)', padding: '12px 14px', borderRadius: '14px', display: 'flex', gap: '10px', alignItems: 'center' }}>
                   <MapPin size={18} style={{ color: '#407BA1', flexShrink: 0 }} />
                   <div>
-                    <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.72rem' }}>المكان</strong>
-                    <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{activeEv.location}</span>
+                    <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.74rem' }}>مكان المناسبة</strong>
+                    <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{activeEv.location}</span>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Action Buttons: Open Maps & Add to Calendar (Phase 4 Req 5) */}
+            {/* Quick Action Buttons: Open Maps & Add to Calendar */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               <button
                 type="button"
@@ -585,10 +606,9 @@ export default function GuestPortal({
                 <CalendarPlus size={15} /> أضف للتقويم
               </button>
             </div>
-
           </div>
 
-          {/* Event Closed / Locked Banner (Phase 4 Req 4) */}
+          {/* Event Closed / Locked Banner */}
           {isLocked && (
             <div style={{
               background: '#fef2f2',
@@ -607,18 +627,18 @@ export default function GuestPortal({
             </div>
           )}
 
-          {/* Section: One Card Per Person in Invitation (Phase 4 Req 1 & 3) */}
+          {/* 4. RSVP Section: تأكيد أو اعتذار (حالة بانتظار الرد مخفية عن الضيوف) */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', padding: '0 4px' }}>
-              <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                تأكيد وبطاقات المدعوين ({allMembers.length})
-              </h3>
-              {allMembers.length > 1 && (
+            {allMembers.length > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', padding: '0 4px' }}>
+                <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                  تأكيد الحضور ({allMembers.length})
+                </h3>
                 <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                   تأكيد مستقل لكل مدعو
                 </span>
-              )}
-            </div>
+              </div>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {allMembers.map((member) => {
@@ -641,53 +661,71 @@ export default function GuestPortal({
                         ? '1.5px solid #22c55e'
                         : memberStatus === 'declined'
                         ? '1.5px solid #f87171'
-                        : '1.5px solid rgba(64, 123, 161, 0.25)',
-                      borderRadius: '18px',
-                      padding: '16px',
+                        : '1px solid rgba(64, 123, 161, 0.15)',
+                      borderRadius: '20px',
+                      padding: '18px 16px',
                       boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    {/* Member Top Bar: Name & Dependent Badge */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
+                    {/* Member Header & Status Tag (NO "بانتظار الرد" badge shown when pending!) */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: memberStatus === 'pending' ? '8px' : '10px', flexWrap: 'wrap', gap: '6px' }}>
                       <div>
-                        <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'block' }}>
-                          {member.isOwner ? 'صاحب الدعوة:' : 'مرافق مدعو:'}
-                        </span>
+                        {allMembers.length > 1 && (
+                          <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'block' }}>
+                            {member.isOwner ? 'المدعوة الأساسية:' : 'مرافقة مدعوة:'}
+                          </span>
+                        )}
                         <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--pink-dark)', margin: '2px 0 0 0' }}>
                           {member.name}
                         </h4>
                       </div>
 
-                      {/* Status Tag */}
-                      <span style={{
-                        padding: '4px 12px',
-                        borderRadius: '50px',
-                        fontSize: '0.78rem',
-                        fontWeight: 800,
-                        background: memberStatus === 'accepted' ? '#dcfce7' : memberStatus === 'declined' ? '#fee2e2' : '#fef3c7',
-                        color: memberStatus === 'accepted' ? '#15803d' : memberStatus === 'declined' ? '#b91c1c' : '#b45309',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}>
-                        {memberStatus === 'accepted' && <><Check size={14} /> تم تأكيد الحضور</>}
-                        {memberStatus === 'declined' && <><X size={14} /> معتذر عن الحضور</>}
-                        {memberStatus === 'pending' && <><Clock size={14} /> بانتظار الرد</>}
-                      </span>
+                      {/* Status Tag ONLY when accepted or declined (hidden when pending!) */}
+                      {memberStatus === 'accepted' && (
+                        <span style={{
+                          padding: '4px 12px',
+                          borderRadius: '50px',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          background: '#dcfce7',
+                          color: '#15803d',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                          <Check size={14} /> تم تأكيد الحضور
+                        </span>
+                      )}
+
+                      {memberStatus === 'declined' && (
+                        <span style={{
+                          padding: '4px 12px',
+                          borderRadius: '50px',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          background: '#fee2e2',
+                          color: '#b91c1c',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                          <X size={14} /> معتذر عن الحضور
+                        </span>
+                      )}
                     </div>
 
-                    {/* State 1: Pending -> Independent Confirm / Decline Buttons (Req 1) */}
+                    {/* Pending State: RSVP Buttons (تأكيد الحضور / الاعتذار) */}
                     {memberStatus === 'pending' && !isLocked && (
-                      <div style={{ marginTop: '12px' }}>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '10px', textAlign: 'center' }}>
-                          هل سيشرفنا بالحضور؟
+                      <div style={{ marginTop: '10px' }}>
+                        <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '12px', textAlign: 'center', fontWeight: 600 }}>
+                          هل يسعدنا حضورك؟
                         </p>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                           <button
                             type="button"
                             className="apple-btn apple-btn-success-large"
-                            style={{ padding: '9px 12px', fontSize: '0.86rem', fontWeight: 800, justifyContent: 'center' }}
+                            style={{ padding: '10px 14px', fontSize: '0.9rem', fontWeight: 800, justifyContent: 'center' }}
                             disabled={isMemberLoading}
                             onClick={() => handleMemberRSVP(member.id, 'accepted')}
                           >
@@ -696,7 +734,7 @@ export default function GuestPortal({
                           <button
                             type="button"
                             className="apple-btn apple-btn-decline-large"
-                            style={{ padding: '9px 12px', fontSize: '0.86rem', fontWeight: 800, justifyContent: 'center' }}
+                            style={{ padding: '10px 14px', fontSize: '0.9rem', fontWeight: 800, justifyContent: 'center' }}
                             disabled={isMemberLoading}
                             onClick={() => handleMemberRSVP(member.id, 'declined')}
                           >
@@ -706,11 +744,10 @@ export default function GuestPortal({
                       </div>
                     )}
 
-                    {/* State 2: Accepted -> Unique Ticket with Dedicated QR Code (Req 3) */}
+                    {/* Accepted State: Digital Pass with QR Code */}
                     {memberStatus === 'accepted' && (
                       <div style={{ marginTop: '10px' }}>
                         <div className="wallet-pass" style={{ margin: '8px 0', border: '1px solid rgba(64,123,161,0.2)' }}>
-                          {/* Pass Header */}
                           <div className="pass-header" style={{ padding: '12px 14px' }}>
                             <div>
                               <div className="pass-header-title">بطاقة دخول المناسبة</div>
@@ -719,14 +756,12 @@ export default function GuestPortal({
                             <ShieldCheck size={24} />
                           </div>
 
-                          {/* Pass Tear Notch */}
                           <div className="pass-cutout-line">
                             <div className="notch-left"></div>
                             <div className="dashed"></div>
                             <div className="notch-right"></div>
                           </div>
 
-                          {/* Pass Body with Unique QR per person (Phase 4 Req 3) */}
                           <div className="pass-body" style={{ padding: '14px 12px' }}>
                             <div className="pass-qr-box" style={{ padding: '10px', background: '#ffffff', borderRadius: '14px' }}>
                               <QRCodeSVG value={qrPayload} size={135} level="H" includeMargin={false} />
@@ -741,13 +776,12 @@ export default function GuestPortal({
                             </p>
                           </div>
                         </div>
-
                       </div>
                     )}
 
-                    {/* State 3: Declined -> Apology message (Final, no editing) */}
+                    {/* Declined State: Apology Note */}
                     {memberStatus === 'declined' && (
-                      <div style={{ textAlign: 'center', padding: '12px 8px', marginTop: '4px' }}>
+                      <div style={{ textAlign: 'center', padding: '14px 8px', marginTop: '4px' }}>
                         <HeartHandshake size={34} style={{ color: '#ef4444', margin: '0 auto 6px auto' }} />
                         <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '0' }}>
                           تم تسجيل الاعتذار. نشكرك على إبلاغنا ونتمنى لك دوام التوفيق.
