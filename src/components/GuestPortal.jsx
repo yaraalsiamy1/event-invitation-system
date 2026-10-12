@@ -553,7 +553,7 @@ export default function GuestPortal({
               >
                 <Mail size={15} />
                 {resolvedDependents.length === 0
-                  ? 'دعوة شخصية خاصة'
+                  ? 'دعوة شخصية'
                   : `دعوة عائلية لـ (${allMembers.length}) مدعوين`}
               </span>
               <h1 style={{ fontSize: '1.3rem', color: '#407BA1', margin: '0', fontWeight: 800 }}>
