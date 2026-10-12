@@ -15,6 +15,7 @@ import {
   DEFAULT_TEMPLATE_SINGLE,
   DEFAULT_TEMPLATE_WITH_COMPANIONS,
   DEFAULT_REMINDER_TEMPLATE,
+  DEFAULT_REMINDER_MESSAGE,
   formatArabicDateOnly,
   formatArabicTimeOnly
 } from './GuestPortal';
@@ -99,12 +100,17 @@ export default function AdminDashboard({
   const [apiToken, setApiToken] = useState(localStorage.getItem('wa_api_token') || '');
   const [hasServerWhatsAppConfig, setHasServerWhatsAppConfig] = useState(false);
   const [isCardVerified, setIsCardVerified] = useState(false);
+  const [activeMessageType, setActiveMessageType] = useState('invite'); // 'invite' | 'reminder'
   const [customMessage, setCustomMessage] = useState(() => {
     const saved = localStorage.getItem('wa_custom_message');
     if (!saved || saved.includes('{guest_name}') || saved.includes('{event_name}')) {
       return 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
     }
     return saved;
+  });
+  const [reminderMessage, setReminderMessage] = useState(() => {
+    const saved = localStorage.getItem('wa_reminder_message');
+    return saved || DEFAULT_REMINDER_MESSAGE;
   });
   const [isSendingAuto, setIsSendingAuto] = useState(false);
   const [autoProgress, setAutoProgress] = useState(null);
@@ -169,11 +175,19 @@ export default function AdminDashboard({
   ];
 
   const insertVariableTag = (tag) => {
-    setCustomMessage(prev => {
-      const updated = prev ? `${prev} ${tag}` : tag;
-      localStorage.setItem('wa_custom_message', updated);
-      return updated;
-    });
+    if (activeMessageType === 'reminder') {
+      setReminderMessage(prev => {
+        const updated = prev ? `${prev} ${tag}` : tag;
+        localStorage.setItem('wa_reminder_message', updated);
+        return updated;
+      });
+    } else {
+      setCustomMessage(prev => {
+        const updated = prev ? `${prev} ${tag}` : tag;
+        localStorage.setItem('wa_custom_message', updated);
+        return updated;
+      });
+    }
   };
 
   // Search by Name or Phone (Phase 2 Requirement 6)
@@ -255,13 +269,14 @@ export default function AdminDashboard({
     if (!selectedPreviewGuest) {
       return 'لا يوجد مدعوين في هذه المناسبة بعد لمعاينة الرسالة الحية.';
     }
-    return renderWhatsAppMessage(customMessage, {
+    const activeText = activeMessageType === 'reminder' ? reminderMessage : customMessage;
+    return renderWhatsAppMessage(activeText, {
       guest: selectedPreviewGuest,
       dependents: previewDependents,
       event: eventData,
       baseUrl: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
     });
-  }, [customMessage, selectedPreviewGuest, previewDependents, eventData]);
+  }, [activeMessageType, customMessage, reminderMessage, selectedPreviewGuest, previewDependents, eventData]);
 
   // Auto-sync selection state when owners change (keep user selection, clean up deleted ones)
   useEffect(() => {
@@ -296,11 +311,8 @@ export default function AdminDashboard({
       return;
     }
     setSelectedGuestIds(pendingOwners);
-    if (window.confirm(`تم تحديد (${pendingOwners.length}) مدعو بانتظار الرد.\nهل ترغب في تبديل مقدمة الرسالة إلى صيغة "التذكير" تلقائياً؟`)) {
-      const reminderIntro = 'نود تذكيركم بموعد حفلنا القريب، ويسعدنا ويشرفنا تأكيد حضوركم لمشاركتنا هذه الفرحة.';
-      setCustomMessage(reminderIntro);
-      localStorage.setItem('wa_custom_message', reminderIntro);
-    }
+    setActiveMessageType('reminder');
+    alert(`تم تحديد (${pendingOwners.length}) مدعو بانتظار الرد، وتم تحويل الرسالة إلى "رسالة التذكير" تلقائياً.`);
   };
 
   const handleToggleSelectGuest = (id) => {
@@ -961,6 +973,7 @@ export default function AdminDashboard({
     const cleanInstance = instanceId.trim();
     const cleanToken = apiToken.trim();
 
+    const activeMsg = activeMessageType === 'reminder' ? reminderMessage : customMessage;
     if (cleanInstance && cleanToken) {
       try {
         const res = await fetch('/api/whatsapp/send-single', {
@@ -972,7 +985,7 @@ export default function AdminDashboard({
             apiToken: cleanToken,
             hostUrl: window.location.origin,
             eventId: activeEventId,
-            customMessage
+            customMessage: activeMsg
           })
         });
         const data = await res.json();
@@ -990,7 +1003,7 @@ export default function AdminDashboard({
       const g = (guests || []).find(item => item.id === failedItem.guestId);
       if (g) {
         const depList = (guests || []).filter(d => d.parent_guest_id === g.id);
-        const fullText = renderWhatsAppMessage(customMessage, {
+        const fullText = renderWhatsAppMessage(activeMsg, {
           guest: g,
           dependents: depList,
           event: eventData,
@@ -1021,6 +1034,7 @@ export default function AdminDashboard({
     const testGuest = selectedPreviewGuest || { name: 'ضيف تجريبي', id: 'test_sample', invite_token: 'test' };
     const testDeps = previewDependents || [];
 
+    const activeMsg = activeMessageType === 'reminder' ? reminderMessage : customMessage;
     if (cleanInstance && cleanToken) {
       try {
         const res = await fetch('/api/whatsapp/send-test', {
@@ -1032,7 +1046,7 @@ export default function AdminDashboard({
             apiToken: cleanToken,
             hostUrl: window.location.origin,
             eventId: activeEventId,
-            customMessage,
+            customMessage: activeMsg,
             previewGuestId: testGuest.id
           })
         });
@@ -1048,7 +1062,7 @@ export default function AdminDashboard({
         setIsSendingTest(false);
       }
     } else {
-      const renderedMsg = renderWhatsAppMessage(customMessage, {
+      const renderedMsg = renderWhatsAppMessage(activeMsg, {
         guest: testGuest,
         dependents: testDeps,
         event: eventData,
@@ -1102,10 +1116,15 @@ export default function AdminDashboard({
     const cleanInstance = instanceId.trim();
     const cleanToken = apiToken.trim();
 
+    const activeMsg = activeMessageType === 'reminder' ? reminderMessage : customMessage;
     if (cleanInstance && !cleanInstance.includes('••••') && cleanToken && !cleanToken.includes('••••')) {
       handleSaveWhatsAppConfig(cleanInstance, cleanToken);
     }
-    localStorage.setItem('wa_custom_message', customMessage);
+    if (activeMessageType === 'reminder') {
+      localStorage.setItem('wa_reminder_message', reminderMessage);
+    } else {
+      localStorage.setItem('wa_custom_message', customMessage);
+    }
 
     setFailedSends([]);
 
@@ -1124,7 +1143,7 @@ export default function AdminDashboard({
             hostUrl: window.location.origin,
             eventId: activeEventId,
             guestIds: finalTargets.map(g => g.id),
-            customMessage: customMessage,
+            customMessage: activeMsg,
             allowResend: true
           })
         });
@@ -1167,7 +1186,7 @@ export default function AdminDashboard({
 
       try {
         const depList = (guests || []).filter(d => d.parent_guest_id === g.id);
-        const fullText = renderWhatsAppMessage(customMessage, {
+        const fullText = renderWhatsAppMessage(activeMsg, {
           guest: g,
           dependents: depList,
           event: eventData,
@@ -1845,71 +1864,128 @@ export default function AdminDashboard({
 
             {/* Form 2: WhatsApp Customization */}
             <div className="apple-card" style={{ marginBottom: 0 }}>
-              <div style={{ marginBottom: '16px' }}>
-                <h2 style={{ margin: 0, marginBottom: '10px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <MessageCircle className="system-gold" size={20} /> 2. تخصيص مقدمة رسالة الواتساب
+              <div className="card-title-row" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MessageCircle className="system-gold" size={20} /> 2. تخصيص رسائل الواتساب
                 </h2>
-                
-                {/* Intro Preset Switchers placed under the box title */}
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <button
-                    type="button"
-                    className="apple-btn apple-btn-secondary"
-                    style={{ fontSize: '0.82rem', padding: '5px 12px' }}
-                    onClick={() => {
-                      const msg = 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
-                      setCustomMessage(msg);
-                      localStorage.setItem('wa_custom_message', msg);
-                    }}
-                    title="مقدمة ترحيبية أساسية"
-                  >
-                    مقدمة ترحيبية
-                  </button>
-                  <button
-                    type="button"
-                    className="apple-btn apple-btn-secondary"
-                    style={{ fontSize: '0.82rem', padding: '5px 12px' }}
-                    onClick={() => {
-                      const msg = 'يسرنا ويسعدنا دعوتكم لحضور حفلنا، ويسعدنا حضوركم مع مرافقينكم الكرام وتكتمل فرحتنا بكم.';
-                      setCustomMessage(msg);
-                      localStorage.setItem('wa_custom_message', msg);
-                    }}
-                    title="مقدمة دعوة عائلية ومع المرافقين"
-                  >
-                    مقدمة عائلية
-                  </button>
-                  <button
-                    type="button"
-                    className="apple-btn apple-btn-secondary"
-                    style={{ fontSize: '0.82rem', padding: '5px 12px' }}
-                    onClick={() => {
-                      const msg = 'نود تذكيركم بموعد حفلنا القريب، ويسعدنا ويشرفنا تأكيد حضوركم لمشاركتنا هذه الفرحة.';
-                      setCustomMessage(msg);
-                      localStorage.setItem('wa_custom_message', msg);
-                    }}
-                    title="مقدمة تذكير بموعد الحفل"
-                  >
-                    مقدمة تذكير
-                  </button>
+                  
+                  {/* Switcher between Invite Message and Reminder Message */}
+                  <div className="ios-segmented-control" style={{ padding: '3px' }}>
+                    <button
+                      type="button"
+                      className={`segment-btn ${activeMessageType === 'invite' ? 'active' : ''}`}
+                      onClick={() => setActiveMessageType('invite')}
+                      style={{ fontSize: '0.82rem', padding: '6px 14px' }}
+                    >
+                      💌 رسالة الدعوة
+                    </button>
+                    <button
+                      type="button"
+                      className={`segment-btn ${activeMessageType === 'reminder' ? 'active' : ''}`}
+                      onClick={() => setActiveMessageType('reminder')}
+                      style={{ fontSize: '0.82rem', padding: '6px 14px' }}
+                    >
+                      🔔 رسالة التذكير
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="form-group" style={{ marginBottom: '14px' }}>
-                <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px', display: 'block' }}>
-                  مقدمة رسالة الدعوة (تظهر في بداية الرسالة قبل تفاصيل المناسبة ورابط الدعوة):
-                </label>
-                <textarea
-                  className="apple-input"
-                  rows="3"
-                  value={customMessage}
-                  onChange={(e) => {
-                    setCustomMessage(e.target.value);
-                    localStorage.setItem('wa_custom_message', e.target.value);
-                  }}
-                  placeholder="اكتب نص المقدمة الترحيبية هنا (مثال: يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم)..."
-                  style={{ lineHeight: '1.6', fontFamily: 'inherit' }}
-                ></textarea>
-              </div>
+                {activeMessageType === 'invite' ? (
+                  <>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '12px' }}>
+                      <button
+                        type="button"
+                        className="apple-btn apple-btn-secondary"
+                        style={{ fontSize: '0.82rem', padding: '5px 12px' }}
+                        onClick={() => {
+                          const msg = 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
+                          setCustomMessage(msg);
+                          localStorage.setItem('wa_custom_message', msg);
+                        }}
+                        title="مقدمة ترحيبية أساسية"
+                      >
+                        مقدمة ترحيبية
+                      </button>
+                      <button
+                        type="button"
+                        className="apple-btn apple-btn-secondary"
+                        style={{ fontSize: '0.82rem', padding: '5px 12px' }}
+                        onClick={() => {
+                          const msg = 'يسرنا ويسعدنا دعوتكم لحضور حفلنا، ويسعدنا حضوركم مع مرافقينكم الكرام وتكتمل فرحتنا بكم.';
+                          setCustomMessage(msg);
+                          localStorage.setItem('wa_custom_message', msg);
+                        }}
+                        title="مقدمة دعوة عائلية ومع المرافقين"
+                      >
+                        مقدمة عائلية
+                      </button>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '14px' }}>
+                      <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px', display: 'block' }}>
+                        مقدمة رسالة الدعوة (تظهر في بداية الرسالة قبل تفاصيل المناسبة ورابط الدعوة):
+                      </label>
+                      <textarea
+                        className="apple-input"
+                        rows="3"
+                        value={customMessage}
+                        onChange={(e) => {
+                          setCustomMessage(e.target.value);
+                          localStorage.setItem('wa_custom_message', e.target.value);
+                        }}
+                        placeholder="اكتب نص المقدمة الترحيبية هنا (مثال: يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم)..."
+                        style={{ lineHeight: '1.6', fontFamily: 'inherit' }}
+                      ></textarea>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '12px' }}>
+                      <button
+                        type="button"
+                        className="apple-btn apple-btn-secondary"
+                        style={{ fontSize: '0.82rem', padding: '5px 12px' }}
+                        onClick={() => {
+                          setReminderMessage(DEFAULT_REMINDER_MESSAGE);
+                          localStorage.setItem('wa_reminder_message', DEFAULT_REMINDER_MESSAGE);
+                        }}
+                        title="استعادة النص الافتراضي لرسالة التذكير"
+                      >
+                        🔄 استعادة النص الافتراضي
+                      </button>
+                      <button
+                        type="button"
+                        className="apple-btn apple-btn-secondary"
+                        style={{ fontSize: '0.82rem', padding: '5px 12px' }}
+                        onClick={() => insertVariableTag('[رابط الموقع]')}
+                        title="إدراج وسم رابط موقع القاعة / الخرائط"
+                      >
+                        📍 إدراج [رابط الموقع]
+                      </button>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '14px' }}>
+                      <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px', display: 'block' }}>
+                        نص رسالة التذكير (مكتوب بالصيغة المعتمدة وقابل للتعديل بالكامل):
+                      </label>
+                      <textarea
+                        className="apple-input"
+                        rows="7"
+                        value={reminderMessage}
+                        onChange={(e) => {
+                          setReminderMessage(e.target.value);
+                          localStorage.setItem('wa_reminder_message', e.target.value);
+                        }}
+                        placeholder="اكتب نص رسالة التذكير هنا..."
+                        style={{ lineHeight: '1.6', fontFamily: 'inherit' }}
+                      ></textarea>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>💡</span>
+                        <span>رسالة التذكير قابلة للتعديل بحرية، وسيتم استبدال <code>[رابط الموقع]</code> تلقائياً برابط لوكيشن المناسبة عند الإرسال، أو يمكنك كتابة الرابط والمواعيد يدوياً.</span>
+                      </div>
+                    </div>
+                  </>
+                )}
 
               {/* Action row: Toggle Message Preview */}
               <div style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
@@ -1939,7 +2015,7 @@ export default function AdminDashboard({
                 <div style={{ background: '#f0f5f9', border: '1px solid rgba(64, 123, 161, 0.25)', borderRadius: '14px', padding: '14px 18px', marginBottom: '14px', fontSize: '0.86rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
                     <div style={{ fontWeight: 800, color: 'var(--pink-dark)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Sparkles size={16} /> معاينة حية لشكل رسالة الواتساب الجاهزة بكافة التفاصيل:
+                      <Sparkles size={16} /> {activeMessageType === 'reminder' ? 'معاينة حية لشكل رسالة التذكير الجاهزة للإرسال:' : 'معاينة حية لشكل رسالة الواتساب الجاهزة بكافة التفاصيل:'}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>

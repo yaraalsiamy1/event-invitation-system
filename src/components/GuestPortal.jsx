@@ -149,11 +149,15 @@ export const DEFAULT_TEMPLATE_WITH_COMPANIONS = `المكرمة/ {guest_name}
 يرجى تأكيد حضوركم واستلام تذاكر الدخول الإلكترونية عبر الرابط التالي:
 {invite_link}`;
 
-export const DEFAULT_REMINDER_TEMPLATE = `المكرمة/ {guest_name}
+export const DEFAULT_REMINDER_MESSAGE = `بكل الحب، نذكّركم بموعد ليلة فرحتنا، ويسعدنا حضوركم ومشاركتنا ...... ✨
 
-نود تذكيركم بموعد حفل {event_name} يوم {date} الساعة {time} في {venue}.
-ويسعدنا تأكيد حضوركم واستلام تذاكركم عبر الرابط التالي:
-{invite_link}`;
+🕦 الحضور: الساعة ……
+💍 موعد الزفّة: الساعة ……
+
+📍 للوصول إلى موقع المناسبة، يرجى الضغط على الرابط أدناه:
+[رابط الموقع]`;
+
+export const DEFAULT_REMINDER_TEMPLATE = DEFAULT_REMINDER_MESSAGE;
 
 export function renderWhatsAppMessage(template, { guest, dependents = [], event = {}, baseUrl }) {
   if (!guest) return '';
@@ -175,14 +179,27 @@ export function renderWhatsAppMessage(template, { guest, dependents = [], event 
   const dateStr = formatArabicDateOnly(event?.date) || event?.date || '';
   const timeStr = formatArabicTimeOnly(event?.time) || event?.time || '';
   const venueStr = event?.location || '';
+  const mapLinkStr = event?.mapLink || event?.location_link || '';
   const effectiveBaseUrl = baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
   const inviteLink = `${effectiveBaseUrl}/?guest=${guest.invite_token || guest.id}`;
 
   const raw = (template || '').trim();
 
-  // If the user's text does not include explicit variables (e.g. user just wrote the intro):
-  // Automatically format the full ready message with all details around this intro!
-  if (!raw.includes('{invite_link}') && !raw.includes('{link}') && !raw.includes('{event_name}')) {
+  // If the user's text does not include explicit variables or full reminder template (e.g. user just wrote the intro):
+  // Automatically format the full ready invitation message with all details around this intro!
+  const isSelfContained = raw.includes('{invite_link}') ||
+    raw.includes('{link}') ||
+    raw.includes('{event_name}') ||
+    raw.includes('[رابط الموقع]') ||
+    raw.includes('{map_link}') ||
+    raw.includes('[رابط الدعوة]') ||
+    raw.includes('نذكّركم') ||
+    raw.includes('نذكركم') ||
+    raw.includes('ليلة فرحتنا') ||
+    raw.includes('موعد الزفّة') ||
+    raw.includes('موعد الزفة');
+
+  if (!isSelfContained) {
     const userIntro = raw || 'يسرنا ويسعدنا دعوتكم لحضور حفلنا وتكتمل فرحتنا بمشاركتكم.';
     const greeting = hasDependents
       ? `المكرمة/ ${guestName}\nالدعوة لك ${companionsText}، ${userIntro}`
@@ -201,13 +218,14 @@ export function renderWhatsAppMessage(template, { guest, dependents = [], event 
   }
 
   return raw
+    .replace(/\[رابط الموقع\]|\{map_link\}/g, mapLinkStr || '[رابط الموقع]')
+    .replace(/\[رابط الدعوة\]|\{invite_link\}|\{link\}/g, inviteLink)
     .replace(/\{guest_name\}|\{name\}/g, guestName)
     .replace(/\{companions\}/g, companionsText)
     .replace(/\{event_name\}|\{event\}/g, eventName)
     .replace(/\{date\}/g, dateStr)
     .replace(/\{time\}/g, timeStr)
-    .replace(/\{venue\}|\{location\}/g, venueStr)
-    .replace(/\{invite_link\}|\{link\}/g, inviteLink);
+    .replace(/\{venue\}|\{location\}/g, venueStr);
 }
 
 
