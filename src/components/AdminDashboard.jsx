@@ -527,11 +527,11 @@ export default function AdminDashboard({
     return clean;
   };
 
-  // Download Updated Template File "تمبلت_الدعوات_المحدث.xlsx" (Phase 3 Req 4)
+  // Download Updated Template File "تمبلت الدعوات.xlsx"
   const downloadExcelTemplate = () => {
     const link = document.createElement('a');
-    link.href = '/تمبلت_الدعوات_المحدث.xlsx';
-    link.setAttribute('download', 'تمبلت_الدعوات_المحدث.xlsx');
+    link.href = encodeURI('/تمبلت الدعوات.xlsx');
+    link.setAttribute('download', 'تمبلت الدعوات.xlsx');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -689,7 +689,7 @@ export default function AdminDashboard({
         if (extractedRows.length > 0) {
           setPendingExcelRows(extractedRows);
         } else {
-          alert('لم يتم العثور على بيانات صالحة في ملف الإكسل. يرجى التأكد من تعبئة عمود "اسم الضيف" في تمبلت_الدعوات_المحدث.xlsx.');
+          alert('لم يتم العثور على بيانات صالحة في ملف الإكسل. يرجى التأكد من تعبئة عمود "اسم الضيف" في تمبلت الدعوات.xlsx.');
         }
       } catch (err) {
         alert('حدث خطأ أثناء قراءة ملف الإكسل. يرجى التأكد من رفع ملف XLSX صالح.');

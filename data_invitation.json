@@ -3,13 +3,13 @@
   "events": [
     {
       "id": "ev_1789587103668_307",
-      "title": "عقد قران تركي قاري & لمار السيامي",
+      "title": "عقد قران لمار السيامي & تركي قاري",
       "type": "wedding",
       "date": "2027-01-08",
       "time": "21:30",
       "location": "قاعة ميلا (2) | الحسينية",
       "mapLink": "https://maps.app.goo.gl/eGuQzLPJbqEkNk1W6",
-      "cardImage": "/uploads/card_ev_1789587103668_307_1791460392359.png",
+      "cardImage": "/uploads/card_ev_1789587103668_307_orig_1791759803727.jpg",
       "guests": [
         {
           "id": "g_1791755513185_414196_1",
@@ -1406,7 +1406,30 @@
           "sent": false,
           "sentAt": null
         }
-      ]
+      ],
+      "cardImageCompressed": "/uploads/card_ev_1789587103668_307_wa_1791759803730.jpg"
+    },
+    {
+      "id": "ev_1791760531704_344",
+      "title": "حفل تخرج وسن",
+      "type": "graduation",
+      "date": "2026-10-29",
+      "time": "20:00",
+      "location": "قاعه",
+      "mapLink": "",
+      "cardImage": null,
+      "guests": []
+    },
+    {
+      "id": "ev_1791760613694_452",
+      "title": "بب",
+      "type": "wedding",
+      "date": "2026-11-05",
+      "time": "20:00",
+      "location": "القاعة الرئيسية",
+      "mapLink": "",
+      "cardImage": null,
+      "guests": []
     }
   ],
   "whatsappConfig": {
