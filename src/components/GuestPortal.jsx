@@ -561,47 +561,71 @@ export default function GuestPortal({
               </h1>
             </div>
 
-            {/* Time & Location with dedicated action button under each detail */}
+            {/* Time & Location with compact small action icon-pills underneath */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', textAlign: 'right', fontSize: '0.84rem' }}>
               {/* Event Date & Add to Calendar */}
               {formattedDateTime && (
-                <div style={{ background: 'rgba(0, 0, 0, 0.025)', padding: '12px 14px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <Calendar size={18} style={{ color: '#407BA1', flexShrink: 0 }} />
-                    <div>
-                      <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.74rem' }}>موعد المناسبة</strong>
-                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.92rem' }}>{formattedDateTime}</span>
-                    </div>
+                <div style={{ background: 'rgba(0, 0, 0, 0.025)', padding: '10px 14px', borderRadius: '14px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <Calendar size={18} style={{ color: '#407BA1', flexShrink: 0, marginTop: '2px' }} />
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.74rem' }}>موعد المناسبة</strong>
+                    <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem', display: 'block' }}>{formattedDateTime}</span>
+                    <button
+                      type="button"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '3px 9px',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: '#407BA1',
+                        background: '#ffffff',
+                        border: '1px solid rgba(64, 123, 161, 0.25)',
+                        borderRadius: '20px',
+                        cursor: 'pointer',
+                        marginTop: '5px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={() => downloadIcsCalendar(activeEv)}
+                    >
+                      <CalendarPlus size={12} /> أضف للتقويم
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="apple-btn apple-btn-secondary"
-                    style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', fontWeight: 700, justifyContent: 'center' }}
-                    onClick={() => downloadIcsCalendar(activeEv)}
-                  >
-                    <CalendarPlus size={15} /> أضف للتقويم
-                  </button>
                 </div>
               )}
 
               {/* Event Location & Open Maps */}
               {activeEv?.location && (
-                <div style={{ background: 'rgba(0, 0, 0, 0.025)', padding: '12px 14px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <MapPin size={18} style={{ color: '#407BA1', flexShrink: 0 }} />
-                    <div>
-                      <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.74rem' }}>مكان المناسبة</strong>
-                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.92rem' }}>{activeEv.location}</span>
-                    </div>
+                <div style={{ background: 'rgba(0, 0, 0, 0.025)', padding: '10px 14px', borderRadius: '14px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <MapPin size={18} style={{ color: '#407BA1', flexShrink: 0, marginTop: '2px' }} />
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.74rem' }}>مكان المناسبة</strong>
+                    <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem', display: 'block' }}>{activeEv.location}</span>
+                    <button
+                      type="button"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '3px 9px',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: '#407BA1',
+                        background: '#ffffff',
+                        border: '1px solid rgba(64, 123, 161, 0.25)',
+                        borderRadius: '20px',
+                        cursor: 'pointer',
+                        marginTop: '5px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={handleOpenMaps}
+                    >
+                      <Navigation size={12} /> افتح الموقع
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="apple-btn apple-btn-secondary"
-                    style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', fontWeight: 700, justifyContent: 'center' }}
-                    onClick={handleOpenMaps}
-                  >
-                    <Navigation size={15} /> افتح الموقع
-                  </button>
                 </div>
               )}
             </div>
