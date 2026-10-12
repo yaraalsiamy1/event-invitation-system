@@ -421,8 +421,8 @@ export default function App() {
       <footer style={{ borderTop: '1px solid var(--apple-border)', padding: '24px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.88rem', fontWeight: 600 }}>
         <div className="apple-container" dir="rtl" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
           <span>تم تطوير النظام بواسطة</span>
-          <span dir="ltr" style={{ fontWeight: 700, color: 'var(--text-primary)' }}>YaraAlsiamy</span>
-          <span dir="ltr">&copy; 2026</span>
+          <span dir="ltr" style={{ fontWeight: 700, color: 'inherit' }}>YaraAlsiamy</span>
+          <span dir="ltr" style={{ color: 'inherit' }}>&copy; 2026</span>
         </div>
       </footer>
     </div>

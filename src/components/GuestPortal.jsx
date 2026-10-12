@@ -791,8 +791,8 @@ export default function GuestPortal({
             flexWrap: 'wrap'
           }}>
             <span>تم تطوير النظام بواسطة</span>
-            <span dir="ltr" style={{ fontWeight: 800, color: '#407BA1' }}>YaraAlsiamy</span>
-            <span dir="ltr" style={{ color: 'var(--text-secondary)' }}>&copy; 2026</span>
+            <span dir="ltr" style={{ fontWeight: 700, color: 'inherit' }}>YaraAlsiamy</span>
+            <span dir="ltr" style={{ color: 'inherit' }}>&copy; 2026</span>
           </footer>
 
         </div>
