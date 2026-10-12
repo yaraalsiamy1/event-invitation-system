@@ -3427,11 +3427,8 @@ export default function AdminDashboard({
             {onDeleteEvent && activeEventId && (
               <div style={{ marginTop: '22px', paddingTop: '16px', borderTop: '1px solid rgba(239, 68, 68, 0.2)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                  <div>
-                    <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Trash2 size={15} /> حذف المناسبة
-                    </div>
-                    <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ flex: 1, minWidth: '180px' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                       حذف المناسبة الحالية ({eventData?.title || 'الحالية'}) وكافة بياناتها نهائياً.
                     </span>
                   </div>
