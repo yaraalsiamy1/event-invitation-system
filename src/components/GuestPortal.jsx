@@ -343,10 +343,10 @@ export default function GuestPortal({
     return getGreetingText(resolvedDependents);
   }, [resolvedDependents]);
 
-  // Formatted unified date & time (Phase 4 Req 6)
+  // Formatted unified date (without time per user request)
   const formattedDateTime = useMemo(() => {
-    return formatArabicDateTime(activeEv?.date, activeEv?.time);
-  }, [activeEv?.date, activeEv?.time]);
+    return formatArabicDateOnly(activeEv?.date);
+  }, [activeEv?.date]);
 
   if (!resolvedOwner) {
     return (
