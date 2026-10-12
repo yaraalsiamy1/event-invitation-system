@@ -1712,7 +1712,7 @@ export default function AdminDashboard({
             {/* Form 1: Event Details & Card Upload */}
             <div className="apple-card" style={{ marginBottom: 0 }}>
               <div className="card-title-row">
-                <h2><Calendar className="system-gold" size={22} /> 1. تعديل بيانات المناسبة وكرت الدعوة</h2>
+                <h2><Calendar className="system-gold" size={20} /> 1. تعديل بيانات المناسبة وكرت الدعوة</h2>
               </div>
 
               <form onSubmit={handleEventSubmit}>
@@ -1835,7 +1835,7 @@ export default function AdminDashboard({
             {/* Form 2: WhatsApp Customization */}
             <div className="apple-card" style={{ marginBottom: 0 }}>
               <div style={{ marginBottom: '16px' }}>
-                <h2 style={{ margin: 0, marginBottom: '10px' }}>
+                <h2 style={{ margin: 0, marginBottom: '10px', fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <MessageCircle className="system-gold" size={20} /> 2. تخصيص مقدمة رسالة الواتساب
                 </h2>
                 

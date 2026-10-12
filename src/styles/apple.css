@@ -295,7 +295,8 @@ body.apple-theme {
     margin-bottom: 20px;
 }
 
-.card-title-row h2 {
+.card-title-row h2,
+.apple-card h2 {
     font-size: 1.2rem;
     font-weight: 800;
     display: flex;
