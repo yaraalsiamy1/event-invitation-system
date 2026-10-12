@@ -561,50 +561,49 @@ export default function GuestPortal({
               </h1>
             </div>
 
-            {/* Time & Location */}
+            {/* Time & Location with dedicated action button under each detail */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', textAlign: 'right', fontSize: '0.84rem' }}>
-              {/* Event Date & Time */}
+              {/* Event Date & Add to Calendar */}
               {formattedDateTime && (
-                <div style={{ background: 'rgba(0, 0, 0, 0.025)', padding: '12px 14px', borderRadius: '14px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <Calendar size={18} style={{ color: '#407BA1', flexShrink: 0 }} />
-                  <div>
-                    <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.74rem' }}>موعد المناسبة</strong>
-                    <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{formattedDateTime}</span>
+                <div style={{ background: 'rgba(0, 0, 0, 0.025)', padding: '12px 14px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <Calendar size={18} style={{ color: '#407BA1', flexShrink: 0 }} />
+                    <div>
+                      <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.74rem' }}>موعد المناسبة</strong>
+                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.92rem' }}>{formattedDateTime}</span>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    className="apple-btn apple-btn-secondary"
+                    style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', fontWeight: 700, justifyContent: 'center' }}
+                    onClick={() => downloadIcsCalendar(activeEv)}
+                  >
+                    <CalendarPlus size={15} /> أضف للتقويم
+                  </button>
                 </div>
               )}
 
-              {/* Event Location */}
+              {/* Event Location & Open Maps */}
               {activeEv?.location && (
-                <div style={{ background: 'rgba(0, 0, 0, 0.025)', padding: '12px 14px', borderRadius: '14px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <MapPin size={18} style={{ color: '#407BA1', flexShrink: 0 }} />
-                  <div>
-                    <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.74rem' }}>مكان المناسبة</strong>
-                    <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{activeEv.location}</span>
+                <div style={{ background: 'rgba(0, 0, 0, 0.025)', padding: '12px 14px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <MapPin size={18} style={{ color: '#407BA1', flexShrink: 0 }} />
+                    <div>
+                      <strong style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.74rem' }}>مكان المناسبة</strong>
+                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.92rem' }}>{activeEv.location}</span>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    className="apple-btn apple-btn-secondary"
+                    style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', fontWeight: 700, justifyContent: 'center' }}
+                    onClick={handleOpenMaps}
+                  >
+                    <Navigation size={15} /> افتح الموقع
+                  </button>
                 </div>
               )}
-            </div>
-
-            {/* Quick Action Buttons: Open Maps & Add to Calendar */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <button
-                type="button"
-                className="apple-btn apple-btn-secondary"
-                style={{ padding: '8px 12px', fontSize: '0.82rem', fontWeight: 700, justifyContent: 'center' }}
-                onClick={handleOpenMaps}
-              >
-                <Navigation size={15} /> افتح الموقع
-              </button>
-
-              <button
-                type="button"
-                className="apple-btn apple-btn-secondary"
-                style={{ padding: '8px 12px', fontSize: '0.82rem', fontWeight: 700, justifyContent: 'center' }}
-                onClick={() => downloadIcsCalendar(activeEv)}
-              >
-                <CalendarPlus size={15} /> أضف للتقويم
-              </button>
             </div>
 
             {/* RSVP Response Buttons (Inside the same box, phrase 'هل يسعدنا حضورك؟' deleted) */}
