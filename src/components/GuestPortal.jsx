@@ -783,6 +783,26 @@ export default function GuestPortal({
             );
           })}
 
+          {/* Footer inside Guest Interface */}
+          <footer style={{
+            marginTop: '16px',
+            paddingTop: '20px',
+            borderTop: '1px solid rgba(64, 123, 161, 0.14)',
+            textAlign: 'center',
+            color: 'var(--text-secondary)',
+            fontSize: '0.84rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            flexWrap: 'wrap'
+          }}>
+            <span>تم تطوير النظام بواسطة</span>
+            <span dir="ltr" style={{ fontWeight: 800, color: '#407BA1' }}>YaraAlsiamy</span>
+            <span dir="ltr" style={{ color: 'var(--text-secondary)' }}>&copy; 2026</span>
+          </footer>
+
         </div>
       </div>
     </div>
