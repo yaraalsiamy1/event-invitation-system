@@ -403,11 +403,11 @@ export default function GuestPortal({
         });
         const targetPerson = allMembers.find(m => m.id === memberId);
         if (showConfirmation) {
-          showConfirmation('تم تأكيد الحضور!', `يسرنا تأكيد حضور (${targetPerson?.name || 'الضيف'})، تم إصدار بطاقة الدخول الخاصة به.`);
+          showConfirmation('تم قبول الدعوة!', `يسرنا تأكيد حضور (${targetPerson?.name || 'الضيف'})، تم إصدار باركود الدخول الخاص به.`);
         }
       } else if (status === 'declined') {
         if (showConfirmation) {
-          showConfirmation('تم تسجيل الاعتذار', 'نشكرك على إبلاغنا ونتمنى لك كل التوفيق.', 'info');
+          showConfirmation('تم تسجيل الإعتذار', 'نشكرك على إبلاغنا ونتمنى لك كل التوفيق.', 'info');
         }
       }
 
@@ -627,12 +627,12 @@ export default function GuestPortal({
             </div>
           )}
 
-          {/* 4. RSVP Section: تأكيد أو اعتذار (حالة بانتظار الرد مخفية عن الضيوف) */}
+          {/* 4. RSVP Section: قبول الدعوة أو الإعتذار عن الدعوة */}
           <div>
             {allMembers.length > 1 && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', padding: '0 4px' }}>
                 <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                  تأكيد الحضور ({allMembers.length})
+                  الرد على الدعوة ({allMembers.length})
                 </h3>
                 <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                   تأكيد مستقل لكل مدعو
@@ -663,128 +663,126 @@ export default function GuestPortal({
                         ? '1.5px solid #f87171'
                         : '1px solid rgba(64, 123, 161, 0.15)',
                       borderRadius: '20px',
-                      padding: '18px 16px',
+                      padding: memberStatus === 'pending' ? '20px 16px' : '16px',
                       boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    {/* Member Header & Status Tag (NO "بانتظار الرد" badge shown when pending!) */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: memberStatus === 'pending' ? '8px' : '10px', flexWrap: 'wrap', gap: '6px' }}>
-                      <div>
-                        {allMembers.length > 1 && (
-                          <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', display: 'block' }}>
-                            {member.isOwner ? 'المدعوة الأساسية:' : 'مرافقة مدعوة:'}
-                          </span>
-                        )}
-                        <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--pink-dark)', margin: '2px 0 0 0' }}>
-                          {member.name}
-                        </h4>
+                    {/* Status Tag ONLY when accepted or declined (hidden when pending) */}
+                    {memberStatus !== 'pending' && (
+                      <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                        <span style={{
+                          padding: '5px 16px',
+                          borderRadius: '50px',
+                          fontSize: '0.82rem',
+                          fontWeight: 800,
+                          background: memberStatus === 'accepted' ? '#dcfce7' : '#fee2e2',
+                          color: memberStatus === 'accepted' ? '#15803d' : '#b91c1c',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          {memberStatus === 'accepted' ? (
+                            <><Check size={14} /> تم قبول الدعوة</>
+                          ) : (
+                            <><X size={14} /> تم الإعتذار عن الدعوة</>
+                          )}
+                        </span>
                       </div>
+                    )}
 
-                      {/* Status Tag ONLY when accepted or declined (hidden when pending!) */}
-                      {memberStatus === 'accepted' && (
-                        <span style={{
-                          padding: '4px 12px',
-                          borderRadius: '50px',
-                          fontSize: '0.78rem',
-                          fontWeight: 800,
-                          background: '#dcfce7',
-                          color: '#15803d',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}>
-                          <Check size={14} /> تم تأكيد الحضور
-                        </span>
-                      )}
-
-                      {memberStatus === 'declined' && (
-                        <span style={{
-                          padding: '4px 12px',
-                          borderRadius: '50px',
-                          fontSize: '0.78rem',
-                          fontWeight: 800,
-                          background: '#fee2e2',
-                          color: '#b91c1c',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}>
-                          <X size={14} /> معتذر عن الحضور
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Pending State: RSVP Buttons (تأكيد الحضور / الاعتذار) */}
+                    {/* Pending State: Buttons only, name removed as requested */}
                     {memberStatus === 'pending' && !isLocked && (
-                      <div style={{ marginTop: '10px' }}>
-                        <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '12px', textAlign: 'center', fontWeight: 600 }}>
+                      <div>
+                        <p style={{ fontSize: '0.94rem', color: 'var(--text-secondary)', marginBottom: '14px', textAlign: 'center', fontWeight: 700 }}>
                           هل يسعدنا حضورك؟
                         </p>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                           <button
                             type="button"
                             className="apple-btn apple-btn-success-large"
-                            style={{ padding: '10px 14px', fontSize: '0.9rem', fontWeight: 800, justifyContent: 'center' }}
+                            style={{ padding: '11px 14px', fontSize: '0.92rem', fontWeight: 800, justifyContent: 'center' }}
                             disabled={isMemberLoading}
                             onClick={() => handleMemberRSVP(member.id, 'accepted')}
                           >
-                            <Check size={18} /> تأكيد الحضور
+                            <Check size={18} /> قبول الدعوة
                           </button>
                           <button
                             type="button"
                             className="apple-btn apple-btn-decline-large"
-                            style={{ padding: '10px 14px', fontSize: '0.9rem', fontWeight: 800, justifyContent: 'center' }}
+                            style={{ padding: '11px 14px', fontSize: '0.92rem', fontWeight: 800, justifyContent: 'center' }}
                             disabled={isMemberLoading}
                             onClick={() => handleMemberRSVP(member.id, 'declined')}
                           >
-                            <X size={18} /> الاعتذار
+                            <X size={18} /> الإعتذار عن الدعوة
                           </button>
                         </div>
                       </div>
                     )}
 
-                    {/* Accepted State: Digital Pass with QR Code */}
+                    {/* Accepted State: Elegant QR Barcode Card matching User Reference */}
                     {memberStatus === 'accepted' && (
-                      <div style={{ marginTop: '10px' }}>
-                        <div className="wallet-pass" style={{ margin: '8px 0', border: '1px solid rgba(64,123,161,0.2)' }}>
-                          <div className="pass-header" style={{ padding: '12px 14px' }}>
-                            <div>
-                              <div className="pass-header-title">بطاقة دخول المناسبة</div>
-                              <div className="pass-header-name" style={{ fontSize: '1.05rem' }}>{member.name}</div>
-                            </div>
-                            <ShieldCheck size={24} />
-                          </div>
+                      <div style={{
+                        background: '#fffdfa',
+                        border: '1.5px solid rgba(197, 160, 89, 0.35)',
+                        borderRadius: '24px',
+                        padding: '24px 20px',
+                        textAlign: 'center',
+                        boxShadow: '0 8px 30px rgba(64, 123, 161, 0.08)',
+                        margin: '8px auto 4px auto',
+                        maxWidth: '340px'
+                      }}>
+                        {/* Title above QR */}
+                        <div style={{
+                          fontSize: '0.92rem',
+                          color: '#78716c',
+                          fontWeight: 700,
+                          marginBottom: '16px'
+                        }}>
+                          باركود دخولك
+                        </div>
 
-                          <div className="pass-cutout-line">
-                            <div className="notch-left"></div>
-                            <div className="dashed"></div>
-                            <div className="notch-right"></div>
-                          </div>
+                        {/* Centered QR Code */}
+                        <div style={{
+                          background: '#ffffff',
+                          padding: '14px',
+                          borderRadius: '16px',
+                          display: 'inline-block',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.05)',
+                          border: '1px solid rgba(0,0,0,0.06)',
+                          marginBottom: '16px'
+                        }}>
+                          <QRCodeSVG value={qrPayload} size={160} level="H" includeMargin={false} />
+                        </div>
 
-                          <div className="pass-body" style={{ padding: '14px 12px' }}>
-                            <div className="pass-qr-box" style={{ padding: '10px', background: '#ffffff', borderRadius: '14px' }}>
-                              <QRCodeSVG value={qrPayload} size={135} level="H" includeMargin={false} />
-                            </div>
-                            <div style={{ marginTop: '8px' }}>
-                              <div className="pass-code-pill" style={{ fontSize: '0.84rem', padding: '4px 14px' }}>
-                                {member.ticketCode || 'EV-PASS'}
-                              </div>
-                            </div>
-                            <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', margin: '6px 0 0 0' }}>
-                              ابرز هذا الباركود لمنظمي الحفل عند الدخول
-                            </p>
-                          </div>
+                        {/* Name below QR: المكرمة : [الاسم] */}
+                        <div style={{
+                          fontSize: '1.25rem',
+                          fontWeight: 800,
+                          color: 'var(--text-primary)',
+                          margin: '0 0 6px 0',
+                          lineHeight: 1.4
+                        }}>
+                          المكرمة : {member.name}
+                        </div>
+
+                        {/* Number of companions or personal invitation */}
+                        <div style={{
+                          fontSize: '0.88rem',
+                          color: 'var(--text-secondary)',
+                          fontWeight: 600
+                        }}>
+                          {resolvedDependents.length > 0 ? `${resolvedDependents.length} مرافق` : 'دعوة شخصية'}
                         </div>
                       </div>
                     )}
 
                     {/* Declined State: Apology Note */}
                     {memberStatus === 'declined' && (
-                      <div style={{ textAlign: 'center', padding: '14px 8px', marginTop: '4px' }}>
-                        <HeartHandshake size={34} style={{ color: '#ef4444', margin: '0 auto 6px auto' }} />
-                        <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '0' }}>
-                          تم تسجيل الاعتذار. نشكرك على إبلاغنا ونتمنى لك دوام التوفيق.
+                      <div style={{ textAlign: 'center', padding: '16px 8px' }}>
+                        <HeartHandshake size={36} style={{ color: '#ef4444', margin: '0 auto 8px auto' }} />
+                        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0', fontWeight: 600 }}>
+                          تم تسجيل الإعتذار. نشكرك على إبلاغنا ونتمنى لك دوام التوفيق.
                         </p>
                       </div>
                     )}
