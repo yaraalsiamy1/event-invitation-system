@@ -606,6 +606,70 @@ export default function GuestPortal({
                 <CalendarPlus size={15} /> أضف للتقويم
               </button>
             </div>
+
+            {/* RSVP Response Buttons (Inside the same box, phrase 'هل يسعدنا حضورك؟' deleted) */}
+            {allMembers.map((member) => {
+              const memberStatus = member.status || 'pending';
+              const isMemberLoading = Boolean(rsvpLoadingMap[member.id]);
+
+              return (
+                <div key={member.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '2px' }}>
+                  {/* Status Tag ONLY when accepted or declined (hidden when pending) */}
+                  {memberStatus !== 'pending' && (
+                    <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                      <span style={{
+                        padding: '6px 18px',
+                        borderRadius: '50px',
+                        fontSize: '0.84rem',
+                        fontWeight: 800,
+                        background: memberStatus === 'accepted' ? '#dcfce7' : '#fee2e2',
+                        color: memberStatus === 'accepted' ? '#15803d' : '#b91c1c',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        {memberStatus === 'accepted' ? (
+                          <><Check size={14} /> تم قبول الدعوة</>
+                        ) : (
+                          <><X size={14} /> تم الإعتذار عن الدعوة</>
+                        )}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Pending State: Direct RSVP Buttons */}
+                  {memberStatus === 'pending' && !isLocked && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '2px' }}>
+                      <button
+                        type="button"
+                        className="apple-btn apple-btn-success-large"
+                        style={{ padding: '11px 14px', fontSize: '0.92rem', fontWeight: 800, justifyContent: 'center' }}
+                        disabled={isMemberLoading}
+                        onClick={() => handleMemberRSVP(member.id, 'accepted')}
+                      >
+                        <Check size={18} /> قبول الدعوة
+                      </button>
+                      <button
+                        type="button"
+                        className="apple-btn apple-btn-decline-large"
+                        style={{ padding: '11px 14px', fontSize: '0.92rem', fontWeight: 800, justifyContent: 'center' }}
+                        disabled={isMemberLoading}
+                        onClick={() => handleMemberRSVP(member.id, 'declined')}
+                      >
+                        <X size={18} /> الإعتذار عن الدعوة
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Declined Note */}
+                  {memberStatus === 'declined' && (
+                    <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '4px 0 0 0', textAlign: 'center', fontWeight: 600 }}>
+                      تم تسجيل الإعتذار. نشكرك على إبلاغنا ونتمنى لك دوام التوفيق.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Event Closed / Locked Banner */}
@@ -627,171 +691,74 @@ export default function GuestPortal({
             </div>
           )}
 
-          {/* 4. RSVP Section: قبول الدعوة أو الإعتذار عن الدعوة */}
-          <div>
-            {allMembers.length > 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', padding: '0 4px' }}>
-                <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                  الرد على الدعوة ({allMembers.length})
-                </h3>
-                <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                  تأكيد مستقل لكل مدعو
-                </span>
+          {/* Accepted State: Dedicated Barcode Card Matching Reference Image */}
+          {allMembers.filter(m => m.status === 'accepted').map((member) => {
+            const qrPayload = JSON.stringify({
+              code: member.ticketCode,
+              id: member.id,
+              name: member.name,
+              eventId: activeEv?.id
+            });
+
+            return (
+              <div
+                key={member.id}
+                style={{
+                  background: '#ffffff',
+                  border: '1.5px solid rgba(197, 160, 89, 0.35)',
+                  borderRadius: '24px',
+                  padding: '24px 20px',
+                  textAlign: 'center',
+                  boxShadow: '0 8px 30px rgba(64, 123, 161, 0.08)',
+                  margin: '0 auto',
+                  width: '100%'
+                }}
+              >
+                {/* Title above QR */}
+                <div style={{
+                  fontSize: '0.92rem',
+                  color: '#78716c',
+                  fontWeight: 700,
+                  marginBottom: '16px'
+                }}>
+                  باركود دخولك
+                </div>
+
+                {/* Centered QR Code */}
+                <div style={{
+                  background: '#ffffff',
+                  padding: '14px',
+                  borderRadius: '16px',
+                  display: 'inline-block',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.05)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  marginBottom: '16px'
+                }}>
+                  <QRCodeSVG value={qrPayload} size={160} level="H" includeMargin={false} />
+                </div>
+
+                {/* Name below QR: المكرمة : [الاسم] */}
+                <div style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 800,
+                  color: 'var(--text-primary)',
+                  margin: '0 0 6px 0',
+                  lineHeight: 1.4
+                }}>
+                  المكرمة : {member.name}
+                </div>
+
+                {/* Number of companions or personal invitation */}
+                <div style={{
+                  fontSize: '0.88rem',
+                  color: 'var(--text-secondary)',
+                  fontWeight: 600
+                }}>
+                  {resolvedDependents.length > 0 ? `${resolvedDependents.length} مرافق` : 'دعوة شخصية'}
+                </div>
               </div>
-            )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {allMembers.map((member) => {
-                const memberStatus = member.status || 'pending';
-                const isMemberLoading = Boolean(rsvpLoadingMap[member.id]);
-
-                const qrPayload = JSON.stringify({
-                  code: member.ticketCode,
-                  id: member.id,
-                  name: member.name,
-                  eventId: activeEv?.id
-                });
-
-                return (
-                  <div
-                    key={member.id}
-                    style={{
-                      background: '#ffffff',
-                      border: memberStatus === 'accepted'
-                        ? '1.5px solid #22c55e'
-                        : memberStatus === 'declined'
-                        ? '1.5px solid #f87171'
-                        : '1px solid rgba(64, 123, 161, 0.15)',
-                      borderRadius: '20px',
-                      padding: memberStatus === 'pending' ? '20px 16px' : '16px',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    {/* Status Tag ONLY when accepted or declined (hidden when pending) */}
-                    {memberStatus !== 'pending' && (
-                      <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-                        <span style={{
-                          padding: '5px 16px',
-                          borderRadius: '50px',
-                          fontSize: '0.82rem',
-                          fontWeight: 800,
-                          background: memberStatus === 'accepted' ? '#dcfce7' : '#fee2e2',
-                          color: memberStatus === 'accepted' ? '#15803d' : '#b91c1c',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}>
-                          {memberStatus === 'accepted' ? (
-                            <><Check size={14} /> تم قبول الدعوة</>
-                          ) : (
-                            <><X size={14} /> تم الإعتذار عن الدعوة</>
-                          )}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Pending State: Buttons only, name removed as requested */}
-                    {memberStatus === 'pending' && !isLocked && (
-                      <div>
-                        <p style={{ fontSize: '0.94rem', color: 'var(--text-secondary)', marginBottom: '14px', textAlign: 'center', fontWeight: 700 }}>
-                          هل يسعدنا حضورك؟
-                        </p>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                          <button
-                            type="button"
-                            className="apple-btn apple-btn-success-large"
-                            style={{ padding: '11px 14px', fontSize: '0.92rem', fontWeight: 800, justifyContent: 'center' }}
-                            disabled={isMemberLoading}
-                            onClick={() => handleMemberRSVP(member.id, 'accepted')}
-                          >
-                            <Check size={18} /> قبول الدعوة
-                          </button>
-                          <button
-                            type="button"
-                            className="apple-btn apple-btn-decline-large"
-                            style={{ padding: '11px 14px', fontSize: '0.92rem', fontWeight: 800, justifyContent: 'center' }}
-                            disabled={isMemberLoading}
-                            onClick={() => handleMemberRSVP(member.id, 'declined')}
-                          >
-                            <X size={18} /> الإعتذار عن الدعوة
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Accepted State: Elegant QR Barcode Card matching User Reference */}
-                    {memberStatus === 'accepted' && (
-                      <div style={{
-                        background: '#fffdfa',
-                        border: '1.5px solid rgba(197, 160, 89, 0.35)',
-                        borderRadius: '24px',
-                        padding: '24px 20px',
-                        textAlign: 'center',
-                        boxShadow: '0 8px 30px rgba(64, 123, 161, 0.08)',
-                        margin: '8px auto 4px auto',
-                        maxWidth: '340px'
-                      }}>
-                        {/* Title above QR */}
-                        <div style={{
-                          fontSize: '0.92rem',
-                          color: '#78716c',
-                          fontWeight: 700,
-                          marginBottom: '16px'
-                        }}>
-                          باركود دخولك
-                        </div>
-
-                        {/* Centered QR Code */}
-                        <div style={{
-                          background: '#ffffff',
-                          padding: '14px',
-                          borderRadius: '16px',
-                          display: 'inline-block',
-                          boxShadow: '0 4px 16px rgba(0,0,0,0.05)',
-                          border: '1px solid rgba(0,0,0,0.06)',
-                          marginBottom: '16px'
-                        }}>
-                          <QRCodeSVG value={qrPayload} size={160} level="H" includeMargin={false} />
-                        </div>
-
-                        {/* Name below QR: المكرمة : [الاسم] */}
-                        <div style={{
-                          fontSize: '1.25rem',
-                          fontWeight: 800,
-                          color: 'var(--text-primary)',
-                          margin: '0 0 6px 0',
-                          lineHeight: 1.4
-                        }}>
-                          المكرمة : {member.name}
-                        </div>
-
-                        {/* Number of companions or personal invitation */}
-                        <div style={{
-                          fontSize: '0.88rem',
-                          color: 'var(--text-secondary)',
-                          fontWeight: 600
-                        }}>
-                          {resolvedDependents.length > 0 ? `${resolvedDependents.length} مرافق` : 'دعوة شخصية'}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Declined State: Apology Note */}
-                    {memberStatus === 'declined' && (
-                      <div style={{ textAlign: 'center', padding: '16px 8px' }}>
-                        <HeartHandshake size={36} style={{ color: '#ef4444', margin: '0 auto 8px auto' }} />
-                        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0', fontWeight: 600 }}>
-                          تم تسجيل الإعتذار. نشكرك على إبلاغنا ونتمنى لك دوام التوفيق.
-                        </p>
-                      </div>
-                    )}
-
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+            );
+          })}
 
         </div>
       </div>
