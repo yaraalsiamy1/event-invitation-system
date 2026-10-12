@@ -283,6 +283,7 @@ export default function GuestPortal({
 }) {
   const [invitationGroup, setInvitationGroup] = useState(null); // { owner, dependents, event, isLocked }
   const [rsvpLoadingMap, setRsvpLoadingMap] = useState({});
+  const [declineConfirmMemberId, setDeclineConfirmMemberId] = useState(null);
 
   const urlGuestParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('guest') : null;
   const effectiveLookupId = urlGuestParam || activeGuestId;
@@ -669,7 +670,7 @@ export default function GuestPortal({
                         className="apple-btn apple-btn-decline-large"
                         style={{ padding: '11px 14px', fontSize: '0.92rem', fontWeight: 800, justifyContent: 'center' }}
                         disabled={isMemberLoading}
-                        onClick={() => handleMemberRSVP(member.id, 'declined')}
+                        onClick={() => setDeclineConfirmMemberId(member.id)}
                       >
                         <X size={18} /> الإعتذار عن الدعوة
                       </button>
@@ -797,6 +798,91 @@ export default function GuestPortal({
 
         </div>
       </div>
+
+      {/* Decline Confirmation Dialog Modal */}
+      {declineConfirmMemberId && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.45)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '26px',
+            padding: '28px 22px',
+            maxWidth: '360px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.22)',
+            animation: 'appleModalSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            <div style={{
+              width: '62px',
+              height: '62px',
+              borderRadius: '50%',
+              background: '#fee2e2',
+              color: '#dc2626',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px auto'
+            }}>
+              <XCircle size={36} />
+            </div>
+
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px 0' }}>
+              تأكيد الإعتذار عن الحضور
+            </h3>
+
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0 0 22px 0', lineHeight: 1.5 }}>
+              هل أنتِ متأكدة من رغبتك في الإعتذار عن الحضور؟
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <button
+                type="button"
+                className="apple-btn apple-btn-secondary"
+                style={{ padding: '11px 14px', fontSize: '0.9rem', fontWeight: 700, justifyContent: 'center' }}
+                onClick={() => setDeclineConfirmMemberId(null)}
+              >
+                تراجع
+              </button>
+
+              <button
+                type="button"
+                className="apple-btn"
+                style={{
+                  padding: '11px 14px',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                  justifyContent: 'center',
+                  background: '#dc2626',
+                  color: '#ffffff',
+                  border: 'none',
+                  boxShadow: '0 4px 14px rgba(220, 38, 38, 0.3)'
+                }}
+                onClick={() => {
+                  const targetId = declineConfirmMemberId;
+                  setDeclineConfirmMemberId(null);
+                  handleMemberRSVP(targetId, 'declined');
+                }}
+              >
+                تأكيد الإعتذار
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
