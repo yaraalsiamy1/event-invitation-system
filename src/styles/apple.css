@@ -354,6 +354,15 @@ body.apple-theme {
     margin-bottom: 8px;
 }
 
+.form-group label.apple-btn,
+label.apple-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    margin-bottom: 0 !important;
+}
+
 .apple-input {
     width: 100%;
     max-width: 100%;

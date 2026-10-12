@@ -1779,9 +1779,20 @@ export default function AdminDashboard({
                 {/* Row 4: Card Image Upload & Preview Flow (Phase 8) */}
                 <div className="form-group" style={{ borderTop: '1px solid rgba(64, 123, 161, 0.2)', paddingTop: '16px', marginBottom: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                    <label className="apple-btn apple-btn-secondary" style={{ cursor: 'pointer', fontSize: '0.84rem' }}>
-                      <Upload size={15} />
-                      {eventData?.cardImage ? 'تغيير صورة كرت الدعوة' : 'اختر صورة الكرت'}
+                    <label
+                      className="apple-btn apple-btn-secondary"
+                      style={{
+                        cursor: 'pointer',
+                        fontSize: '0.84rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '12px',
+                        marginBottom: 0
+                      }}
+                    >
+                      <Upload size={16} style={{ flexShrink: 0 }} />
+                      <span>{eventData?.cardImage ? 'تغيير صورة كرت الدعوة' : 'اختر صورة الكرت'}</span>
                       <input
                         type="file"
                         accept="image/png, image/jpeg, image/jpg"

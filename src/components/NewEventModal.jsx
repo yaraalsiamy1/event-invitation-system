@@ -174,8 +174,20 @@ export default function NewEventModal({ onCreateEvent, onClose }) {
           <div className="form-group" style={{ marginBottom: '20px' }}>
             <label>رفع صورة كرت الدعوة الخاص بهذه المناسبة:</label>
             <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-              <label className="apple-btn apple-btn-secondary" style={{ cursor: 'pointer', flex: 1 }}>
-                <Upload size={16} /> اختر صورة الكرت
+              <label
+                className="apple-btn apple-btn-secondary"
+                style={{
+                  cursor: 'pointer',
+                  flex: 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  marginBottom: 0
+                }}
+              >
+                <Upload size={16} style={{ flexShrink: 0 }} />
+                <span>اختر صورة الكرت</span>
                 <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
               </label>
 
