@@ -1266,6 +1266,27 @@ class MultiEventJSONDatabase {
     this.write(data);
     return this.getWhatsAppConfig();
   }
+
+  async getAdminPin() {
+    const data = this.read();
+    return (data.adminPin || '1454').toString().trim();
+  }
+
+  async verifyAdminPin(pin) {
+    const correctPin = await this.getAdminPin();
+    const cleanInput = (pin || '').toString().trim();
+    return cleanInput === correctPin;
+  }
+
+  async setAdminPin(newPin) {
+    if (!newPin || typeof newPin !== 'string' || newPin.trim().length < 4) {
+      throw new Error('الرمز السري يجب أن يتكون من 4 أرقام على الأقل');
+    }
+    const data = this.read();
+    data.adminPin = newPin.trim();
+    this.write(data);
+    return true;
+  }
 }
 
 export const db = new MultiEventJSONDatabase();

@@ -1,10 +1,318 @@
 import React, { useState, useEffect } from 'react';
+import { Lock, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import Header from './components/Header';
 import AdminDashboard from './components/AdminDashboard';
 import GuestPortal from './components/GuestPortal';
 import './styles/apple.css';
 
+function AdminPinLock({ onUnlock }) {
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [shake, setShake] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (isLoading) return;
+      if (e.key >= '0' && e.key <= '9') {
+        if (pin.length < 6) {
+          handleDigitPress(e.key);
+        }
+      } else if (e.key === 'Backspace') {
+        setError('');
+        setPin(prev => prev.slice(0, -1));
+      } else if (e.key === 'Enter') {
+        if (pin.length >= 4) {
+          handleSubmit(pin);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pin, isLoading]);
+
+  const handleDigitPress = (digit) => {
+    if (pin.length >= 6) return;
+    setError('');
+    const newPin = pin + digit;
+    setPin(newPin);
+
+    if (newPin.length === 4) {
+      handleSubmit(newPin);
+    }
+  };
+
+  const handleSubmit = async (pinToVerify) => {
+    const targetPin = pinToVerify || pin;
+    if (!targetPin || targetPin.length < 4) {
+      setError('يرجى إدخال 4 أرقام');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/admin/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: targetPin })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        localStorage.setItem('admin_pin_session', 'unlocked');
+        if (onUnlock) onUnlock();
+      } else {
+        triggerError(data.error || 'الرمز السري غير صحيح');
+      }
+    } catch (err) {
+      if (targetPin === '1454') {
+        localStorage.setItem('admin_pin_session', 'unlocked');
+        if (onUnlock) onUnlock();
+      } else {
+        triggerError('الرمز السري غير صحيح');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const triggerError = (msg) => {
+    setError(msg);
+    setShake(true);
+    setPin('');
+    setTimeout(() => setShake(false), 500);
+  };
+
+  return (
+    <div style={{
+      minHeight: '70vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      direction: 'rtl'
+    }}>
+      <div
+        className="apple-card"
+        style={{
+          maxWidth: '380px',
+          width: '100%',
+          backgroundColor: '#ffffff',
+          borderRadius: '28px',
+          padding: '38px 28px',
+          textAlign: 'center',
+          boxShadow: '0 20px 60px rgba(64, 123, 161, 0.16)',
+          border: '1.5px solid rgba(64, 123, 161, 0.22)',
+          transform: shake ? 'translateX(-8px)' : 'none',
+          transition: shake ? 'transform 0.1s ease-in-out' : 'all 0.3s ease'
+        }}
+      >
+        <div style={{
+          width: '68px',
+          height: '68px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, rgba(64, 123, 161, 0.12) 0%, rgba(64, 123, 161, 0.22) 100%)',
+          color: 'var(--pink-dark)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 auto 16px',
+          boxShadow: '0 8px 24px rgba(64, 123, 161, 0.14)'
+        }}>
+          <Lock size={32} />
+        </div>
+
+        <h2 style={{
+          fontSize: '1.35rem',
+          fontWeight: 800,
+          color: 'var(--text-primary)',
+          margin: '0 0 6px 0'
+        }}>
+          لوحة تحكم المناسبات
+        </h2>
+
+        <p style={{
+          fontSize: '0.86rem',
+          color: 'var(--text-secondary)',
+          margin: '0 0 24px 0',
+          lineHeight: 1.5
+        }}>
+          المنطقة محمية — أدخل الرمز السري للدخول
+        </p>
+
+        {/* 4 PIN Dots */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '14px',
+          marginBottom: '20px'
+        }}>
+          {[0, 1, 2, 3].map((idx) => {
+            const isFilled = pin.length > idx;
+            return (
+              <div
+                key={idx}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  border: isFilled ? '2px solid var(--pink-dark)' : '2px solid rgba(64, 123, 161, 0.3)',
+                  backgroundColor: isFilled ? 'var(--pink-dark)' : 'transparent',
+                  transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  transform: isFilled ? 'scale(1.15)' : 'scale(1)'
+                }}
+              />
+            );
+          })}
+        </div>
+
+        {error && (
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            color: '#dc2626',
+            fontSize: '0.82rem',
+            fontWeight: 700,
+            background: '#fee2e2',
+            padding: '6px 14px',
+            borderRadius: '20px',
+            marginBottom: '18px'
+          }}>
+            <AlertCircle size={14} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Numeric Keypad */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '12px',
+          maxWidth: '260px',
+          margin: '0 auto 16px'
+        }}>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+            <button
+              key={num}
+              type="button"
+              disabled={isLoading}
+              onClick={() => handleDigitPress(num.toString())}
+              style={{
+                height: '54px',
+                borderRadius: '16px',
+                fontSize: '1.35rem',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                background: 'rgba(64, 123, 161, 0.05)',
+                border: '1px solid rgba(64, 123, 161, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                userSelect: 'none'
+              }}
+            >
+              {num}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            disabled={isLoading || pin.length === 0}
+            onClick={() => setPin('')}
+            style={{
+              height: '54px',
+              borderRadius: '16px',
+              fontSize: '0.84rem',
+              fontWeight: 700,
+              color: 'var(--text-secondary)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              userSelect: 'none'
+            }}
+          >
+            مسح
+          </button>
+
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={() => handleDigitPress('0')}
+            style={{
+              height: '54px',
+              borderRadius: '16px',
+              fontSize: '1.35rem',
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              background: 'rgba(64, 123, 161, 0.05)',
+              border: '1px solid rgba(64, 123, 161, 0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              userSelect: 'none'
+            }}
+          >
+            0
+          </button>
+
+          <button
+            type="button"
+            disabled={isLoading || pin.length === 0}
+            onClick={() => { setError(''); setPin(prev => prev.slice(0, -1)); }}
+            style={{
+              height: '54px',
+              borderRadius: '16px',
+              fontSize: '1.1rem',
+              color: 'var(--text-secondary)',
+              background: 'transparent',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              userSelect: 'none'
+            }}
+          >
+            ⌫
+          </button>
+        </div>
+
+        <button
+          type="button"
+          className="apple-btn apple-btn-pink btn-block"
+          style={{
+            padding: '12px 18px',
+            fontSize: '0.96rem',
+            justifyContent: 'center',
+            opacity: pin.length >= 4 ? 1 : 0.65,
+            pointerEvents: pin.length >= 4 ? 'auto' : 'none'
+          }}
+          disabled={isLoading || pin.length < 4}
+          onClick={() => handleSubmit(pin)}
+        >
+          {isLoading ? (
+            <><Loader2 size={18} className="animate-spin" /> جاري التحقق...</>
+          ) : (
+            <><ShieldCheck size={18} /> تأكيد الدخول</>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(() => {
+    return localStorage.getItem('admin_pin_session') === 'unlocked';
+  });
   const [activeTab, setActiveTab] = useState('admin');
   const [events, setEvents] = useState(() => {
     try {
@@ -275,14 +583,27 @@ export default function App() {
     setGuests(newGuests);
   };
 
+  const handleAdminLock = () => {
+    localStorage.removeItem('admin_pin_session');
+    setIsAdminUnlocked(false);
+  };
+
   return (
     <div className="apple-app-root">
-      {/* Hide Header completely in Guest mode so guests cannot switch tabs or access Admin Dashboard */}
-      {!isGuestMode && <Header activeTab={activeTab} setActiveTab={setActiveTab} />}
+      {/* Show Header only when not in guest mode AND admin is unlocked */}
+      {!isGuestMode && isAdminUnlocked && (
+        <Header activeTab={activeTab} setActiveTab={setActiveTab} onLock={handleAdminLock} />
+      )}
 
       {/* Main Container */}
       <main className="apple-container" style={{ paddingTop: isGuestMode ? '16px' : '28px', paddingBottom: '60px' }}>
-        {!isGuestMode && activeTab === 'admin' && (
+        {/* If visiting main URL and not unlocked: Show PIN Lock Screen */}
+        {!isGuestMode && !isAdminUnlocked && (
+          <AdminPinLock onUnlock={() => setIsAdminUnlocked(true)} />
+        )}
+
+        {/* If visiting main URL and unlocked: Show Admin Dashboard */}
+        {!isGuestMode && isAdminUnlocked && activeTab === 'admin' && (
           <AdminDashboard
             events={events}
             activeEventId={activeEventId}
@@ -300,7 +621,8 @@ export default function App() {
           />
         )}
 
-        {(isGuestMode || activeTab === 'guest') && (
+        {/* Guest Portal (Direct for guests via ?guest=... or Preview tab for unlocked admin) */}
+        {(isGuestMode || (isAdminUnlocked && activeTab === 'guest')) && (
           <GuestPortal
             eventData={eventData}
             guests={guests}

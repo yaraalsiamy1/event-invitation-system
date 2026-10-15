@@ -516,6 +516,35 @@ async function sendSingleWhatsAppMessageHelper({
   return { success: false, error: errorMsg };
 }
 
+// Admin PIN Security & Authentication
+app.post('/api/admin/verify-pin', async (req, res) => {
+  try {
+    const { pin } = req.body;
+    const isValid = await db.verifyAdminPin(pin);
+    if (isValid) {
+      res.json({ success: true, message: 'تم التحقق بنجاح' });
+    } else {
+      res.status(401).json({ success: false, error: 'الرمز السري غير صحيح، يرجى المحاولة مرة أخرى' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/change-pin', async (req, res) => {
+  try {
+    const { currentPin, newPin } = req.body;
+    const isValid = await db.verifyAdminPin(currentPin);
+    if (!isValid) {
+      return res.status(401).json({ success: false, error: 'الرمز السري الحالي غير صحيح' });
+    }
+    await db.setAdminPin(newPin);
+    res.json({ success: true, message: 'تم تغيير الرمز السري بنجاح' });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 // WhatsApp Gateway Configuration (Phase 7 Req 1)
 app.get('/api/whatsapp/config', async (req, res) => {
   try {
