@@ -25,6 +25,9 @@ RUN npm ci --only=production
 # Copy server & dist assets from builder stage
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server ./server
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/uploads ./uploads
+COPY --from=builder /app/data_invitation.json ./data_invitation.json
 
 EXPOSE 3000
 
