@@ -12,36 +12,6 @@
       "cardImage": "/uploads/card_ev_1789587103668_307_orig_1792082748536.jpg",
       "guests": [
         {
-          "id": "g_1791755513185_414196_1",
-          "eventId": "ev_1789587103668_307",
-          "event_id": "ev_1789587103668_307",
-          "name": "نجاة فلمبان",
-          "phone": "966555510052",
-          "parent_guest_id": null,
-          "invite_token": "m9EFoUJfcbkNvPef7dNUIY0Kxwyv5uKo",
-          "status": "pending",
-          "ticketCode": "EV-427168",
-          "checkedIn": false,
-          "checkInTime": null,
-          "sent": false,
-          "sentAt": null
-        },
-        {
-          "id": "g_1791755513185_176143_2",
-          "eventId": "ev_1789587103668_307",
-          "event_id": "ev_1789587103668_307",
-          "name": "بيبي حليمة",
-          "phone": "966552439228",
-          "parent_guest_id": null,
-          "invite_token": "NypnzS0ubTLkBdcMge5wLLV5mA4Hg7oH",
-          "status": "pending",
-          "ticketCode": "EV-748518",
-          "checkedIn": false,
-          "checkInTime": null,
-          "sent": false,
-          "sentAt": null
-        },
-        {
           "id": "g_1791755513185_426676_4",
           "eventId": "ev_1789587103668_307",
           "event_id": "ev_1789587103668_307",

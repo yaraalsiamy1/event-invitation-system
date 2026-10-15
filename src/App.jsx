@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Lock, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import Header from './components/Header';
 import AdminDashboard from './components/AdminDashboard';
