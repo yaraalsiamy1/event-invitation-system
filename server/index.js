@@ -852,6 +852,14 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Multi-Event Invitation Server & WhatsApp API running on port ${PORT}`);
-});
+async function startServer() {
+  try {
+    await db.initPostgres();
+  } catch (err) {
+    console.warn('Postgres initialization warning:', err);
+  }
+  app.listen(PORT, () => {
+    console.log(`Multi-Event Invitation Server & WhatsApp API running on port ${PORT}`);
+  });
+}
+startServer();

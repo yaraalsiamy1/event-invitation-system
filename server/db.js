@@ -2,6 +2,22 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
+import pg from 'pg';
+
+const Pool = pg.default?.Pool || pg.Pool;
+
+let pgPool = null;
+if (process.env.DATABASE_URL) {
+  try {
+    pgPool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+    console.log('PostgreSQL Pool initialized with DATABASE_URL.');
+  } catch (err) {
+    console.warn('Failed to initialize PostgreSQL Pool:', err);
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -501,7 +517,36 @@ class MultiEventJSONDatabase {
     }
   }
 
-  read() {
+  async initPostgres() {
+    if (!pgPool) return;
+    try {
+      await pgPool.query(`
+        CREATE TABLE IF NOT EXISTS app_state (
+          id VARCHAR(50) PRIMARY KEY,
+          data JSONB NOT NULL,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      const res = await pgPool.query(`SELECT data FROM app_state WHERE id = 'main' LIMIT 1;`);
+      if (res.rows.length > 0 && res.rows[0].data) {
+        this.memoryCache = res.rows[0].data;
+        console.log('Loaded database state from PostgreSQL successfully.');
+      } else {
+        const initialData = this.readFromFile();
+        await pgPool.query(
+          `INSERT INTO app_state (id, data, updated_at) VALUES ('main', $1, NOW())
+           ON CONFLICT (id) DO UPDATE SET data = $1, updated_at = NOW();`,
+          [initialData]
+        );
+        this.memoryCache = initialData;
+        console.log('Migrated initial data into PostgreSQL successfully.');
+      }
+    } catch (err) {
+      console.error('PostgreSQL init error:', err);
+    }
+  }
+
+  readFromFile() {
     const createDefault = () => {
       const defaultEv = {
         id: "ev_1789587103668_307",
@@ -531,15 +576,36 @@ class MultiEventJSONDatabase {
     } catch (e) {}
 
     const defaultData = createDefault();
-    this.write(defaultData);
+    this.writeToFile(defaultData);
     return defaultData;
   }
 
-  write(data) {
+  read() {
+    if (this.memoryCache) {
+      return this.memoryCache;
+    }
+    return this.readFromFile();
+  }
+
+  writeToFile(data) {
     try {
       fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
     } catch (e) {
       console.error('Error writing to DB_FILE:', e);
+    }
+  }
+
+  write(data) {
+    this.memoryCache = data;
+    this.writeToFile(data);
+    if (pgPool) {
+      pgPool.query(
+        `INSERT INTO app_state (id, data, updated_at) VALUES ('main', $1, NOW())
+         ON CONFLICT (id) DO UPDATE SET data = $1, updated_at = NOW();`,
+        [data]
+      ).catch(err => {
+        console.error('PostgreSQL async write error:', err);
+      });
     }
   }
 
