@@ -237,7 +237,7 @@ export default function AdminDashboard({
     if (guest.sent) {
       return (
         <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
-          <Check size={13} /> تم الإرسال (بانتظار الرد)
+          <Clock size={13} /> بانتظار الرد
         </span>
       );
     }
@@ -1552,7 +1552,7 @@ export default function AdminDashboard({
     filteredUnits.forEach(unit => {
       const ownerStatusText = unit.status === 'accepted' ? 'حضور مؤكد'
         : unit.status === 'declined' ? 'معتذر'
-        : unit.sent ? 'تم الإرسال (بانتظار الرد)'
+        : unit.sent ? 'بانتظار الرد'
         : 'لم يُرسل بعد';
 
       const depBadge = unit.dependents.length > 0
