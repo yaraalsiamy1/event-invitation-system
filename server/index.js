@@ -10,7 +10,8 @@ import {
   formatArabicTimeOnly,
   DEFAULT_TEMPLATE_SINGLE,
   DEFAULT_TEMPLATE_WITH_COMPANIONS,
-  DEFAULT_REMINDER_TEMPLATE
+  DEFAULT_REMINDER_TEMPLATE,
+  normalizePhone
 } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -362,7 +363,16 @@ const activeQueues = new Map();
 /**
  * Single WhatsApp message sender helper
  */
-async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, messageText, videoPath, videoUrl, dryRun = false }) {
+async function sendSingleWhatsAppMessageHelper({
+  instanceId,
+  apiToken,
+  phone,
+  messageText,
+  videoPath,
+  videoUrl,
+  cachedMediaUrl,
+  dryRun = false
+}) {
   if (dryRun || process.env.NODE_ENV === 'test') {
     const cleanPhone = (phone || '').toString().replace(/\D/g, '');
     if (cleanPhone.length >= 9) {
@@ -375,10 +385,51 @@ async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, me
     return { success: false, error: 'يرجى إدخال Instance ID و API Token لبوابة الواتساب' };
   }
 
-  const cleanPhone = phone.toString().replace(/\D/g, '');
+  let cleanPhone = normalizePhone(phone) || (phone || '').toString().replace(/\D/g, '');
+  if (cleanPhone.startsWith('05')) {
+    cleanPhone = '966' + cleanPhone.substring(1);
+  } else if (cleanPhone.startsWith('5') && cleanPhone.length === 9) {
+    cleanPhone = '966' + cleanPhone;
+  }
+
+  if (!cleanPhone || cleanPhone.length < 9) {
+    return { success: false, error: 'رقم الجوال غير صحيح أو فارغ' };
+  }
+
+  // Green-API safe caption (maximum 1024 characters for media attachments)
+  const safeCaption = (messageText || '').slice(0, 1024);
   let errorMsg = null;
 
-  // 1. Send video file with caption (Phase: video.mp4 attachment with electronic invite link)
+  // 1. FAST PATH: If cachedMediaUrl is already available (from Green-API CDN after first upload)
+  if (cachedMediaUrl && (cachedMediaUrl.startsWith('http://') || cachedMediaUrl.startsWith('https://'))) {
+    try {
+      const fileApiUrl = `https://api.green-api.com/waInstance${instanceId}/sendFileByUrl/${apiToken}`;
+      const fileRes = await fetch(fileApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: `${cleanPhone}@c.us`,
+          urlFile: cachedMediaUrl,
+          fileName: 'video.mp4',
+          caption: safeCaption
+        })
+      });
+
+      if (fileRes.ok) {
+        const fileData = await fileRes.json();
+        if (fileData && (fileData.idMessage || fileData.id)) {
+          return { success: true, mediaType: 'video', urlFile: cachedMediaUrl };
+        }
+      } else {
+        const errText = await fileRes.text();
+        console.warn('sendFileByUrl cachedMediaUrl non-200:', fileRes.status, errText);
+      }
+    } catch (e) {
+      console.warn('Fast path cachedMediaUrl error:', e.message);
+    }
+  }
+
+  // 2. Upload video file with caption (First send will upload and Green-API returns urlFile on its CDN)
   const targetVideoPath = videoPath || path.join(__dirname, '../public/video.mp4');
   if (fs.existsSync(targetVideoPath)) {
     try {
@@ -387,7 +438,7 @@ async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, me
       const formData = new FormData();
       formData.append('chatId', `${cleanPhone}@c.us`);
       formData.append('fileName', 'video.mp4');
-      formData.append('caption', messageText);
+      formData.append('caption', safeCaption);
       formData.append('file', fileBlob, 'video.mp4');
 
       const uploadApiUrl = `https://api.green-api.com/waInstance${instanceId}/sendFileByUpload/${apiToken}`;
@@ -399,7 +450,7 @@ async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, me
       if (fileRes.ok) {
         const fileData = await fileRes.json();
         if (fileData && (fileData.idMessage || fileData.id)) {
-          return { success: true, mediaType: 'video' };
+          return { success: true, mediaType: 'video', urlFile: fileData.urlFile || null };
         }
       } else {
         const errText = await fileRes.text();
@@ -410,7 +461,7 @@ async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, me
     }
   }
 
-  // 1b. Fallback: sendFileByUrl if public videoUrl provided and accessible
+  // 3. Fallback: sendFileByUrl if public videoUrl provided and accessible
   if (videoUrl && (videoUrl.startsWith('http://') || videoUrl.startsWith('https://')) && !videoUrl.includes('localhost') && !videoUrl.includes('127.0.0.1')) {
     try {
       const fileApiUrl = `https://api.green-api.com/waInstance${instanceId}/sendFileByUrl/${apiToken}`;
@@ -421,14 +472,14 @@ async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, me
           chatId: `${cleanPhone}@c.us`,
           urlFile: videoUrl,
           fileName: 'video.mp4',
-          caption: messageText
+          caption: safeCaption
         })
       });
 
       if (fileRes.ok) {
         const fileData = await fileRes.json();
         if (fileData && (fileData.idMessage || fileData.id)) {
-          return { success: true, mediaType: 'video' };
+          return { success: true, mediaType: 'video', urlFile: videoUrl };
         }
       }
     } catch (e) {
@@ -436,7 +487,7 @@ async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, me
     }
   }
 
-  // 2. Standard text message dispatch (contains the electronic invite link as fallback)
+  // 4. Standard text message dispatch (contains the electronic invite link as fallback)
   try {
     const gatewayUrl = `https://api.green-api.com/waInstance${instanceId}/sendMessage/${apiToken}`;
     const apiRes = await fetch(gatewayUrl, {
@@ -670,6 +721,8 @@ app.post('/api/send-whatsapp-batch', sendingRateLimiter, async (req, res) => {
     const defaultVideoPath = path.join(__dirname, '../public/video.mp4');
     const videoUrl = `${baseUrl}/video.mp4`;
 
+    let cachedCdnVideoUrl = null;
+
     for (let i = 0; i < targetGuests.length; i++) {
       const guest = targetGuests[i];
       const dependents = allGuests.filter(d => d.parent_guest_id === guest.id);
@@ -689,6 +742,7 @@ app.post('/api/send-whatsapp-batch', sendingRateLimiter, async (req, res) => {
         messageText,
         videoPath: defaultVideoPath,
         videoUrl,
+        cachedMediaUrl: cachedCdnVideoUrl,
         dryRun
       });
 
@@ -696,15 +750,19 @@ app.post('/api/send-whatsapp-batch', sendingRateLimiter, async (req, res) => {
         sentCount++;
         successfullySentIds.push(guest.id);
         results.push({ guestId: guest.id, name: guest.name, phone: guest.phone, success: true });
+        // Cache the CDN media url returned by Green-API to send to subsequent guests in ~200ms
+        if (sendRes.urlFile && !cachedCdnVideoUrl) {
+          cachedCdnVideoUrl = sendRes.urlFile;
+        }
       } else {
         const errorReason = sendRes.error || 'تعذر الإرسال للرقم';
         failedList.push({ guestId: guest.id, name: guest.name, phone: guest.phone, errorReason });
         results.push({ guestId: guest.id, name: guest.name, phone: guest.phone, success: false, errorMsg: errorReason });
       }
 
-      // Random delay between 3 to 8 seconds to prevent WhatsApp ban (Phase 5 Req 5)
+      // Fast, safe delay between 400ms and 800ms (Green-API recommended for high speed mass delivery)
       if (i < targetGuests.length - 1) {
-        const delayMs = dryRun ? 20 : (Math.floor(Math.random() * (8000 - 3000 + 1)) + 3000);
+        const delayMs = dryRun ? 20 : (Math.floor(Math.random() * (800 - 400 + 1)) + 400);
         await new Promise(r => setTimeout(r, delayMs));
       }
     }

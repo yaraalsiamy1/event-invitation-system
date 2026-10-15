@@ -6,7 +6,7 @@
       "title": "عقـد قـران لمـار السيـامي & تركـي قـاري",
       "type": "wedding",
       "date": "2027-01-08",
-      "time": "21:30",
+      "time": "21:00",
       "location": "قاعة ميلا (2) | الحسينية",
       "mapLink": "https://maps.app.goo.gl/eGuQzLPJbqEkNk1W6",
       "cardImage": "/uploads/card_ev_1789587103668_307_orig_1792082748536.jpg",
@@ -1408,6 +1408,21 @@
           "checkInTime": null,
           "sent": false,
           "sentAt": null
+        },
+        {
+          "id": "g_1792084495113_69674",
+          "eventId": "ev_1789587103668_307",
+          "event_id": "ev_1789587103668_307",
+          "name": "yara",
+          "phone": "966534303484",
+          "parent_guest_id": null,
+          "invite_token": "h3J-fE8bSDVxX2EyXrnhOIzJpePgaRAd",
+          "status": "pending",
+          "ticketCode": "EV-804717",
+          "checkedIn": false,
+          "checkInTime": null,
+          "sent": true,
+          "sentAt": "2026-10-15T17:17:25.880Z"
         }
       ],
       "cardImageCompressed": "/uploads/card_ev_1789587103668_307_wa_1792082748544.jpg"
@@ -1425,7 +1440,7 @@
     }
   ],
   "whatsappConfig": {
-    "instanceId": "9876543210",
-    "apiToken": "super_secret_token_xyz999"
+    "instanceId": "710722738574",
+    "apiToken": "56b05dc7bd3242b980f64e73c30f804cf04f5828f4da4eaaba"
   }
 }
