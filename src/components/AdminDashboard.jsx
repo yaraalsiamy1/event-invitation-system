@@ -236,13 +236,13 @@ export default function AdminDashboard({
     }
     if (guest.sent) {
       return (
-        <span className="ios-badge ios-badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+        <span className="ios-badge ios-badge-amber" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#b45309', border: '1px solid rgba(245, 158, 11, 0.35)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
           <Clock size={13} /> بانتظار الرد
         </span>
       );
     }
     return (
-      <span className="ios-badge ios-badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+      <span className="ios-badge" style={{ background: 'rgba(148, 163, 184, 0.12)', color: '#64748b', border: '1px solid rgba(148, 163, 184, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
         <Clock size={13} /> لم يُرسل بعد
       </span>
     );

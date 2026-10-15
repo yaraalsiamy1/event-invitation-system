@@ -332,6 +332,11 @@ body.apple-theme {
     color: #1e8449; 
     border: 1px solid rgba(46, 204, 113, 0.3); 
 }
+.ios-badge-amber { 
+    background: rgba(245, 158, 11, 0.14); 
+    color: #b45309; 
+    border: 1px solid rgba(245, 158, 11, 0.38); 
+}
 .ios-badge-red { 
     background: rgba(231, 76, 60, 0.12); 
     color: #c0392b; 
