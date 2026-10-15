@@ -648,6 +648,34 @@ export default function GuestPortal({
 
               return (
                 <div key={member.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '2px' }}>
+                  {/* Companion Identification Tag */}
+                  {!member.isOwner && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      marginTop: '12px',
+                      marginBottom: '4px',
+                      paddingTop: '12px',
+                      borderTop: '1px dashed rgba(64, 123, 161, 0.22)'
+                    }}>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                        المرافق:
+                      </span>
+                      <span style={{
+                        fontSize: '0.94rem',
+                        color: 'var(--pink-dark)',
+                        fontWeight: 800,
+                        background: 'rgba(64, 123, 161, 0.08)',
+                        padding: '3px 12px',
+                        borderRadius: '20px'
+                      }}>
+                        {member.name}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Status Tag ONLY when accepted or declined (hidden when pending) */}
                   {memberStatus !== 'pending' && (
                     <div style={{ textAlign: 'center', marginTop: '4px' }}>
@@ -663,9 +691,9 @@ export default function GuestPortal({
                         gap: '6px'
                       }}>
                         {memberStatus === 'accepted' ? (
-                          <><Check size={14} /> تم قبول الدعوة</>
+                          <><Check size={14} /> تم قبول الدعوة {!member.isOwner ? `(لـ ${member.name})` : ''}</>
                         ) : (
-                          <><X size={14} /> تم الإعتذار عن الدعوة</>
+                          <><X size={14} /> تم الإعتذار عن الدعوة {!member.isOwner ? `(لـ ${member.name})` : ''}</>
                         )}
                       </span>
                     </div>
@@ -861,7 +889,9 @@ export default function GuestPortal({
             </h3>
 
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0 0 22px 0', lineHeight: 1.5 }}>
-              هل أنتِ متأكدة من رغبتك في الإعتذار عن الحضور؟
+              {allMembers.find(m => m.id === declineConfirmMemberId && !m.isOwner)
+                ? `هل أنتِ متأكدة من رغبتك في الإعتذار عن الحضور للمرافق (${allMembers.find(m => m.id === declineConfirmMemberId)?.name})؟`
+                : 'هل أنتِ متأكدة من رغبتك في الإعتذار عن الحضور؟'}
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
