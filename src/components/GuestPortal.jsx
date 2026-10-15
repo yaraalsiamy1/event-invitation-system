@@ -5,7 +5,7 @@ import {
   Smartphone, Calendar, Clock, MapPin, CheckCircle2, XCircle,
   Download, ShieldCheck, HeartHandshake, Check, X, Mail, Users,
   UserCheck, Sparkles, Navigation, CalendarPlus, RotateCcw, AlertCircle,
-  Lock, ArrowRight
+  Lock, ArrowRight, Copy, Link2
 } from 'lucide-react';
 
 /**
@@ -302,6 +302,22 @@ export default function GuestPortal({
   const [invitationGroup, setInvitationGroup] = useState(null); // { owner, dependents, event, isLocked }
   const [rsvpLoadingMap, setRsvpLoadingMap] = useState({});
   const [declineConfirmMemberId, setDeclineConfirmMemberId] = useState(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const handleCopyGuestLink = (token, name) => {
+    if (!token) return;
+    const url = `${window.location.origin}/?guest=${token}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2500);
+      }).catch(() => {
+        prompt(`رابط دعوة ${name || 'الضيف'}:`, url);
+      });
+    } else {
+      prompt(`رابط دعوة ${name || 'الضيف'}:`, url);
+    }
+  };
 
   const urlGuestParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('guest') : null;
   const effectiveLookupId = urlGuestParam || activeGuestId;
@@ -444,31 +460,74 @@ export default function GuestPortal({
 
   return (
     <div className="guest-portal-wrapper" style={{ direction: 'rtl' }}>
-      {/* Top Banner selector (Only in Admin Preview mode) */}
+      {/* Top Banner selector & Invitation Link (Only in Admin Preview mode) */}
       {!isGuestMode && (
-        <div className="apple-card" style={{ width: '100%', maxWidth: '430px', padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.86rem' }}>
-            <Smartphone className="pink-dark" size={18} style={{ color: 'var(--pink-primary)' }} />
-            <span>معاينة شاشة الضيف:</span>
+        <div className="apple-card" style={{ width: '100%', maxWidth: '430px', padding: '14px 18px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: resolvedOwner.invite_token ? '12px' : 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.86rem', fontWeight: 700 }}>
+              <Smartphone className="pink-dark" size={18} style={{ color: 'var(--pink-primary)' }} />
+              <span>معاينة شاشة الضيف:</span>
+            </div>
+            <select
+              className="apple-input"
+              style={{ width: 'auto', padding: '6px 12px', fontSize: '0.84rem' }}
+              value={resolvedOwner.id}
+              onChange={(e) => {
+                setActiveGuestId(e.target.value);
+                setInvitationGroup(null);
+              }}
+            >
+              {(guests || []).filter(g => !g.parent_guest_id).map(g => {
+                const deps = (guests || []).filter(d => d.parent_guest_id === g.id);
+                return (
+                  <option key={g.id} value={g.id}>
+                    {g.name} {deps.length > 0 ? `(+${deps.length} مرافقين)` : '(دعوة فردية)'}
+                  </option>
+                );
+              })}
+            </select>
           </div>
-          <select
-            className="apple-input"
-            style={{ width: 'auto', padding: '6px 12px', fontSize: '0.84rem' }}
-            value={resolvedOwner.id}
-            onChange={(e) => {
-              setActiveGuestId(e.target.value);
-              setInvitationGroup(null);
-            }}
-          >
-            {(guests || []).filter(g => !g.parent_guest_id).map(g => {
-              const deps = (guests || []).filter(d => d.parent_guest_id === g.id);
-              return (
-                <option key={g.id} value={g.id}>
-                  {g.name} {deps.length > 0 ? `(+${deps.length} مرافقين)` : '(دعوة فردية)'}
-                </option>
-              );
-            })}
-          </select>
+
+          {/* Invitation Link Section */}
+          {resolvedOwner.invite_token && (
+            <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Link2 size={13} style={{ color: 'var(--system-gold)' }} />
+                  رابط دعوة ({resolvedOwner.name}):
+                </span>
+                <button
+                  type="button"
+                  className="apple-btn apple-btn-primary"
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '0.78rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: linkCopied ? '#16a34a' : undefined
+                  }}
+                  onClick={() => handleCopyGuestLink(resolvedOwner.invite_token, resolvedOwner.name)}
+                >
+                  {linkCopied ? <Check size={13} /> : <Copy size={13} />}
+                  {linkCopied ? 'تم النسخ ✓' : 'نسخ الرابط'}
+                </button>
+              </div>
+              <div style={{
+                fontSize: '0.76rem',
+                color: '#64748b',
+                wordBreak: 'break-all',
+                direction: 'ltr',
+                background: '#ffffff',
+                padding: '6px 8px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                userSelect: 'all'
+              }}>
+                {`${window.location.origin}/?guest=${resolvedOwner.invite_token}`}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

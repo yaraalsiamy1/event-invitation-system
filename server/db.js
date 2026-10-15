@@ -1216,6 +1216,8 @@ class MultiEventJSONDatabase {
           name: validation.cleanName,
           phone: isDependent ? null : validation.normalizedPhone,
           parent_guest_id: isDependent ? merged.parent_guest_id : null,
+          status: merged.status || current.status || 'pending',
+          rsvpAt: (merged.status && merged.status !== 'pending' && !current.rsvpAt) ? new Date().toISOString() : (merged.rsvpAt || current.rsvpAt || null),
           invite_token: isDependent ? null : (current.invite_token || generateInviteToken())
         };
 

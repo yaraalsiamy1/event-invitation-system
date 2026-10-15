@@ -5,7 +5,7 @@ import {
   Plus, MessageCircle, Eye, EyeOff, FileSpreadsheet, Send, Image as ImageIcon,
   Rocket, Loader2, Trash2, Layers, BarChart3, Check, X, Sparkles,
   HelpCircle, Filter, ChevronDown, ChevronRight, ChevronLeft, Search, Edit, UserPlus, Smartphone,
-  AlertTriangle, RefreshCw, Copy, Settings
+  AlertTriangle, RefreshCw, Copy, Settings, Link2
 } from 'lucide-react';
 import ExcelValidationModal from './ExcelValidationModal';
 import EventsSidebar from './EventsSidebar';
@@ -55,6 +55,27 @@ export default function AdminDashboard({
   const [isNewEventModalOpen, setIsNewEventModalOpen] = useState(false);
   const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
   const [isMessagePreviewOpen, setIsMessagePreviewOpen] = useState(false);
+  const [copiedGuestId, setCopiedGuestId] = useState(null);
+
+  const handleCopyGuestLink = (guest) => {
+    if (!guest) return;
+    const token = guest.invite_token;
+    if (!token) {
+      alert('هذا الضيف مرافق تابع لصاحب دعوة، ويمكن فتح دعوته من خلال رابط صاحب الدعوة.');
+      return;
+    }
+    const link = `${window.location.origin}/?guest=${token}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(() => {
+        setCopiedGuestId(guest.id);
+        setTimeout(() => setCopiedGuestId(null), 2500);
+      }).catch(() => {
+        prompt(`رابط دعوة ${guest.name}:`, link);
+      });
+    } else {
+      prompt(`رابط دعوة ${guest.name}:`, link);
+    }
+  };
 
   // Track saved state of event fields to only show save button when fields are modified
   const lastSyncedEventIdRef = useRef(null);
@@ -1469,6 +1490,8 @@ export default function AdminDashboard({
       id: guest.id,
       name: guest.name || '',
       phone: guest.phone || '',
+      status: guest.status || 'pending',
+      invite_token: guest.invite_token || '',
       parent_guest_id: guest.parent_guest_id || '',
       isDependent: isDep,
       hasDependents: deps.length > 0,
@@ -1517,6 +1540,7 @@ export default function AdminDashboard({
         body: JSON.stringify({
           name: cleanName,
           phone: cleanPhone,
+          status: editingGuestModal.status || 'pending',
           parent_guest_id: parentId,
           eventId: activeEventId
         })
@@ -2087,6 +2111,29 @@ export default function AdminDashboard({
                         </select>
                       )}
 
+                      {/* Copy Invitation Link Button */}
+                      {selectedPreviewGuest?.invite_token && (
+                        <button
+                          type="button"
+                          className="apple-btn apple-btn-secondary"
+                          style={{
+                            padding: '4px 12px',
+                            fontSize: '0.78rem',
+                            height: '32px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            borderColor: copiedGuestId === selectedPreviewGuest.id ? '#22c55e' : undefined,
+                            color: copiedGuestId === selectedPreviewGuest.id ? '#16a34a' : undefined
+                          }}
+                          onClick={() => handleCopyGuestLink(selectedPreviewGuest)}
+                          title="نسخ رابط الدعوة المباشر للضيف المختار"
+                        >
+                          {copiedGuestId === selectedPreviewGuest.id ? <Check size={14} /> : <Copy size={14} />}
+                          {copiedGuestId === selectedPreviewGuest.id ? 'تم نسخ الرابط ✓' : 'نسخ رابط الدعوة'}
+                        </button>
+                      )}
+
                       {/* Test Send Button (Phase 5 Req 3) */}
                       <button
                         type="button"
@@ -2608,16 +2655,41 @@ export default function AdminDashboard({
                                 {renderSingleStatus(owner)}
                               </td>
                               <td>
-                                <button
-                                  className="apple-btn apple-btn-secondary"
-                                  style={{ padding: '5px 10px', fontSize: '0.78rem' }}
-                                  onClick={() => {
-                                    setActiveGuestId(owner.id);
-                                    setActiveTab('guest');
-                                  }}
-                                >
-                                  <Eye size={13} /> معاينة الكرت
-                                </button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <button
+                                    className="apple-btn apple-btn-secondary"
+                                    style={{ padding: '5px 8px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                    title="معاينة كرت الدعوة الخاص بالضيف"
+                                    onClick={() => {
+                                      setActiveGuestId(owner.id);
+                                      setActiveTab('guest');
+                                    }}
+                                  >
+                                    <Eye size={13} /> معاينة
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="apple-btn"
+                                    style={{
+                                      padding: '5px 8px',
+                                      fontSize: '0.78rem',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      background: copiedGuestId === owner.id ? 'rgba(34, 197, 94, 0.12)' : 'rgba(197, 160, 89, 0.12)',
+                                      color: copiedGuestId === owner.id ? '#15803d' : 'var(--system-gold)',
+                                      border: copiedGuestId === owner.id ? '1px solid #22c55e' : '1px solid rgba(197, 160, 89, 0.35)',
+                                      borderRadius: '8px',
+                                      cursor: 'pointer',
+                                      fontWeight: 600
+                                    }}
+                                    title="نسخ رابط الدعوة المباشر للضيف"
+                                    onClick={() => handleCopyGuestLink(owner)}
+                                  >
+                                    {copiedGuestId === owner.id ? <Check size={13} /> : <Copy size={13} />}
+                                    {copiedGuestId === owner.id ? 'تم النسخ ✓' : 'نسخ الرابط'}
+                                  </button>
+                                </div>
                               </td>
                               <td>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -3129,6 +3201,47 @@ export default function AdminDashboard({
                         </option>
                       ))}
                   </select>
+                </div>
+              )}
+
+              {/* RSVP Status Selector */}
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label style={{ fontWeight: 700, fontSize: '0.88rem', display: 'block', marginBottom: '6px' }}>
+                  حالة الرد على الدعوة:
+                </label>
+                <select
+                  className="apple-input"
+                  style={{ fontWeight: 600 }}
+                  value={editingGuestModal.status || 'pending'}
+                  onChange={(e) => setEditingGuestModal(prev => ({ ...prev, status: e.target.value }))}
+                >
+                  <option value="pending">🟠 بانتظار الرد (قيد الانتظار)</option>
+                  <option value="accepted">🟢 حضور مؤكد</option>
+                  <option value="declined">🔴 معتذر عن الحضور</option>
+                </select>
+              </div>
+
+              {/* Direct Invitation Link with Copy in Edit Modal */}
+              {editingGuestModal.invite_token && (
+                <div style={{ marginBottom: '18px', background: '#f8fafc', padding: '10px 12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <Link2 size={13} style={{ color: 'var(--system-gold)' }} />
+                      رابط الدعوة المباشر:
+                    </span>
+                    <button
+                      type="button"
+                      className="apple-btn apple-btn-secondary"
+                      style={{ padding: '3px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      onClick={() => handleCopyGuestLink(editingGuestModal)}
+                    >
+                      {copiedGuestId === editingGuestModal.id ? <Check size={12} style={{ color: '#16a34a' }} /> : <Copy size={12} />}
+                      {copiedGuestId === editingGuestModal.id ? 'تم النسخ ✓' : 'نسخ الرابط'}
+                    </button>
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: '#64748b', wordBreak: 'break-all', direction: 'ltr', background: '#ffffff', padding: '6px 8px', borderRadius: '8px', border: '1px solid #e2e8f0', userSelect: 'all' }}>
+                    {`${window.location.origin}/?guest=${editingGuestModal.invite_token}`}
+                  </div>
                 </div>
               )}
 
