@@ -29,6 +29,10 @@ if (!fs.existsSync(uploadsDir)) {
 }
 app.use('/uploads', express.static(uploadsDir));
 
+// Static public setup (video.mp4, etc.)
+const publicDir = path.join(__dirname, '../public');
+app.use(express.static(publicDir));
+
 // Helper to save base64 image strings to server disk and return clean relative URL (/uploads/card_xxx.png)
 function saveBase64Image(base64Data, eventId) {
   if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:image')) {
@@ -358,7 +362,7 @@ const activeQueues = new Map();
 /**
  * Single WhatsApp message sender helper
  */
-async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, messageText, cardImageUrl, dryRun = false }) {
+async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, messageText, videoPath, videoUrl, dryRun = false }) {
   if (dryRun || process.env.NODE_ENV === 'test') {
     const cleanPhone = (phone || '').toString().replace(/\D/g, '');
     if (cleanPhone.length >= 9) {
@@ -374,8 +378,40 @@ async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, me
   const cleanPhone = phone.toString().replace(/\D/g, '');
   let errorMsg = null;
 
-  // 1. Send card image with text caption if card image exists
-  if (cardImageUrl) {
+  // 1. Send video file with caption (Phase: video.mp4 attachment with electronic invite link)
+  const targetVideoPath = videoPath || path.join(__dirname, '../public/video.mp4');
+  if (fs.existsSync(targetVideoPath)) {
+    try {
+      const fileBuffer = fs.readFileSync(targetVideoPath);
+      const fileBlob = new Blob([fileBuffer], { type: 'video/mp4' });
+      const formData = new FormData();
+      formData.append('chatId', `${cleanPhone}@c.us`);
+      formData.append('fileName', 'video.mp4');
+      formData.append('caption', messageText);
+      formData.append('file', fileBlob, 'video.mp4');
+
+      const uploadApiUrl = `https://api.green-api.com/waInstance${instanceId}/sendFileByUpload/${apiToken}`;
+      const fileRes = await fetch(uploadApiUrl, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (fileRes.ok) {
+        const fileData = await fileRes.json();
+        if (fileData && (fileData.idMessage || fileData.id)) {
+          return { success: true, mediaType: 'video' };
+        }
+      } else {
+        const errText = await fileRes.text();
+        console.warn('sendFileByUpload video returned non-200:', fileRes.status, errText);
+      }
+    } catch (e) {
+      console.warn('Video upload dispatch error, attempting fallback:', e.message);
+    }
+  }
+
+  // 1b. Fallback: sendFileByUrl if public videoUrl provided and accessible
+  if (videoUrl && (videoUrl.startsWith('http://') || videoUrl.startsWith('https://')) && !videoUrl.includes('localhost') && !videoUrl.includes('127.0.0.1')) {
     try {
       const fileApiUrl = `https://api.green-api.com/waInstance${instanceId}/sendFileByUrl/${apiToken}`;
       const fileRes = await fetch(fileApiUrl, {
@@ -383,8 +419,8 @@ async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, me
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chatId: `${cleanPhone}@c.us`,
-          urlFile: cardImageUrl,
-          fileName: 'invitation_card.png',
+          urlFile: videoUrl,
+          fileName: 'video.mp4',
           caption: messageText
         })
       });
@@ -392,15 +428,15 @@ async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, me
       if (fileRes.ok) {
         const fileData = await fileRes.json();
         if (fileData && (fileData.idMessage || fileData.id)) {
-          return { success: true };
+          return { success: true, mediaType: 'video' };
         }
       }
     } catch (e) {
-      console.warn('Card image dispatch error, falling back to text:', e.message);
+      console.warn('Video sendFileByUrl error:', e.message);
     }
   }
 
-  // 2. Standard text message dispatch
+  // 2. Standard text message dispatch (contains the electronic invite link as fallback)
   try {
     const gatewayUrl = `https://api.green-api.com/waInstance${instanceId}/sendMessage/${apiToken}`;
     const apiRes = await fetch(gatewayUrl, {
@@ -415,7 +451,7 @@ async function sendSingleWhatsAppMessageHelper({ instanceId, apiToken, phone, me
     if (apiRes.ok) {
       const resData = await apiRes.json();
       if (resData && (resData.idMessage || resData.id)) {
-        return { success: true };
+        return { success: true, mediaType: 'text' };
       }
       errorMsg = 'لم يتم تأكيد استلام الرسالة من البوابة';
     } else {
@@ -437,6 +473,24 @@ app.get('/api/whatsapp/config', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// WhatsApp Video Attachment Status
+app.get('/api/whatsapp/video-status', (req, res) => {
+  const targetVideoPath = path.join(__dirname, '../public/video.mp4');
+  const exists = fs.existsSync(targetVideoPath);
+  let sizeBytes = 0;
+  if (exists) {
+    try {
+      sizeBytes = fs.statSync(targetVideoPath).size;
+    } catch {}
+  }
+  res.json({
+    exists,
+    filename: 'video.mp4',
+    url: '/video.mp4',
+    sizeBytes
+  });
 });
 
 app.post('/api/whatsapp/config', async (req, res) => {
@@ -493,22 +547,16 @@ app.post('/api/whatsapp/send-test', sendingRateLimiter, async (req, res) => {
       baseUrl
     });
 
-    let cardImageUrl = null;
-    const cardImg = event.cardImageCompressed || event.cardImage;
-    if (cardImg) {
-      if (cardImg.startsWith('http://') || cardImg.startsWith('https://')) {
-        cardImageUrl = cardImg;
-      } else if (!cardImg.startsWith('data:image')) {
-        cardImageUrl = `${baseUrl}${cardImg.startsWith('/') ? '' : '/'}${cardImg}`;
-      }
-    }
+    const defaultVideoPath = path.join(__dirname, '../public/video.mp4');
+    const videoUrl = `${baseUrl}/video.mp4`;
 
     const sendRes = await sendSingleWhatsAppMessageHelper({
       instanceId,
       apiToken,
       phone: testPhone,
       messageText,
-      cardImageUrl,
+      videoPath: defaultVideoPath,
+      videoUrl,
       dryRun
     });
 
@@ -551,22 +599,16 @@ app.post('/api/whatsapp/send-single', sendingRateLimiter, async (req, res) => {
       baseUrl
     });
 
-    let cardImageUrl = null;
-    const cardImg = event.cardImageCompressed || event.cardImage;
-    if (cardImg) {
-      if (cardImg.startsWith('http://') || cardImg.startsWith('https://')) {
-        cardImageUrl = cardImg;
-      } else if (!cardImg.startsWith('data:image')) {
-        cardImageUrl = `${baseUrl}${cardImg.startsWith('/') ? '' : '/'}${cardImg}`;
-      }
-    }
+    const defaultVideoPath = path.join(__dirname, '../public/video.mp4');
+    const videoUrl = `${baseUrl}/video.mp4`;
 
     const sendRes = await sendSingleWhatsAppMessageHelper({
       instanceId,
       apiToken,
       phone: guest.phone,
       messageText,
-      cardImageUrl,
+      videoPath: defaultVideoPath,
+      videoUrl,
       dryRun
     });
 
@@ -625,16 +667,8 @@ app.post('/api/send-whatsapp-batch', sendingRateLimiter, async (req, res) => {
     const successfullySentIds = [];
     const failedList = [];
 
-    // Image URL resolution
-    let cardImageUrl = null;
-    const cardImg = event.cardImageCompressed || event.cardImage;
-    if (cardImg) {
-      if (cardImg.startsWith('http://') || cardImg.startsWith('https://')) {
-        cardImageUrl = cardImg;
-      } else if (!cardImg.startsWith('data:image')) {
-        cardImageUrl = `${baseUrl}${cardImg.startsWith('/') ? '' : '/'}${cardImg}`;
-      }
-    }
+    const defaultVideoPath = path.join(__dirname, '../public/video.mp4');
+    const videoUrl = `${baseUrl}/video.mp4`;
 
     for (let i = 0; i < targetGuests.length; i++) {
       const guest = targetGuests[i];
@@ -653,7 +687,8 @@ app.post('/api/send-whatsapp-batch', sendingRateLimiter, async (req, res) => {
         apiToken,
         phone: guest.phone,
         messageText,
-        cardImageUrl,
+        videoPath: defaultVideoPath,
+        videoUrl,
         dryRun
       });
 

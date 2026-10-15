@@ -1892,6 +1892,54 @@ export default function AdminDashboard({
 
                 {activeMessageType === 'invite' ? (
                   <>
+                    {/* Attached Video Banner */}
+                    <div style={{
+                      background: 'rgba(64, 123, 161, 0.08)',
+                      border: '1px solid rgba(64, 123, 161, 0.22)',
+                      borderRadius: '14px',
+                      padding: '12px 16px',
+                      marginBottom: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '10px',
+                          background: 'var(--pink-gradient)',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.2rem',
+                          boxShadow: '0 4px 12px rgba(64, 123, 161, 0.25)'
+                        }}>
+                          🎬
+                        </div>
+                        <div>
+                          <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)', display: 'block' }}>
+                            فيديو الدعوة المرفق (video.mp4)
+                          </strong>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                            يتم إرسال هذا الفيديو تلقائياً مع الرسالة عبر الواتساب مع رابط الدعوة الإلكترونية
+                          </span>
+                        </div>
+                      </div>
+                      <a
+                        href="/video.mp4"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="apple-btn apple-btn-secondary"
+                        style={{ fontSize: '0.78rem', padding: '6px 14px', height: '32px' }}
+                      >
+                        ▶️ تشغيل الفيديو
+                      </a>
+                    </div>
+
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '12px' }}>
                       <button
                         type="button"
@@ -2075,10 +2123,76 @@ export default function AdminDashboard({
                     </div>
                   )}
 
+                  {/* Attached Video Indicator in Preview */}
+                  {activeMessageType === 'invite' && (
+                    <div style={{
+                      background: '#ffffff',
+                      border: '1.5px solid rgba(64, 123, 161, 0.25)',
+                      borderRadius: '12px',
+                      padding: '10px 14px',
+                      marginBottom: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          background: 'rgba(64, 123, 161, 0.12)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.1rem'
+                        }}>
+                          🎬
+                        </div>
+                        <div>
+                          <strong style={{ fontSize: '0.84rem', color: 'var(--text-primary)', display: 'block' }}>
+                            الفيديو المرفق مع رسالة الدعوة (video.mp4)
+                          </strong>
+                          <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                            يُرسل هذا الفيديو في الواتساب وفوقه نص الدعوة ورابط الدخول أدناه
+                          </span>
+                        </div>
+                      </div>
+                      <a
+                        href="/video.mp4"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="apple-btn apple-btn-secondary"
+                        style={{ fontSize: '0.75rem', padding: '4px 10px', height: '28px' }}
+                      >
+                        مشاهدة الفيديو
+                      </a>
+                    </div>
+                  )}
+
                   {/* Rendered Text Box */}
                   <div style={{ color: 'var(--text-primary)', whiteSpace: 'pre-line', background: '#ffffff', padding: '14px 18px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', lineHeight: '1.65', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
                     {renderedLivePreview}
                   </div>
+
+                  {/* Notice about clicking the electronic invite link */}
+                  {activeMessageType === 'invite' && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '8px 12px',
+                      background: 'rgba(64, 123, 161, 0.08)',
+                      borderRadius: '10px',
+                      fontSize: '0.78rem',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <span>🖼️</span>
+                      <span><strong>ملاحظة:</strong> عند ضغط المدعو على رابط الدعوة الإلكترونية أعلاه، سيفتح له الموقع وتظهر له <strong>صورة كرت الدعوة</strong> المعتمدة داخل الصفحة.</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
