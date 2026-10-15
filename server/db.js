@@ -4,8 +4,21 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DB_FILE = path.join(__dirname, '../data_invitation.json');
+export const DATA_DIR = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || (fs.existsSync('/data') ? '/data' : path.join(__dirname, '..'));
+const DB_FILE = path.join(DATA_DIR, 'data_invitation.json');
+
+// Auto-initialize from bundled database if volume or custom data dir is empty
+if (!fs.existsSync(DB_FILE)) {
+  const bundled = path.join(__dirname, '../data_invitation.json');
+  if (fs.existsSync(bundled)) {
+    try {
+      fs.copyFileSync(bundled, DB_FILE);
+      console.log('Initialized DB_FILE from bundled data to:', DB_FILE);
+    } catch (e) {
+      console.warn('Failed to copy bundled DB_FILE:', e);
+    }
+  }
+}
 
 /**
  * Normalizes Arabic text for matching:

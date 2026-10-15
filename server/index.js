@@ -5,6 +5,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import {
   db,
+  DATA_DIR,
   renderWhatsAppMessage,
   formatArabicDateOnly,
   formatArabicTimeOnly,
@@ -23,12 +24,16 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Static uploads setup for card images
-const uploadsDir = path.join(__dirname, '../uploads');
+// Static uploads setup for card images (persisted on DATA_DIR/volume if available)
+const uploadsDir = path.join(DATA_DIR, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 app.use('/uploads', express.static(uploadsDir));
+const fallbackUploads = path.join(__dirname, '../uploads');
+if (fallbackUploads !== uploadsDir && fs.existsSync(fallbackUploads)) {
+  app.use('/uploads', express.static(fallbackUploads));
+}
 
 // Static public setup (video.mp4, etc.)
 const publicDir = path.join(__dirname, '../public');
@@ -130,6 +135,31 @@ app.get('/api/event/stats', async (req, res) => {
     const stats = await db.getEventStats(eventId);
     if (!stats) return res.status(404).json({ error: 'المناسبة غير موجودة' });
     res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Database Backup Export & Restore Routes
+app.get('/api/backup', (req, res) => {
+  try {
+    const data = db.read();
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename=invitation_backup_${Date.now()}.json`);
+    res.send(JSON.stringify(data, null, 2));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/backup/restore', (req, res) => {
+  try {
+    const backupData = req.body;
+    if (!backupData || !Array.isArray(backupData.events)) {
+      return res.status(400).json({ error: 'صيغة ملف النسخة الاحتياطية غير صالحة' });
+    }
+    db.write(backupData);
+    res.json({ success: true, eventsCount: backupData.events.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
