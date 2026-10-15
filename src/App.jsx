@@ -6,45 +6,77 @@ import GuestPortal from './components/GuestPortal';
 import './styles/apple.css';
 
 function AdminPinLock({ onUnlock }) {
-  const [pin, setPin] = useState('');
+  const [digits, setDigits] = useState(['', '', '', '']);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [shake, setShake] = useState(false);
+  const inputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
 
+  // Auto focus first OTP cell on mount
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (isLoading) return;
-      if (e.key >= '0' && e.key <= '9') {
-        if (pin.length < 6) {
-          handleDigitPress(e.key);
-        }
-      } else if (e.key === 'Backspace') {
-        setError('');
-        setPin(prev => prev.slice(0, -1));
-      } else if (e.key === 'Enter') {
-        if (pin.length >= 4) {
-          handleSubmit(pin);
-        }
+    inputRefs[0]?.current?.focus();
+  }, []);
+
+  const handleChange = (index, value) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (!cleaned) {
+      const next = [...digits];
+      next[index] = '';
+      setDigits(next);
+      return;
+    }
+
+    const next = [...digits];
+    // If pasted or multi-character entered
+    if (cleaned.length > 1) {
+      const chars = cleaned.slice(0, 4).split('');
+      for (let i = 0; i < 4; i++) {
+        next[i] = chars[i] || '';
       }
-    };
+      setDigits(next);
+      const focusIndex = Math.min(chars.length, 3);
+      inputRefs[focusIndex]?.current?.focus();
+      if (chars.length === 4) {
+        handleSubmit(chars.join(''));
+      }
+      return;
+    }
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [pin, isLoading]);
-
-  const handleDigitPress = (digit) => {
-    if (pin.length >= 6) return;
+    next[index] = cleaned[cleaned.length - 1];
+    setDigits(next);
     setError('');
-    const newPin = pin + digit;
-    setPin(newPin);
 
-    if (newPin.length === 4) {
-      handleSubmit(newPin);
+    // Advance focus to next input
+    if (index < 3) {
+      inputRefs[index + 1]?.current?.focus();
+    }
+
+    // Auto submit when all 4 cells are filled
+    const fullPin = next.join('');
+    if (fullPin.length === 4 && !next.includes('')) {
+      handleSubmit(fullPin);
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === 'Backspace') {
+      if (!digits[index] && index > 0) {
+        inputRefs[index - 1]?.current?.focus();
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      inputRefs[index - 1]?.current?.focus();
+    } else if (e.key === 'ArrowRight' && index < 3) {
+      inputRefs[index + 1]?.current?.focus();
+    } else if (e.key === 'Enter') {
+      const fullPin = digits.join('');
+      if (fullPin.length === 4) {
+        handleSubmit(fullPin);
+      }
     }
   };
 
   const handleSubmit = async (pinToVerify) => {
-    const targetPin = pinToVerify || pin;
+    const targetPin = pinToVerify || digits.join('');
     if (!targetPin || targetPin.length < 4) {
       setError('يرجى إدخال 4 أرقام');
       return;
@@ -82,9 +114,14 @@ function AdminPinLock({ onUnlock }) {
   const triggerError = (msg) => {
     setError(msg);
     setShake(true);
-    setPin('');
-    setTimeout(() => setShake(false), 500);
+    setDigits(['', '', '', '']);
+    setTimeout(() => {
+      setShake(false);
+      inputRefs[0]?.current?.focus();
+    }, 450);
   };
+
+  const fullPin = digits.join('');
 
   return (
     <div style={{
@@ -102,7 +139,7 @@ function AdminPinLock({ onUnlock }) {
           width: '100%',
           backgroundColor: '#ffffff',
           borderRadius: '28px',
-          padding: '38px 28px',
+          padding: '40px 28px',
           textAlign: 'center',
           boxShadow: '0 20px 60px rgba(64, 123, 161, 0.16)',
           border: '1.5px solid rgba(64, 123, 161, 0.22)',
@@ -110,6 +147,7 @@ function AdminPinLock({ onUnlock }) {
           transition: shake ? 'transform 0.1s ease-in-out' : 'all 0.3s ease'
         }}
       >
+        {/* Top Lock Icon */}
         <div style={{
           width: '68px',
           height: '68px',
@@ -119,184 +157,108 @@ function AdminPinLock({ onUnlock }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          margin: '0 auto 16px',
+          margin: '0 auto 16px auto',
           boxShadow: '0 8px 24px rgba(64, 123, 161, 0.14)'
         }}>
           <Lock size={32} />
         </div>
 
+        {/* Title: Centered */}
         <h2 style={{
-          fontSize: '1.35rem',
+          fontSize: '1.4rem',
           fontWeight: 800,
           color: 'var(--text-primary)',
-          margin: '0 0 6px 0'
+          margin: '0 auto 8px auto',
+          textAlign: 'center',
+          width: '100%'
         }}>
           لوحة تحكم المناسبات
         </h2>
 
+        {/* Subtitle: Centered without 'المنطقة محمية —' */}
         <p style={{
-          fontSize: '0.86rem',
+          fontSize: '0.9rem',
           color: 'var(--text-secondary)',
-          margin: '0 0 24px 0',
+          margin: '0 auto 28px auto',
+          textAlign: 'center',
+          width: '100%',
           lineHeight: 1.5
         }}>
-          المنطقة محمية — أدخل الرمز السري للدخول
+          أدخل الرمز السري للدخول
         </p>
 
-        {/* 4 PIN Dots */}
+        {/* 4 OTP Input Cells */}
         <div style={{
           display: 'flex',
           justifyContent: 'center',
-          gap: '14px',
-          marginBottom: '20px'
+          gap: '12px',
+          marginBottom: '26px',
+          direction: 'ltr'
         }}>
-          {[0, 1, 2, 3].map((idx) => {
-            const isFilled = pin.length > idx;
-            return (
-              <div
-                key={idx}
-                style={{
-                  width: '16px',
-                  height: '16px',
-                  borderRadius: '50%',
-                  border: isFilled ? '2px solid var(--pink-dark)' : '2px solid rgba(64, 123, 161, 0.3)',
-                  backgroundColor: isFilled ? 'var(--pink-dark)' : 'transparent',
-                  transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                  transform: isFilled ? 'scale(1.15)' : 'scale(1)'
-                }}
-              />
-            );
-          })}
+          {digits.map((digit, idx) => (
+            <input
+              key={idx}
+              ref={inputRefs[idx]}
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={1}
+              value={digit}
+              autoComplete="one-time-code"
+              onChange={(e) => handleChange(idx, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(idx, e)}
+              onFocus={(e) => e.target.select()}
+              disabled={isLoading}
+              style={{
+                width: '56px',
+                height: '64px',
+                borderRadius: '16px',
+                background: digit ? '#ffffff' : 'rgba(64, 123, 161, 0.05)',
+                border: digit ? '2px solid var(--pink-dark)' : '1.5px solid rgba(64, 123, 161, 0.22)',
+                boxShadow: digit ? '0 4px 16px rgba(64, 123, 161, 0.15)' : 'none',
+                textAlign: 'center',
+                fontSize: '1.6rem',
+                fontWeight: 800,
+                color: 'var(--text-primary)',
+                outline: 'none',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+              }}
+            />
+          ))}
         </div>
 
+        {/* Error message */}
         {error && (
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
             color: '#dc2626',
-            fontSize: '0.82rem',
+            fontSize: '0.84rem',
             fontWeight: 700,
             background: '#fee2e2',
-            padding: '6px 14px',
+            padding: '6px 16px',
             borderRadius: '20px',
-            marginBottom: '18px'
+            marginBottom: '20px'
           }}>
             <AlertCircle size={14} />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Numeric Keypad */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '12px',
-          maxWidth: '260px',
-          margin: '0 auto 16px'
-        }}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-            <button
-              key={num}
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleDigitPress(num.toString())}
-              style={{
-                height: '54px',
-                borderRadius: '16px',
-                fontSize: '1.35rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                background: 'rgba(64, 123, 161, 0.05)',
-                border: '1px solid rgba(64, 123, 161, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                userSelect: 'none'
-              }}
-            >
-              {num}
-            </button>
-          ))}
-
-          <button
-            type="button"
-            disabled={isLoading || pin.length === 0}
-            onClick={() => setPin('')}
-            style={{
-              height: '54px',
-              borderRadius: '16px',
-              fontSize: '0.84rem',
-              fontWeight: 700,
-              color: 'var(--text-secondary)',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              userSelect: 'none'
-            }}
-          >
-            مسح
-          </button>
-
-          <button
-            type="button"
-            disabled={isLoading}
-            onClick={() => handleDigitPress('0')}
-            style={{
-              height: '54px',
-              borderRadius: '16px',
-              fontSize: '1.35rem',
-              fontWeight: 700,
-              color: 'var(--text-primary)',
-              background: 'rgba(64, 123, 161, 0.05)',
-              border: '1px solid rgba(64, 123, 161, 0.12)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              userSelect: 'none'
-            }}
-          >
-            0
-          </button>
-
-          <button
-            type="button"
-            disabled={isLoading || pin.length === 0}
-            onClick={() => { setError(''); setPin(prev => prev.slice(0, -1)); }}
-            style={{
-              height: '54px',
-              borderRadius: '16px',
-              fontSize: '1.1rem',
-              color: 'var(--text-secondary)',
-              background: 'transparent',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              userSelect: 'none'
-            }}
-          >
-            ⌫
-          </button>
-        </div>
-
+        {/* Submit button */}
         <button
           type="button"
           className="apple-btn apple-btn-pink btn-block"
           style={{
-            padding: '12px 18px',
+            padding: '13px 18px',
             fontSize: '0.96rem',
             justifyContent: 'center',
-            opacity: pin.length >= 4 ? 1 : 0.65,
-            pointerEvents: pin.length >= 4 ? 'auto' : 'none'
+            opacity: fullPin.length === 4 ? 1 : 0.65,
+            pointerEvents: fullPin.length === 4 ? 'auto' : 'none'
           }}
-          disabled={isLoading || pin.length < 4}
-          onClick={() => handleSubmit(pin)}
+          disabled={isLoading || fullPin.length < 4}
+          onClick={() => handleSubmit(fullPin)}
         >
           {isLoading ? (
             <><Loader2 size={18} className="animate-spin" /> جاري التحقق...</>
